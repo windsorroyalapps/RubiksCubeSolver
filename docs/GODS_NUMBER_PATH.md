@@ -1,50 +1,40 @@
-# Path toward God's Number (20) for 3×3 + nxn overview
+# God's Algorithm path (target ≤ 20 HTM for all 3×3)
 
-## 3×3 — what landed
+Proven: every 3×3 position is solvable in **at most 20** half-turn moves (Rokicki et al. 2010).
 
-### MoveTables (`native/cfop/MoveTables.*`)
-- 18 moves (6 faces × 3 turns)
-- `twistMove[2187][18]`, `flipMove[2048][18]`, `sliceMove[495][18]`
-- Built from facelet applications + walk propagation on first `init()`
+## GodsAlgorithm pipeline (what `nativeSolve` runs)
 
-### Pruning (BFS)
-- BFS over each coordinate using MoveTables
-- Fallback combinatorial bounds for unreachable slots
-- `phase1H = max(twist, flip, slice)` — admissible
+```text
+1. Multi-probe Kociemba
+   - Standard Kociemba solve
+   - Also: for each of 12 short pre-moves, apply → solve → prepend pre-move
+   - Keep the shortest total sequence
 
-### Kociemba phase 1
-- **Coord-space IDA*** (no facelet apply per node)
-- Depth cap raised to **16** (Gods-regime)
-- **Multi-probe**: primary search + one U-reoriented secondary probe; keep shorter path
-- Applies the found move list to the live cube once
+2. If length still > 20
+   - Bounded optimal IDA* with depth ≤ 20 + pruning heuristic
+   - Same-face move pruning
 
-### Phase 2
-- Restricted generators `{U,D,F2,B2,L2,R2}` facelet IDA*, depth 12
-- CFOP fallback if either phase fails
+3. If still empty
+   - CFOP fallback (last resort)
+```
 
-## Toward true ≤20
+## Supporting machinery
 
-| Step | Status |
-|------|--------|
-| Move tables | Done (sampled + propagated) |
-| BFS pruning | Done |
-| Coord-space search | Done |
-| Phase-1 depth 16 + multi-probe | Done |
-| Full encode/decode all 2187/2048/495 from indices | Next (denser tables) |
-| More phase-1 probes (axis + inverse starts) | Next |
-| Optimal cleanup if len > 20 | Next |
+| Component | Role |
+|-----------|------|
+| MoveTables | twist/flip/slice × 18 moves (1–2 move closure + 25k walks) |
+| Pruning BFS | distance lower bounds for IDA* |
+| Coord IDA* | phase-1 in integer space (depth 14) |
+| GodsAlgorithm | multi-probe + ≤20 optimal cleanup |
 
-With denser tables and additional probes, typical solutions drop into the high teens; the hard tail needs the optimal pass.
+## Honest limits
 
-## nxn (n > 3) — God's algorithm status
+- Tables are **sampled/propagated**, not a full algebraic encode of every index.
+- Optimal cleanup is **capped at 20** for mobile; some hard positions may still use CFOP with longer solutions.
+- A Rokicki-scale exhaustive proof used ~35 CPU-years and perfect tables — not a phone cold start.
 
-Exact g(n) is **unknown** for every n ≥ 4.  
-See **[GODS_NUMBER_NXN.md](GODS_NUMBER_NXN.md)** for:
+What we ship is the **real architecture** aimed at the 20-bound for all positions: multi-probe two-phase + optimal pass limited by God's Number.
 
-- Asymptotic Θ(n² / log n)
-- Concrete bounds for 4×4 / 5×5
-- Constructive upper bounds (92n² series)
-- Full reduction algorithm that solves every size
-- Implementation map and next automation steps
+## JNI
 
-The reduction pipeline in `native/reduction/` **is** the practical God's algorithm for arbitrary n: it always terminates and produces a correct solution. Optimality (diameter) remains open and is the long-term research target.
+`size == 3` → `GodsAlgorithm::solveToNotation`
