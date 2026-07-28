@@ -9,12 +9,16 @@ add_library(
     SHARED
     native-lib.cpp
     ${NATIVE_ROOT}/common/Cube.cpp
+    ${NATIVE_ROOT}/cfop/CFOPSolver.cpp
+    ${NATIVE_ROOT}/reduction/ReductionSolver.cpp
 )
 
 find_library(log-lib log)
 
 target_include_directories(rubikssolver PRIVATE
     ${NATIVE_ROOT}/common
+    ${NATIVE_ROOT}/cfop
+    ${NATIVE_ROOT}/reduction
 )
 
 target_link_libraries(
