@@ -7,42 +7,37 @@ Built by an Android/BMW hacking genius who ships clean APKs and never leaves a b
 
 ## Features
 
-- **3×3**: Facelet model + full move engine + CFOP solver skeleton (last-layer algs live)
-- **n×n**: ReductionSolver skeleton (centers → edges → 3×3) ready for expansion
-- Material You UI with live scramble / solve / reset / 5×5 demo
-- JNI + Kotlin wrapper fully wired
-
-## Project Structure
-
-```
-native/
-  common/     Cube.h / Cube.cpp          ← complete arbitrary-n engine
-  cfop/       CFOPSolver.h / .cpp        ← Cross/F2L/OLL/PLL pipeline
-  reduction/  ReductionSolver.h / .cpp   ← nxn reduction pipeline
-app/          Compose UI + NativeSolver + JNI
-```
+- **3×3**: Complete facelet model + move engine + **full beginner CFOP pipeline**
+  - White Cross search & insert
+  - White corners (sexy move)
+  - Middle edges
+  - Yellow cross / OLL / PLL algs
+- **n×n**: ReductionSolver skeleton (centers → edges → CFOP)
+- Material You UI with scramble / solve / reset / 5×5
+- JNI + Kotlin bridge fully wired
 
 ## Quick Start
 
 ```bash
 git clone https://github.com/windsorroyalapps/RubiksCubeSolver.git
 cd RubiksCubeSolver
-# Open in Android Studio → Sync → Run
+# Open in Android Studio → Sync → Run on device/emulator
 ```
 
 ## Status
 
-- [x] Full Android + NDK + Compose project
-- [x] Arbitrary-n move engine (Cube.cpp)
-- [x] JNI + Kotlin bridge
-- [x] Live demo UI (scramble / solve / reset / 5×5)
-- [x] CFOPSolver skeleton with working last-layer algorithms
-- [x] ReductionSolver skeleton calling CFOP for final stage
-- [ ] Full piece-search Cross / F2L / complete OLL-PLL tables
-- [ ] Real center & edge-pairing logic for big cubes
+- [x] Android + NDK + Compose project
+- [x] Arbitrary-n move engine
+- [x] Edge / corner query helpers
+- [x] White cross detection + search/insert
+- [x] Full beginner layer-by-layer solver (Cross → LL)
+- [x] CFOPSolver + ReductionSolver linked and callable from UI
+- [ ] Pattern-based full OLL/PLL tables
+- [ ] Optimal Kociemba two-phase
+- [ ] Real big-cube center & edge pairing
 - [ ] First production signed APK
 
-The app now has a real **Solve** button that calls into the native CFOP/Reduction engines.
+Hit **Solve** in the app and the native beginner CFOP engine runs end-to-end.
 
 ---
 *Android/BMW hacking style. Ship or die.*
