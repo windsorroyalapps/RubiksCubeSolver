@@ -2,8 +2,9 @@
 #include <string>
 #include <memory>
 #include "Cube.h"
+#include "CFOPSolver.h"
+#include "ReductionSolver.h"
 
-// Simple global for demo (production will use instance per session)
 static std::unique_ptr<Cube> g_cube;
 
 extern "C" {
@@ -65,6 +66,26 @@ Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeSize(
         jobject /*thiz*/) {
     if (!g_cube) return 0;
     return static_cast<jint>(g_cube->size());
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeSolve(
+        JNIEnv* env,
+        jobject /*thiz*/) {
+    if (!g_cube) {
+        return env->NewStringUTF("");
+    }
+    std::string notation;
+    if (g_cube->size() == 3) {
+        notation = CFOPSolver::solveToNotation(*g_cube);
+    } else {
+        notation = ReductionSolver::solveToNotation(*g_cube);
+    }
+    // Also apply the solution to the live cube so UI reflects solved state
+    if (!notation.empty()) {
+        g_cube->applyNotation(notation);
+    }
+    return env->NewStringUTF(notation.c_str());
 }
 
 } // extern "C"
