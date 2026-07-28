@@ -3,22 +3,38 @@
 #include <algorithm>
 
 std::vector<Move> CenterSolver::commutator(const Move& a, const Move& b) {
-    // A B A' B'
     Move aInv{a.face, a.depth, a.turns == 2 ? 2 : -a.turns};
     Move bInv{b.face, b.depth, b.turns == 2 ? 2 : -b.turns};
     return {a, b, aInv, bInv};
+}
+
+static int centerScore(const Cube& work, int face) {
+    int n = work.size();
+    Color target = static_cast<Color>(face);
+    int correct = 0, total = 0;
+    int start = 1, end = n - 1; // ignore outer frame (edges/corners)
+    for (int r = start; r < end; ++r) {
+        for (int c = start; c < end; ++c) {
+            ++total;
+            if (work.get(face, r, c) == target) ++correct;
+        }
+    }
+    return total == 0 ? 100 : (correct * 100) / total;
+}
+
+static int opposite(int face) {
+    switch (face) {
+        case U: return D; case D: return U;
+        case F: return B; case B: return F;
+        case L: return R; case R: return L;
+        default: return face;
+    }
 }
 
 std::vector<Move> CenterSolver::solveFace(Cube& work, int face) {
     std::vector<Move> moves;
     int n = work.size();
     if (n < 4) return moves;
-
-    Color target = static_cast<Color>(face);
-
-    // For each non-center facelet on this face, try to bring correct color in.
-    // Strategy: use outer-layer turns + inner-slice commutators.
-    // This is a practical reduction approach, not optimal.
 
     auto append = [&](const std::vector<Move>& seq) {
         for (const auto& m : seq) {
@@ -27,40 +43,46 @@ std::vector<Move> CenterSolver::solveFace(Cube& work, int face) {
         }
     };
 
-    // Sweep inner rows/cols with slice moves to gather correct colors
-    // depth 1 .. n/2-1 are the movable center bands
     int maxDepth = n / 2;
-    for (int depth = 1; depth < maxDepth; ++depth) {
-        // Rotate this face and adjacent sides to funnel pieces
-        for (int t = 0; t < 4; ++t) {
-            // Check if center band already mostly correct
-            int correct = 0;
-            int total = 0;
-            for (int r = depth; r < n - depth; ++r) {
-                for (int c = depth; c < n - depth; ++c) {
-                    if (r == n/2 && c == n/2 && (n % 2 == 1)) continue; // fixed center
-                    ++total;
-                    if (work.get(face, r, c) == target) ++correct;
-                }
-            }
-            if (total > 0 && correct * 100 / total >= 80) break;
+    int opp = opposite(face);
 
-            // Apply a gathering sequence: turn face, slice, turn back
+    // Goal: push centerScore to >= 95
+    for (int attempt = 0; attempt < 24 && centerScore(work, face) < 95; ++attempt) {
+        int bestDepth = 1;
+        int bestGain = -1;
+        int scoreBefore = centerScore(work, face);
+
+        // Try each inner depth and pick the commutator that improves most
+        for (int depth = 1; depth < maxDepth; ++depth) {
             Move faceTurn{face, 0, 1};
-            // Opposite face for slice context
-            int opp = (face == U) ? D : (face == D) ? U :
-                      (face == F) ? B : (face == B) ? F :
-                      (face == L) ? R : L;
             Move slice{opp, depth, 1};
+            auto seq = commutator(faceTurn, slice);
 
-            append(commutator(faceTurn, slice));
-            append({Move{face, 0, 1}}); // align next
+            // Speculatively apply
+            for (auto& m : seq) work.apply(m);
+            int scoreAfter = centerScore(work, face);
+            int gain = scoreAfter - scoreBefore;
+
+            // Undo
+            for (auto it = seq.rbegin(); it != seq.rend(); ++it) {
+                Move inv{it->face, it->depth, it->turns == 2 ? 2 : -it->turns};
+                work.apply(inv);
+            }
+
+            if (gain > bestGain) {
+                bestGain = gain;
+                bestDepth = depth;
+            }
         }
-    }
 
-    // Final outer alignment
-    for (int i = 0; i < 4; ++i) {
-        append({Move{face, 0, 1}});
+        // Apply best (or rotate face to change alignment if no gain)
+        if (bestGain > 0) {
+            Move faceTurn{face, 0, 1};
+            Move slice{opp, bestDepth, 1};
+            append(commutator(faceTurn, slice));
+        } else {
+            append({Move{face, 0, 1}}); // reorient and try again
+        }
     }
 
     return moves;
@@ -68,17 +90,13 @@ std::vector<Move> CenterSolver::solveFace(Cube& work, int face) {
 
 std::vector<Move> CenterSolver::solve(Cube& work) {
     std::vector<Move> solution;
-    int n = work.size();
-    if (n < 4) return solution;
+    if (work.size() < 4) return solution;
 
-    // Solve centers in order: U, D, then sides F R B L
-    // (standard reduction order reduces disruption)
-    const int order[] = {U, D, F, R, B, L};
-
+    // U/D first (stable axis), then belt faces
+    const int order[] = {U, D, F, B, L, R};
     for (int face : order) {
         auto stage = solveFace(work, face);
         solution.insert(solution.end(), stage.begin(), stage.end());
     }
-
     return solution;
 }
