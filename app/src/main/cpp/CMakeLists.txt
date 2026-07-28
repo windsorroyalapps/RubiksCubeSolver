@@ -20,6 +20,7 @@ add_library(
     ${NATIVE_ROOT}/reduction/EdgePairing.cpp
     ${NATIVE_ROOT}/reduction/ParityHandler.cpp
     ${NATIVE_ROOT}/reduction/BatchSolver.cpp
+    ${NATIVE_ROOT}/reduction/ClusterScheduler.cpp
 )
 
 find_library(log-lib log)
