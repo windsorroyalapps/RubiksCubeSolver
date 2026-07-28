@@ -1,37 +1,51 @@
 # Solving Algorithms
 
-## 3×3 — CFOP (Fridrich)
+## 3×3 — CFOP (Fridrich) + Kociemba
 
 1. **Cross** — White (or any color) cross on bottom, edges aligned with centers.
 2. **F2L** — Pair + insert 4 corner-edge pairs (41 basic cases).
 3. **OLL** — Orient last layer (57 algs full / ~10 for 2-look).
 4. **PLL** — Permute last layer (21 algs full / 2-look).
 
-God's Number: **20**.
+**God's Number (HTM): 20.** Proven.
 
-## 4×4+ — Reduction Method
+Kociemba two-phase (coord IDA*) is the primary engine; CFOP is the reliable fallback.
+
+## 4×4+ — Reduction Method (universal for any n)
 
 1. **Solve Centers**  
    Group all center pieces of each face into solid blocks.  
-   Odd n: fixed centers. Even n: choose color scheme.
+   Odd n: fixed centers. Even n: choose colour scheme.
 
 2. **Edge Pairing**  
    Match the (n-2) wing pieces that belong to each of the 12 edges.  
    Techniques: Freeslice, Yau, Hoya, pure pair-by-pair.
 
-3. **3×3 Stage**  
-   Treat reduced cube as normal 3×3 with CFOP.  
-   Handle parity cases on even-order cubes (OLL parity, PLL parity).
+3. **Parity (even n)**  
+   OLL parity ("flipped" dedge) then PLL parity (odd permutation of edges).
 
-Same pipeline works for any n up to 1000+ (and beyond).
+4. **3×3 Stage**  
+   Treat reduced cube as normal 3×3 with Kociemba/CFOP.
+
+Same pipeline works for any n up to device memory (design target 1000×1000 software-only).
 
 ## Theoretical Bound (Demaine et al. 2011)
 
 God's Number for n×n×n is **Θ(n² / log n)**.  
-Upper bound obtained by parallelizing classic Θ(n²) reduction algorithms.
+Upper bound obtained by parallelising classic Θ(n²) reduction algorithms.
+
+Exact values only known for n = 2 and n = 3. For n ≥ 4 the diameter remains open; only bounds exist (see [GODS_NUMBER_NXN.md](GODS_NUMBER_NXN.md)).
 
 ## Implementation Notes (this repo)
 
 - `native/cfop/` → 3×3 CFOP + Kociemba two-phase
-- `native/reduction/` → centers + edge pairing for arbitrary n
+- `native/reduction/` → centers + edge pairing + parity for arbitrary n
 - `native/common/` → cube state, move notation, facelet model
+
+## Next approaches
+
+- Dense full-index pruning tables for 3×3 (close the gap to 20)
+- Look-ahead / BFS center solving for small-to-medium n
+- Full wing-parity detection (not mid-slice proxy)
+- Emit move counts in multiple metrics for bound comparison
+- Scaffolding for diameter search on reduced 4×4 / 5×5 state spaces

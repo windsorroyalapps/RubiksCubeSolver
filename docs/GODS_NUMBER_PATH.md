@@ -1,6 +1,6 @@
-# Path toward God's Number (20) for 3×3
+# Path toward God's Number (20) for 3×3 + nxn overview
 
-## What landed
+## 3×3 — what landed
 
 ### MoveTables (`native/cfop/MoveTables.*`)
 - 18 moves (6 faces × 3 turns)
@@ -21,7 +21,7 @@
 - Restricted generators `{U,D,F2,B2,L2,R2}` facelet IDA*, depth 12
 - CFOP fallback if either phase fails
 
-## Toward true ≤20
+## Toward true ≤20 on 3×3
 
 | Step | Status |
 |------|--------|
@@ -33,3 +33,16 @@
 | Optimal cleanup if len > 20 | Next |
 
 With denser tables and multi-probe phase-1, typical solutions drop into the high teens; the hard tail needs the optimal pass.
+
+## nxn (n > 3) — God's algorithm status
+
+Exact g(n) is **unknown** for every n ≥ 4.  
+See **[GODS_NUMBER_NXN.md](GODS_NUMBER_NXN.md)** for:
+
+- Asymptotic Θ(n² / log n)
+- Concrete bounds for 4×4 / 5×5
+- Constructive upper bounds (92n² series)
+- Full reduction algorithm that solves every size
+- Implementation map and next automation steps
+
+The reduction pipeline in `native/reduction/` **is** the practical God's algorithm for arbitrary n: it always terminates and produces a correct solution. Optimality (diameter) remains open and is the long-term research target.
