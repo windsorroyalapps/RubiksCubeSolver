@@ -1,21 +1,21 @@
-# CFOP Engine
+# CFOP + Kociemba Engine
 
-3×3 beginner-method solver (layer-by-layer) that is the foundation for full CFOP.
+## Modules
 
-## Current implementation
+| File | Role |
+|------|------|
+| `CFOPSolver.*` | Beginner CFOP + pattern-aware 2-look OLL/PLL |
+| `OLLTables.h` | Edge + corner OLL algorithms |
+| `PLLTables.h` | Corner/edge PLL algorithms |
+| `CoordCube.*` | twist / flip / slice coordinates from facelets |
+| `Kociemba.*` | Two-phase IDA* (phase-1 → G1, phase-2 → solved) |
 
-1. **White Cross** – search + insert white edges onto D face
-2. **White Corners** – sexy-move (`R U R' U'`) insertion cycles
-3. **Middle Edges** – left/right insertion algs
-4. **Yellow Cross** – `F R U R' U' F'`
-5. **OLL corners** – Sune
-6. **PLL corners** – A-perm style
-7. **PLL edges** – U-perm
+## Solve path (3x3)
 
-## Files
-- `CFOPSolver.h` / `CFOPSolver.cpp`
+1. **Kociemba phase 1** – IDA* on (twist, flip, slice) until G1  
+2. **Kociemba phase 2** – IDA* with restricted move set to solved  
+3. On failure / depth limit → **CFOP beginner** fallback  
 
-## Next upgrades
-- Pattern recognition for OLL (57) and PLL (21)
-- Proper F2L pair matching instead of pure insertion cycles
-- Kociemba two-phase for optimal solutions
+## Next
+- Precomputed move tables + pruning tables for real God's-algorithm performance
+- Full 57 OLL / 21 PLL case IDs
