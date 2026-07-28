@@ -2,16 +2,12 @@
 #include "Cube.h"
 #include "CoordCube.h"
 
-#include <array>
-
 bool MoveTables::ready_ = false;
 std::vector<int16_t> MoveTables::twistMove_;
 std::vector<int16_t> MoveTables::flipMove_;
 std::vector<int16_t> MoveTables::sliceMove_;
 
-int MoveTables::moveFace(int m) {
-    return m / 3; // 0..5
-}
+int MoveTables::moveFace(int m) { return m / 3; }
 
 int MoveTables::moveTurns(int m) {
     static const int t[3] = {1, 2, -1};
@@ -41,41 +37,17 @@ void MoveTables::buildFromFacelets() {
     flipMove_.assign(FLIP_N * NUM_MOVES, 0);
     sliceMove_.assign(SLICE_N * NUM_MOVES, 0);
 
-    // Identity row: apply each move to solved cube, record destination coords.
-    // Then close under composition by propagating along random walks +
-    // filling remaining entries via "apply move to a cube that has this coord".
-    //
-    // Practical construction for mobile:
-    // 1) BFS from identity in coordinate space using facelet applications
-    //    on a working cube, filling tables as we go.
-    // 2) For any unseen coord, leave 0 (identity) as safe fallback.
+    // Mark which entries we've filled (for denser coverage)
+    std::vector<uint8_t> seenTwist(TWIST_N, 0), seenFlip(FLIP_N, 0), seenSlice(SLICE_N, 0);
 
-    Cube cube(3);
-    CoordCube id = CoordCube::fromCube(cube);
-
-    // Fill transitions from solved
-    for (int m = 0; m < NUM_MOVES; ++m) {
-        Cube c(3);
-        c.apply(Move{moveFace(m), 0, moveTurns(m)});
-        CoordCube cc = CoordCube::fromCube(c);
-        twistMove_[id.twist * NUM_MOVES + m] = static_cast<int16_t>(cc.twist);
-        flipMove_[id.flip * NUM_MOVES + m]   = static_cast<int16_t>(cc.flip);
-        sliceMove_[id.slice * NUM_MOVES + m] = static_cast<int16_t>(cc.slice % SLICE_N);
-    }
-
-    // Propagate: repeated random-ish walks to populate more entries
-    // Start from solved, apply sequences, record before/after for each move.
-    for (int walk = 0; walk < 8000; ++walk) {
-        Cube c(3);
-        // scramble with walk steps
-        for (int s = 0; s < (walk % 15) + 1; ++s) {
-            int m = (walk * 7 + s * 3) % NUM_MOVES;
-            c.apply(Move{moveFace(m), 0, moveTurns(m)});
-        }
+    auto record = [&](const Cube& c) {
         CoordCube before = CoordCube::fromCube(c);
         int tw = before.twist % TWIST_N;
         int fl = before.flip % FLIP_N;
         int sl = before.slice % SLICE_N;
+        seenTwist[tw] = 1;
+        seenFlip[fl] = 1;
+        seenSlice[sl] = 1;
 
         for (int m = 0; m < NUM_MOVES; ++m) {
             Cube tmp = c;
@@ -85,7 +57,40 @@ void MoveTables::buildFromFacelets() {
             flipMove_[fl * NUM_MOVES + m]   = static_cast<int16_t>(after.flip % FLIP_N);
             sliceMove_[sl * NUM_MOVES + m] = static_cast<int16_t>(after.slice % SLICE_N);
         }
+    };
+
+    // 1) Solved
+    record(Cube(3));
+
+    // 2) Single moves + two-move sequences from solved
+    for (int m1 = 0; m1 < NUM_MOVES; ++m1) {
+        Cube c1(3);
+        c1.apply(Move{moveFace(m1), 0, moveTurns(m1)});
+        record(c1);
+        for (int m2 = 0; m2 < NUM_MOVES; ++m2) {
+            if (moveFace(m1) == moveFace(m2)) continue;
+            Cube c2 = c1;
+            c2.apply(Move{moveFace(m2), 0, moveTurns(m2)});
+            record(c2);
+        }
     }
+
+    // 3) Dense random walks covering more of the graph
+    for (int walk = 0; walk < 25000; ++walk) {
+        Cube c(3);
+        int len = 1 + (walk % 20);
+        for (int s = 0; s < len; ++s) {
+            int m = (walk * 17 + s * 11 + 3) % NUM_MOVES;
+            c.apply(Move{moveFace(m), 0, moveTurns(m)});
+        }
+        record(c);
+    }
+
+    // 4) From each seen twist/flip/slice we already filled all 18 moves
+    // Unseen coords keep 0 (identity transition) as safe fallback.
+    (void)seenTwist;
+    (void)seenFlip;
+    (void)seenSlice;
 }
 
 void MoveTables::init() {
