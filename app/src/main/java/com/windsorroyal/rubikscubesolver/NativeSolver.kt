@@ -1,14 +1,21 @@
 package com.windsorroyal.rubikscubesolver
 
 /**
- * Thin Kotlin wrapper over the native C++ Cube + CFOP/Reduction engine.
- * Supports arbitrary n (3x3 up to large sizes limited by device memory).
+ * Kotlin ↔ JNI ↔ C++ bridge for the Rubik solver.
+ *
+ * Native library: librubikssolver.so (CMake target "rubikssolver")
+ * JNI source: app/src/main/cpp/native-lib.cpp
+ *
+ * Naming rule: Java_com_windsorroyal_rubikscubesolver_NativeSolver_<method>
+ * must match each `external fun native...` below.
  */
 object NativeSolver {
 
     init {
         System.loadLibrary("rubikssolver")
     }
+
+    // ---- JNI externals (implemented in native-lib.cpp) ----
 
     external fun nativeCreate(size: Int)
     external fun nativeApplyMove(face: Int, depth: Int, turns: Int)
@@ -17,6 +24,14 @@ object NativeSolver {
     external fun nativeToString(): String
     external fun nativeSize(): Int
     external fun nativeSolve(): String
+
+    /** Last BoundHarness report after an nxn solve (stage lengths vs U(n)). */
+    external fun nativeBoundReport(): String
+
+    /** Constructive upper bound U(n) for working backward toward God's Number. */
+    external fun nativeConstructiveUpper(n: Int): Int
+
+    // ---- Kotlin convenience API ----
 
     fun create(size: Int = 3) = nativeCreate(size)
 
@@ -31,6 +46,11 @@ object NativeSolver {
 
     fun size(): Int = nativeSize()
 
-    /** Run CFOP (3x3) or Reduction (nxn) and return the solution notation. */
+    /** 3x3 → GodsAlgorithm; n>3 → ReductionSolver (+ BoundHarness). */
     fun solve(): String = nativeSolve()
+
+    /** Bound harness string; call after [solve] on nxn. */
+    fun boundReport(): String = nativeBoundReport()
+
+    fun constructiveUpper(n: Int): Int = nativeConstructiveUpper(n)
 }
