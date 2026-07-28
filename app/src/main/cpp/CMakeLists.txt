@@ -12,9 +12,11 @@ add_library(
     ${NATIVE_ROOT}/cfop/CFOPSolver.cpp
     ${NATIVE_ROOT}/cfop/Kociemba.cpp
     ${NATIVE_ROOT}/cfop/CoordCube.cpp
+    ${NATIVE_ROOT}/cfop/Pruning.cpp
     ${NATIVE_ROOT}/reduction/ReductionSolver.cpp
     ${NATIVE_ROOT}/reduction/CenterSolver.cpp
     ${NATIVE_ROOT}/reduction/EdgePairing.cpp
+    ${NATIVE_ROOT}/reduction/ParityHandler.cpp
 )
 
 find_library(log-lib log)
