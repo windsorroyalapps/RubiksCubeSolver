@@ -2,8 +2,7 @@
 #include <string>
 #include <memory>
 #include "Cube.h"
-#include "CFOPSolver.h"
-#include "Kociemba.h"
+#include "GodsAlgorithm.h"
 #include "ReductionSolver.h"
 
 static std::unique_ptr<Cube> g_cube;
@@ -62,8 +61,8 @@ Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeSolve(
 
     std::string notation;
     if (g_cube->size() == 3) {
-        // Prefer Kociemba path (falls back to CFOP until tables are ready)
-        notation = Kociemba::solveToNotation(*g_cube);
+        // God's-algorithm path: multi-probe Kociemba + optimal cleanup <= 20 HTM
+        notation = GodsAlgorithm::solveToNotation(*g_cube);
     } else {
         notation = ReductionSolver::solveToNotation(*g_cube);
     }
