@@ -3,6 +3,7 @@
 #include <memory>
 #include "Cube.h"
 #include "CFOPSolver.h"
+#include "Kociemba.h"
 #include "ReductionSolver.h"
 
 static std::unique_ptr<Cube> g_cube;
@@ -11,28 +12,20 @@ extern "C" {
 
 JNIEXPORT void JNICALL
 Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeCreate(
-        JNIEnv* /*env*/,
-        jobject /*thiz*/,
-        jint size) {
+        JNIEnv*, jobject, jint size) {
     g_cube = std::make_unique<Cube>(static_cast<int>(size));
 }
 
 JNIEXPORT void JNICALL
 Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeApplyMove(
-        JNIEnv* /*env*/,
-        jobject /*thiz*/,
-        jint face,
-        jint depth,
-        jint turns) {
+        JNIEnv*, jobject, jint face, jint depth, jint turns) {
     if (!g_cube) return;
     g_cube->apply(Move{static_cast<int>(face), static_cast<int>(depth), static_cast<int>(turns)});
 }
 
 JNIEXPORT void JNICALL
 Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeApplyNotation(
-        JNIEnv* env,
-        jobject /*thiz*/,
-        jstring notation) {
+        JNIEnv* env, jobject, jstring notation) {
     if (!g_cube) return;
     const char* str = env->GetStringUTFChars(notation, nullptr);
     if (str) {
@@ -43,45 +36,38 @@ Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeApplyNotation(
 
 JNIEXPORT jboolean JNICALL
 Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeIsSolved(
-        JNIEnv* /*env*/,
-        jobject /*thiz*/) {
+        JNIEnv*, jobject) {
     if (!g_cube) return JNI_FALSE;
     return g_cube->isSolved() ? JNI_TRUE : JNI_FALSE;
 }
 
 JNIEXPORT jstring JNICALL
 Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeToString(
-        JNIEnv* env,
-        jobject /*thiz*/) {
-    if (!g_cube) {
-        return env->NewStringUTF("No cube");
-    }
-    std::string s = g_cube->toString();
-    return env->NewStringUTF(s.c_str());
+        JNIEnv* env, jobject) {
+    if (!g_cube) return env->NewStringUTF("No cube");
+    return env->NewStringUTF(g_cube->toString().c_str());
 }
 
 JNIEXPORT jint JNICALL
 Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeSize(
-        JNIEnv* /*env*/,
-        jobject /*thiz*/) {
+        JNIEnv*, jobject) {
     if (!g_cube) return 0;
     return static_cast<jint>(g_cube->size());
 }
 
 JNIEXPORT jstring JNICALL
 Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeSolve(
-        JNIEnv* env,
-        jobject /*thiz*/) {
-    if (!g_cube) {
-        return env->NewStringUTF("");
-    }
+        JNIEnv* env, jobject) {
+    if (!g_cube) return env->NewStringUTF("");
+
     std::string notation;
     if (g_cube->size() == 3) {
-        notation = CFOPSolver::solveToNotation(*g_cube);
+        // Prefer Kociemba path (falls back to CFOP until tables are ready)
+        notation = Kociemba::solveToNotation(*g_cube);
     } else {
         notation = ReductionSolver::solveToNotation(*g_cube);
     }
-    // Also apply the solution to the live cube so UI reflects solved state
+
     if (!notation.empty()) {
         g_cube->applyNotation(notation);
     }
