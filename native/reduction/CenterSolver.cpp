@@ -1,5 +1,6 @@
 #include "CenterSolver.h"
 #include "ClusterScheduler.h"
+#include "BatchGroups.h"
 
 #include <algorithm>
 
@@ -104,26 +105,16 @@ std::vector<Move> CenterSolver::solve(Cube& work) {
         solution.insert(solution.end(), seq.begin(), seq.end());
     };
 
-    // ---- Phase A: cluster scheduling (Demaine parallel setup) ----
-    // Group unsolved center facelets by shared preferred (face,depth,turns).
-    // One commutator per group serves many clusters at once.
+    // Phase A: BatchGroups — one commutator per shared-move group
     for (int pass = 0; pass < 3; ++pass) {
-        auto ordered = ClusterScheduler::schedule(work);
-        if (ordered.empty()) break;
-
-        auto groups = ClusterScheduler::batchGroups(ordered);
-        for (const auto& group : groups) {
-            if (group.empty()) continue;
-            const auto& need = group.front();
-            Move faceTurn{need.id.face, 0, 1};
-            Move slice{need.preferredFace, need.preferredDepth, need.preferredTurns};
-            auto seq = commutator(faceTurn, slice);
-            for (const auto& m : seq) work.apply(m);
-            append(seq);
-        }
+        auto groups = BatchGroups::fromCube(work);
+        if (groups.empty()) break;
+        auto seq = BatchGroups::applyAll(work, groups);
+        if (seq.empty()) break;
+        append(seq);
     }
 
-    // ---- Phase B: score-guided face cleanup ----
+    // Phase B: score-guided face cleanup
     const int order[] = {U, D, F, B, L, R};
     for (int face : order) {
         append(solveFace(work, face));
