@@ -8,15 +8,14 @@ static std::vector<Move> parse(const std::string& notation) {
     std::string token;
     while (iss >> token) {
         if (token.empty()) continue;
-        // Support inner-slice notation like 2R (depth=1, face=R)
         int depth = 0;
         size_t pos = 0;
         if (token[0] >= '2' && token[0] <= '9') {
-            depth = token[0] - '1'; // 2R -> depth 1
+            depth = token[0] - '1';
             pos = 1;
         }
         if (pos >= token.size()) continue;
-        int face = 0;
+        int face = -1;
         switch (token[pos]) {
             case 'U': face = U; break;
             case 'D': face = D; break;
@@ -36,54 +35,94 @@ static std::vector<Move> parse(const std::string& notation) {
     return result;
 }
 
+static void applyAll(Cube& work, const std::vector<Move>& moves) {
+    for (const auto& m : moves) work.apply(m);
+}
+
 bool ParityHandler::hasOLLParity(const Cube& c) {
-    if (c.size() < 4 || c.size() % 2 != 0) return false;
-    // Heuristic: count oriented edges on U after reduction-like state.
-    // Real detection needs wing-edge orientation tracking.
-    // For pipeline purposes we expose the alg and let caller decide;
-    // here we use a simple edge-orientation proxy on outer edges.
-    int flipped = 0;
-    int mid = c.size() / 2;
-    // Sample outer edge facelets on U
-    if (c.get(U, 0, mid) != Color::U && c.get(U, 0, mid) != Color::D) ++flipped;
-    if (c.get(U, mid, c.size()-1) != Color::U && c.get(U, mid, c.size()-1) != Color::D) ++flipped;
-    if (c.get(U, c.size()-1, mid) != Color::U && c.get(U, c.size()-1, mid) != Color::D) ++flipped;
-    if (c.get(U, mid, 0) != Color::U && c.get(U, mid, 0) != Color::D) ++flipped;
-    // Odd number of "bad" orientations suggests OLL parity in reduction context
-    return (flipped % 2) == 1;
+    if (c.size() < 4 || (c.size() % 2) != 0) return false;
+
+    // After reduction, OLL parity = odd number of flipped wing-pairs
+    // on the last layer relative to a 3x3 model.
+    // Proxy: count outer-layer edges on U whose adjacent side color
+    // does not match the side center (misoriented dedge).
+    int n = c.size();
+    int mid = n / 2;
+    int bad = 0;
+
+    // UF edge: U facelet at (n-1, mid), F facelet at (0, mid)
+    Color uUF = c.get(U, n - 1, mid);
+    Color fUF = c.get(F, 0, mid);
+    if (!((uUF == Color::U || uUF == Color::D) || (fUF == Color::U || fUF == Color::D)))
+        ++bad;
+
+    Color uUR = c.get(U, mid, n - 1);
+    Color rUR = c.get(R, 0, mid);
+    if (!((uUR == Color::U || uUR == Color::D) || (rUR == Color::U || rUR == Color::D)))
+        ++bad;
+
+    Color uUB = c.get(U, 0, mid);
+    Color bUB = c.get(B, 0, mid);
+    if (!((uUB == Color::U || uUB == Color::D) || (bUB == Color::U || bUB == Color::D)))
+        ++bad;
+
+    Color uUL = c.get(U, mid, 0);
+    Color lUL = c.get(L, 0, mid);
+    if (!((uUL == Color::U || uUL == Color::D) || (lUL == Color::U || lUL == Color::D)))
+        ++bad;
+
+    // OLL parity presents as a single "flipped" edge in 3x3 terms => odd count
+    return (bad % 2) == 1;
 }
 
 bool ParityHandler::hasPLLParity(const Cube& c) {
-    if (c.size() < 4 || c.size() % 2 != 0) return false;
-    // Heuristic: after OLL, if two outer edges appear swapped vs centers
-    // Simplified: always offer the alg when even-order and not solved
-    return !c.isSolved();
+    if (c.size() < 4 || (c.size() % 2) != 0) return false;
+
+    // PLL parity = odd permutation of the 12 dedges (two edges swapped).
+    // Proxy after OLL: check whether opposite edge colors form consistent pairs.
+    int n = c.size();
+    int mid = n / 2;
+
+    // Side colors of the four U edges
+    Color sUF = c.get(F, 0, mid);
+    Color sUR = c.get(R, 0, mid);
+    Color sUB = c.get(B, 0, mid);
+    Color sUL = c.get(L, 0, mid);
+
+    // In a solved-or-even-perm state, opposite sides should not both be "adjacent-only" mismatches
+    // Count cycles of length 2 among the four
+    int matches = 0;
+    if (sUF == Color::F) ++matches;
+    if (sUR == Color::R) ++matches;
+    if (sUB == Color::B) ++matches;
+    if (sUL == Color::L) ++matches;
+
+    // 4 = solved edges, 1 or 3 often indicates odd perm / parity case
+    // 0 or 2 can be even perms (H, Z, U-perms etc.)
+    return matches == 1 || matches == 3;
 }
 
 std::vector<Move> ParityHandler::fixOLLParity(Cube& work) {
-    // Standard 4x4 OLL parity (Uw2 style expressed with depth):
+    // Widely used 4x4 OLL parity (inner r/l):
     // r2 B2 U2 l U2 r' U2 r U2 F2 r F2 l' B2 r2
-    // Using depth-1 for inner R/L slices
     auto moves = parse("2R2 B2 U2 2L U2 2R' U2 2R U2 F2 2R F2 2L' B2 2R2");
-    for (auto& m : moves) work.apply(m);
+    applyAll(work, moves);
     return moves;
 }
 
 std::vector<Move> ParityHandler::fixPLLParity(Cube& work) {
-    // Standard PLL parity (adjacent edge swap):
-    // r2 U2 r2 Uw2 r2 u2
-    auto moves = parse("2R2 U2 2R2 U2 2R2 U2");
-    // More complete common alg:
+    // Common PLL parity (opposite edge swap style):
     // Rw2 F2 U2 Rw2 R2 U2 F2 Rw2
-    auto alt = parse("2R2 F2 U2 2R2 R2 U2 F2 2R2");
-    for (auto& m : alt) work.apply(m);
-    return alt;
+    auto moves = parse("2R2 F2 U2 2R2 R2 U2 F2 2R2");
+    applyAll(work, moves);
+    return moves;
 }
 
 std::vector<Move> ParityHandler::fix(Cube& work) {
     std::vector<Move> solution;
-    if (work.size() < 4 || work.size() % 2 != 0) return solution;
+    if (work.size() < 4 || (work.size() % 2) != 0) return solution;
 
+    // OLL parity first, then PLL parity (standard order)
     if (hasOLLParity(work)) {
         auto m = fixOLLParity(work);
         solution.insert(solution.end(), m.begin(), m.end());
