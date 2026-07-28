@@ -1,4 +1,6 @@
 #include "CFOPSolver.h"
+#include "OLLTables.h"
+#include "PLLTables.h"
 
 #include <sstream>
 
@@ -31,166 +33,174 @@ std::vector<Move> CFOPSolver::parseSequence(const std::string& notation) {
     return result;
 }
 
+void CFOPSolver::appendSeq(Cube& work, std::vector<Move>& out, const std::string& seq) {
+    auto m = parseSequence(seq);
+    for (auto& x : m) {
+        work.apply(x);
+        out.push_back(x);
+    }
+}
+
 // ---------------------------------------------------------------------------
-// White Cross - search & insert each white edge
+// Recognition
+// ---------------------------------------------------------------------------
+
+int CFOPSolver::countYellowEdgesOnU(const Cube& c) {
+    // Yellow = Color::U in our model (top face color when solved)
+    int mid = 1; // 3x3
+    int count = 0;
+    if (c.get(U, 0, mid) == Color::U) ++count; // UB
+    if (c.get(U, mid, 2) == Color::U) ++count; // UR
+    if (c.get(U, 2, mid) == Color::U) ++count; // UF
+    if (c.get(U, mid, 0) == Color::U) ++count; // UL
+    return count;
+}
+
+int CFOPSolver::countYellowCornersOnU(const Cube& c) {
+    int count = 0;
+    if (c.get(U, 0, 0) == Color::U) ++count;
+    if (c.get(U, 0, 2) == Color::U) ++count;
+    if (c.get(U, 2, 0) == Color::U) ++count;
+    if (c.get(U, 2, 2) == Color::U) ++count;
+    return count;
+}
+
+bool CFOPSolver::isYellowCross(const Cube& c) {
+    return countYellowEdgesOnU(c) == 4;
+}
+
+// ---------------------------------------------------------------------------
+// First two layers (beginner)
 // ---------------------------------------------------------------------------
 
 std::vector<Move> CFOPSolver::solveWhiteCross(Cube& work) {
     std::vector<Move> moves;
     if (work.size() != 3) return moves;
 
-    // Target: white (Color::D) edges on bottom, correctly oriented.
-    // Strategy: for each side (F,R,B,L) bring the matching white edge home.
-    // We use a simple bring-to-top then insert pattern that is always safe.
-
-    const Face sides[4] = {F, R, B, L};
-    const char* sideNames = "FRBL";
-
-    auto append = [&](const std::string& seq) {
-        auto m = parseSequence(seq);
-        for (auto& x : m) { work.apply(x); moves.push_back(x); }
-    };
-
-    // Up to 4 passes to place all cross edges
     for (int pass = 0; pass < 8 && !work.isWhiteCrossSolved(); ++pass) {
-        for (int s = 0; s < 4; ++s) {
-            Face side = sides[s];
-            Color sideColor = static_cast<Color>(side);
-
-            // Already correct?
-            auto [c1, c2] = work.edgeColors(D, side);
-            bool whiteOnD = (work.get(D,
-                side == F ? 0 : side == B ? 2 : 1,
-                side == L ? 0 : side == R ? 2 : 1) == Color::D);
-            bool hasSide = (c1 == sideColor || c2 == sideColor);
-            if (whiteOnD && hasSide) continue;
-
-            // Generic insert: raise edge to U, align, drop with F2/R2/etc.
-            // This is a robust beginner-style approach.
-            if (s == 0) append("F' U F");      // rough trigger
-            else if (s == 1) append("R' U R");
-            else if (s == 2) append("B' U B");
-            else append("L' U L");
-
-            // Align and insert from top
-            append("U");
-            if (s == 0) append("F2");
-            else if (s == 1) append("R2");
-            else if (s == 2) append("B2");
-            else append("L2");
-        }
+        appendSeq(work, moves, "F' U F");
+        appendSeq(work, moves, "U");
+        appendSeq(work, moves, "F2");
+        appendSeq(work, moves, "R' U R U R2");
+        appendSeq(work, moves, "B' U B U B2");
+        appendSeq(work, moves, "L' U L U L2");
     }
     return moves;
 }
-
-// ---------------------------------------------------------------------------
-// White corners (first layer)
-// ---------------------------------------------------------------------------
 
 std::vector<Move> CFOPSolver::solveWhiteCorners(Cube& work) {
     std::vector<Move> moves;
-    auto append = [&](const std::string& seq) {
-        auto m = parseSequence(seq);
-        for (auto& x : m) { work.apply(x); moves.push_back(x); }
-    };
-
-    // Classic sexy-move insertion: R U R' U' repeated to place corners
-    // Run several cycles; each cycle can seat one corner.
-    for (int i = 0; i < 12; ++i) {
+    for (int i = 0; i < 16; ++i) {
         if (work.isFirstLayerSolved()) break;
-        append("R U R' U'");  // sexy move
-        if (i % 3 == 2) append("U"); // rotate next corner into slot
+        appendSeq(work, moves, "R U R' U'");
+        if (i % 4 == 3) appendSeq(work, moves, "U");
     }
     return moves;
 }
-
-// ---------------------------------------------------------------------------
-// Middle layer edges
-// ---------------------------------------------------------------------------
 
 std::vector<Move> CFOPSolver::solveMiddleEdges(Cube& work) {
     std::vector<Move> moves;
-    auto append = [&](const std::string& seq) {
-        auto m = parseSequence(seq);
-        for (auto& x : m) { work.apply(x); moves.push_back(x); }
-    };
-
-    // Standard middle-edge insertion algorithms (left and right)
-    // Right insert: U R U' R' U' F' U F
-    // Left insert:  U' L' U L U F U' F'
-    for (int i = 0; i < 8; ++i) {
-        append("U R U' R' U' F' U F");
-        append("U");
-        append("U' L' U L U F U' F'");
-        append("U");
+    for (int i = 0; i < 6; ++i) {
+        appendSeq(work, moves, "U R U' R' U' F' U F");
+        appendSeq(work, moves, "U");
+        appendSeq(work, moves, "U' L' U L U F U' F'");
+        appendSeq(work, moves, "U");
     }
     return moves;
 }
 
 // ---------------------------------------------------------------------------
-// Last layer - pattern-aware where possible
+// Pattern-aware last layer
 // ---------------------------------------------------------------------------
 
 std::vector<Move> CFOPSolver::solveYellowCross(Cube& work) {
-    // F R U R' U' F'  (dot / L / line cases)
-    // Apply up to 3 times with U adjustments
     std::vector<Move> moves;
-    auto append = [&](const std::string& seq) {
-        auto m = parseSequence(seq);
-        for (auto& x : m) { work.apply(x); moves.push_back(x); }
-    };
-    for (int i = 0; i < 3; ++i) {
-        append("F R U R' U' F'");
-        append("U");
+
+    for (int attempt = 0; attempt < 4; ++attempt) {
+        int edges = countYellowEdgesOnU(work);
+        if (edges == 4) break; // already cross
+
+        if (edges == 0) {
+            // Dot
+            appendSeq(work, moves, OLL::EDGE_DOT.moves);
+        } else if (edges == 2) {
+            // Could be L or Line — try Line alg first, then L
+            // Check if opposite edges (line) vs adjacent (L)
+            bool uf = work.get(U, 2, 1) == Color::U;
+            bool ub = work.get(U, 0, 1) == Color::U;
+            bool ul = work.get(U, 1, 0) == Color::U;
+            bool ur = work.get(U, 1, 2) == Color::U;
+
+            if ((uf && ub) || (ul && ur)) {
+                // Line — orient so line is horizontal
+                if (ul && ur) appendSeq(work, moves, "U");
+                appendSeq(work, moves, OLL::EDGE_LINE.moves);
+            } else {
+                // L-shape — put L in back-left
+                appendSeq(work, moves, OLL::EDGE_L.moves);
+            }
+        } else {
+            // Fallback
+            appendSeq(work, moves, OLL::EDGE_LINE.moves);
+        }
+        if (!isYellowCross(work)) appendSeq(work, moves, "U");
     }
     return moves;
 }
 
 std::vector<Move> CFOPSolver::orientYellowCorners(Cube& work) {
     std::vector<Move> moves;
-    auto append = [&](const std::string& seq) {
-        auto m = parseSequence(seq);
-        for (auto& x : m) { work.apply(x); moves.push_back(x); }
-    };
-    // Sune + Anti-Sune + U adjustments
-    for (int i = 0; i < 4; ++i) {
-        append("R U R' U R U2 R'"); // Sune
-        append("U");
+
+    for (int attempt = 0; attempt < 6; ++attempt) {
+        int corners = countYellowCornersOnU(work);
+        if (corners == 4) break;
+
+        if (corners == 1) {
+            // Sune or AntiSune — try Sune, rotate if needed
+            appendSeq(work, moves, OLL::CORNER_SUNE.moves);
+        } else if (corners == 0) {
+            // Pi / H / other — try Pi then H
+            appendSeq(work, moves, OLL::CORNER_PI.moves);
+        } else if (corners == 2) {
+            // Headlights / T / Bowtie
+            appendSeq(work, moves, OLL::CORNER_HEADLIGHTS.moves);
+        } else {
+            appendSeq(work, moves, OLL::CORNER_SUNE.moves);
+        }
+        if (countYellowCornersOnU(work) < 4) appendSeq(work, moves, "U");
     }
     return moves;
 }
 
 std::vector<Move> CFOPSolver::permuteYellowCorners(Cube& work) {
     std::vector<Move> moves;
-    auto append = [&](const std::string& seq) {
-        auto m = parseSequence(seq);
-        for (auto& x : m) { work.apply(x); moves.push_back(x); }
-    };
-    // A-perm / Niklas style
-    for (int i = 0; i < 3; ++i) {
-        append("R' F R' B2 R F' R' B2 R2");
-        append("U");
+    // A-perm cycles; try a few orientations
+    for (int i = 0; i < 4; ++i) {
+        appendSeq(work, moves, PLL::CORNER_A_PERM.moves);
+        appendSeq(work, moves, "U");
     }
     return moves;
 }
 
 std::vector<Move> CFOPSolver::permuteYellowEdges(Cube& work) {
     std::vector<Move> moves;
-    auto append = [&](const std::string& seq) {
-        auto m = parseSequence(seq);
-        for (auto& x : m) { work.apply(x); moves.push_back(x); }
-    };
-    // U-perm (a) and (b)
-    for (int i = 0; i < 2; ++i) {
-        append("R U' R U R U R U' R' U' R2");
-        append("U");
-        append("R2 U R U R' U' R' U' R' U R'");
+    for (int i = 0; i < 3; ++i) {
+        appendSeq(work, moves, PLL::EDGE_Ua.moves);
+        if (work.isSolved()) break;
+        appendSeq(work, moves, "U");
+        appendSeq(work, moves, PLL::EDGE_Ub.moves);
+        if (work.isSolved()) break;
+        appendSeq(work, moves, "U");
+    }
+    // H-perm as final cleanup if still not solved
+    if (!work.isSolved()) {
+        appendSeq(work, moves, PLL::EDGE_H.moves);
     }
     return moves;
 }
 
 // ---------------------------------------------------------------------------
-// Public API - full beginner pipeline
+// Public API
 // ---------------------------------------------------------------------------
 
 std::vector<Move> CFOPSolver::solve(const Cube& cube) {
@@ -199,20 +209,17 @@ std::vector<Move> CFOPSolver::solve(const Cube& cube) {
     Cube work = cube;
     std::vector<Move> solution;
 
-    auto append = [&](const std::vector<Move>& stage) {
-        for (const auto& m : stage) {
-            // already applied inside stage helpers
-            solution.push_back(m);
-        }
+    auto collect = [&](const std::vector<Move>& stage) {
+        for (const auto& m : stage) solution.push_back(m);
     };
 
-    append(solveWhiteCross(work));
-    append(solveWhiteCorners(work));
-    append(solveMiddleEdges(work));
-    append(solveYellowCross(work));
-    append(orientYellowCorners(work));
-    append(permuteYellowCorners(work));
-    append(permuteYellowEdges(work));
+    collect(solveWhiteCross(work));
+    collect(solveWhiteCorners(work));
+    collect(solveMiddleEdges(work));
+    collect(solveYellowCross(work));
+    collect(orientYellowCorners(work));
+    collect(permuteYellowCorners(work));
+    collect(permuteYellowEdges(work));
 
     return solution;
 }
