@@ -4,6 +4,7 @@
 #include "Cube.h"
 #include "GodsAlgorithm.h"
 #include "ReductionSolver.h"
+#include "BoundHarness.h"
 
 static std::unique_ptr<Cube> g_cube;
 
@@ -61,7 +62,6 @@ Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeSolve(
 
     std::string notation;
     if (g_cube->size() == 3) {
-        // God's-algorithm path: multi-probe Kociemba + optimal cleanup <= 20 HTM
         notation = GodsAlgorithm::solveToNotation(*g_cube);
     } else {
         notation = ReductionSolver::solveToNotation(*g_cube);
@@ -71,6 +71,28 @@ Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeSolve(
         g_cube->applyNotation(notation);
     }
     return env->NewStringUTF(notation.c_str());
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeBoundReport(
+        JNIEnv* env, jobject) {
+    if (!g_cube || g_cube->size() < 4) {
+        // Still useful: show static U(n) table row for current size if any
+        if (g_cube) {
+            int n = g_cube->size();
+            StageLengths empty{};
+            auto r = BoundHarness::report(n, empty);
+            return env->NewStringUTF(r.toString().c_str());
+        }
+        return env->NewStringUTF("");
+    }
+    return env->NewStringUTF(ReductionSolver::lastBoundReportString().c_str());
+}
+
+JNIEXPORT jint JNICALL
+Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeConstructiveUpper(
+        JNIEnv*, jobject, jint n) {
+    return static_cast<jint>(BoundHarness::constructiveUpper(static_cast<int>(n)));
 }
 
 } // extern "C"
