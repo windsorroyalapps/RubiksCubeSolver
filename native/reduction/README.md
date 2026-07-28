@@ -1,33 +1,28 @@
 # Reduction Engine (nxn) — Practical God's Algorithm
 
-Reduces any n×n×n (n ≥ 4) to a 3×3, then solves with Kociemba/CFOP.
-This is the constructive algorithm that works for **every** size; exact diameter remains open.
+```text
+Centers → Edges → [Parity if even] → 3x3 → BatchSolver::optimize
+```
 
-## Pipeline
+## Demaine connection
 
-1. **CenterSolver** – gather center pieces per face using multi-axis commutators + slice moves
-2. **EdgePairing** – freeslice-style wing pairing into 12 solid dedges (skips already-paired)
-3. **ParityHandler** (even n) – OLL parity then PLL parity
-4. **3×3 stage** – Kociemba (with CFOP fallback) on the reduced cube
+- **Lower bound:** too many configs, O(n) moves/step ⇒ Ω(n²/log n)
+- **Upper bound:** batch shared slice moves ⇒ O(n²/log n)
+- **BatchSolver:** compress + window dedupe implements the parallel idea in practice
+
+See [docs/DEMAINE_BATCHING.md](../../docs/DEMAINE_BATCHING.md).
 
 ## Files
 
 | File | Role |
 |------|------|
-| `CenterSolver.*` | Multi-axis center commutators for arbitrary n |
-| `EdgePairing.*` | Freeslice edge pairing with solid-edge skip |
-| `ParityHandler.*` | Even-n OLL/PLL parity detect + fix |
-| `ReductionSolver.*` | Orchestrator |
+| CenterSolver | Multi-axis center commutators |
+| EdgePairing | Freeslice pairing + skip |
+| ParityHandler | Even-n OLL/PLL parity |
+| BatchSolver | Shared-move collapse (n² → n²/log n spirit) |
+| ReductionSolver | Orchestrator |
 
 ## Notes
 
-- Works for 4×4, 5×5, … up to memory limits on device
-- Design target includes theoretical 1000×1000 (software-only)
-- Exact God's number g(n) = Θ(n² / log n); see `docs/GODS_NUMBER_NXN.md`
-
-## Next approaches
-
-- Look-ahead / small BFS for centers on n ≤ 8
-- Pure pair-by-pair + buffer tracking for edges
-- Full wing-set parity instead of mid-slice proxy
-- Move-count emission in OBTM / SSTM for bound comparison
+- Works for 4×4 … up to device memory
+- Exact g(n) still open; asymptotic Θ(n²/log n)
