@@ -1,39 +1,35 @@
 # RubiksCubeSolver
 
 **Android + Native C++ Rubik's Cube Solver**  
-3×3 CFOP + Kociemba · nxn Reduction (centers, edges, parity)
+3×3 toward God's Number 20 · nxn reduction
 
-Built by an Android/BMW hacking genius who ships clean APKs and never leaves a broken production build on the table.
+## 3×3 path toward 20 moves
 
-## Features
+1. **MoveTables** – twist/flip/slice transitions for 18 moves  
+2. **BFS pruning** – distance lower bounds per coordinate  
+3. **Coord-space IDA*** – phase 1 searches integers, not facelets  
+4. Phase 2 restricted moves → solved  
+5. CFOP fallback if needed  
 
-### 3×3
-- Kociemba two-phase with **twist / flip / slice pruning tables**
-- Admissible `max()` heuristic for faster IDA*
-- CFOP fallback with pattern OLL/PLL
+See [docs/GODS_NUMBER_PATH.md](docs/GODS_NUMBER_PATH.md).
 
-### n×n
-- **Score-guided centers** (simulate commutators, pick best depth)
-- **Skip-aware edge pairing** (don't re-pair finished dedges)
-- **OLL + PLL parity** detection + standard algs for even order
-
-See [docs/PRUNING_AND_PARITY.md](docs/PRUNING_AND_PARITY.md) for details.
+## nxn
+Centers → edges → parity (even) → Kociemba/CFOP
 
 ## Quick Start
 
 ```bash
 git clone https://github.com/windsorroyalapps/RubiksCubeSolver.git
-cd RubiksCubeSolver
 # Android Studio → Sync → Run
 ```
 
 ## Status
 
-- [x] Pruning tables (twist/flip/slice) + admissible heuristic
-- [x] Even-order OLL/PLL parity detection + algs
-- [x] Tighter center score search + edge skip heuristics
-- [x] Full reduction pipeline
-- [ ] Offline full move-table BFS pruning DBs
+- [x] MoveTables + BFS pruning + coord IDA*
+- [x] Phase-1 depth 14 (God's-regime search)
+- [x] Full reduction + parity
+- [ ] Dense full-index table generation
+- [ ] Multi-probe phase-1 + optimal cleanup
 - [ ] Production signed APK
 
 ---
