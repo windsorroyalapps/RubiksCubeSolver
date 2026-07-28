@@ -4,32 +4,28 @@
 #include <string>
 #include <vector>
 
-/**
- * CFOP solver for 3x3.
- * Stages: Cross → F2L → OLL → PLL
- * Currently implements a working beginner-style layer-by-layer path
- * that returns a sequence of Moves. Full optimal tables come next.
- */
 class CFOPSolver {
 public:
-    // Solve the given 3x3 cube. Returns move sequence that solves it.
-    // Cube is left unmodified; caller can apply the returned moves.
     static std::vector<Move> solve(const Cube& cube);
-
-    // Convenience: solve and return human-readable Singmaster string
     static std::string solveToNotation(const Cube& cube);
 
 private:
-    // Internal helpers (beginner method first, upgrade to full CFOP later)
     static std::vector<Move> solveWhiteCross(Cube& work);
     static std::vector<Move> solveWhiteCorners(Cube& work);
     static std::vector<Move> solveMiddleEdges(Cube& work);
+
+    // Pattern-aware last layer
     static std::vector<Move> solveYellowCross(Cube& work);
     static std::vector<Move> orientYellowCorners(Cube& work);
     static std::vector<Move> permuteYellowCorners(Cube& work);
     static std::vector<Move> permuteYellowEdges(Cube& work);
 
-    // Utility
+    // Recognition helpers (U face = yellow for last layer)
+    static int countYellowEdgesOnU(const Cube& c);
+    static int countYellowCornersOnU(const Cube& c);
+    static bool isYellowCross(const Cube& c);
+
     static Move parseToken(const std::string& token);
     static std::vector<Move> parseSequence(const std::string& notation);
+    static void appendSeq(Cube& work, std::vector<Move>& out, const std::string& seq);
 };
