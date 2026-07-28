@@ -1,7 +1,7 @@
 package com.windsorroyal.rubikscubesolver
 
 /**
- * Thin Kotlin wrapper over the native C++ Cube engine.
+ * Thin Kotlin wrapper over the native C++ Cube + CFOP/Reduction engine.
  * Supports arbitrary n (3x3 up to large sizes limited by device memory).
  */
 object NativeSolver {
@@ -16,8 +16,8 @@ object NativeSolver {
     external fun nativeIsSolved(): Boolean
     external fun nativeToString(): String
     external fun nativeSize(): Int
+    external fun nativeSolve(): String
 
-    // Convenience
     fun create(size: Int = 3) = nativeCreate(size)
 
     fun apply(face: Int, depth: Int = 0, turns: Int = 1) =
@@ -30,4 +30,7 @@ object NativeSolver {
     fun dump(): String = nativeToString()
 
     fun size(): Int = nativeSize()
+
+    /** Run CFOP (3x3) or Reduction (nxn) and return the solution notation. */
+    fun solve(): String = nativeSolve()
 }
