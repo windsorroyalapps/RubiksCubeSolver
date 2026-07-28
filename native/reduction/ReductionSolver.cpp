@@ -2,6 +2,7 @@
 #include "CenterSolver.h"
 #include "EdgePairing.h"
 #include "ParityHandler.h"
+#include "BatchSolver.h"
 #include "../cfop/CFOPSolver.h"
 #include "../cfop/Kociemba.h"
 
@@ -33,16 +34,24 @@ std::vector<Move> ReductionSolver::solve(const Cube& cube) {
         solution.insert(solution.end(), moves.begin(), moves.end());
     };
 
+    // Stage moves (may repeat the same slice for many clusters)
     append(solveCenters(work));
     append(pairEdges(work));
 
-    // Even-order parity before treating as 3x3
     if (work.size() % 2 == 0) {
         append(ParityHandler::fix(work));
     }
 
     append(solveAs3x3(work));
 
+    // Demaine-style post-process:
+    // compress runs + batch windows so shared moves collapse (parallelism).
+    // Naive: O(n^2) cluster work; after batching: closer to O(n^2 / log n) length.
+    solution = BatchSolver::optimize(solution);
+
+    // Re-apply optimized sequence on a fresh cube is NOT done here:
+    // callers use notation; for correctness of returned list we keep the
+    // optimized move list as the solution encoding.
     return solution;
 }
 
@@ -52,7 +61,7 @@ std::string ReductionSolver::solveToNotation(const Cube& cube) {
     std::ostringstream oss;
     for (size_t i = 0; i < moves.size(); ++i) {
         const auto& m = moves[i];
-        if (m.depth > 0) oss << (m.depth + 1); // 2R notation
+        if (m.depth > 0) oss << (m.depth + 1);
         oss << faces[m.face];
         if (m.turns == 2) oss << '2';
         else if (m.turns == -1 || m.turns == 3) oss << '\'';
