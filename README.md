@@ -1,41 +1,42 @@
 # RubiksCubeSolver
 
 **Android + Native C++ Rubik's Cube Solver**  
-From classic 3×3 CFOP all the way to theoretical 1000×1000+ reduction engine.
+3×3 CFOP + Kociemba two-phase, extensible to nxn reduction.
 
 Built by an Android/BMW hacking genius who ships clean APKs and never leaves a broken production build on the table.
 
 ## Features
 
 - **3×3**
-  - Full facelet model + arbitrary-depth move engine
-  - Beginner CFOP pipeline (Cross → corners → middle → LL)
-  - **Pattern-aware 2-look OLL** (dot / L / line detection)
-  - **Pattern-aware corner OLL** (Sune / Pi / Headlights)
-  - PLL tables (A-perm, Ua/Ub, H, T, Y, J …)
-  - **Kociemba two-phase skeleton** (falls back to CFOP until pruning tables land)
+  - Facelet model + full move engine
+  - Beginner CFOP (Cross → LL) with **pattern-aware OLL/PLL**
+  - **Kociemba two-phase** with real coordinates:
+    - `twist` / `flip` / `slice` extracted from facelets
+    - Phase-1 IDA* → G1 subgroup
+    - Phase-2 IDA* → solved (restricted moves)
+    - Automatic CFOP fallback if depth limit hit
 - **n×n**: ReductionSolver skeleton
-- Material You UI + live Solve button
+- Material You UI + Solve button wired to native engine
 
 ## Quick Start
 
 ```bash
 git clone https://github.com/windsorroyalapps/RubiksCubeSolver.git
 cd RubiksCubeSolver
-# Android Studio → Sync → Run
+# Android Studio → Sync Gradle → Run
 ```
 
 ## Status
 
-- [x] Android + NDK + Compose
-- [x] Arbitrary-n move engine + edge/corner helpers
-- [x] Full beginner CFOP path
-- [x] Pattern recognition for yellow cross + corner OLL
-- [x] OLL / PLL algorithm tables
-- [x] Kociemba two-phase skeleton (wired as preferred solver)
-- [ ] Full pruning tables + IDA* for Kociemba
-- [ ] Complete 57 OLL + 21 PLL recognition
-- [ ] Real big-cube centers & edge pairing
+- [x] Android + NDK + Compose project
+- [x] Arbitrary-n move engine
+- [x] Full beginner CFOP + pattern OLL/PLL
+- [x] CoordCube (twist / flip / slice)
+- [x] Kociemba phase-1 & phase-2 IDA* search
+- [x] JNI solve path: Kociemba → CFOP fallback
+- [ ] Precomputed pruning / move tables (speed)
+- [ ] Full 57 OLL + 21 PLL IDs
+- [ ] Big-cube centers & edge pairing
 - [ ] Production signed APK
 
 ---
