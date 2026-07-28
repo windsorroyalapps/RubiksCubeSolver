@@ -30,13 +30,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Create a 3x3 by default
         NativeSolver.create(3)
 
         setContent {
             RubiksCubeSolverTheme {
                 var status by remember { mutableStateOf("3x3 ready — solved = ${NativeSolver.isSolved()}") }
                 var dump by remember { mutableStateOf(NativeSolver.dump()) }
+                var lastSolution by remember { mutableStateOf("") }
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Column(
@@ -53,38 +53,46 @@ class MainActivity : ComponentActivity() {
                             style = MaterialTheme.typography.headlineMedium
                         )
                         Text(
-                            text = "Android/BMW style native engine",
+                            text = "Native CFOP + Reduction engine",
                             style = MaterialTheme.typography.bodyMedium
                         )
 
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         Text(text = status)
 
-                        Spacer(Modifier.height(12.dp))
+                        if (lastSolution.isNotEmpty()) {
+                            Text(
+                                text = "Solution: $lastSolution",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
 
                         Button(onClick = {
-                            // Scramble with a classic sequence
                             NativeSolver.applyNotation("R U R' U' R' F R2 U' R' U' R U R' F'")
                             status = "Scrambled — solved = ${NativeSolver.isSolved()}"
                             dump = NativeSolver.dump()
+                            lastSolution = ""
                         }) {
                             Text("Scramble (T-perm)")
                         }
 
                         Button(onClick = {
-                            // Apply the inverse to solve it back (for demo)
-                            NativeSolver.applyNotation("F R U' R' U R U R2 F' R U R U' R'")
-                            status = "Applied inverse — solved = ${NativeSolver.isSolved()}"
+                            val sol = NativeSolver.solve()
+                            lastSolution = sol.ifEmpty { "(empty / not fully implemented yet)" }
+                            status = "Solved via engine — solved = ${NativeSolver.isSolved()}"
                             dump = NativeSolver.dump()
                         }) {
-                            Text("Solve (inverse)")
+                            Text("Solve (CFOP / Reduction)")
                         }
 
                         Button(onClick = {
                             NativeSolver.create(3)
                             status = "Reset 3x3 — solved = ${NativeSolver.isSolved()}"
                             dump = NativeSolver.dump()
+                            lastSolution = ""
                         }) {
                             Text("Reset 3x3")
                         }
@@ -93,11 +101,12 @@ class MainActivity : ComponentActivity() {
                             NativeSolver.create(5)
                             status = "Created 5x5 — solved = ${NativeSolver.isSolved()}"
                             dump = NativeSolver.dump()
+                            lastSolution = ""
                         }) {
                             Text("Create 5x5")
                         }
 
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         Text(
                             text = dump,
