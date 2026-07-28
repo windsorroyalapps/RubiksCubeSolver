@@ -7,37 +7,36 @@ Built by an Android/BMW hacking genius who ships clean APKs and never leaves a b
 
 ## Features
 
-- **3×3**: Complete facelet model + move engine + **full beginner CFOP pipeline**
-  - White Cross search & insert
-  - White corners (sexy move)
-  - Middle edges
-  - Yellow cross / OLL / PLL algs
-- **n×n**: ReductionSolver skeleton (centers → edges → CFOP)
-- Material You UI with scramble / solve / reset / 5×5
-- JNI + Kotlin bridge fully wired
+- **3×3**
+  - Full facelet model + arbitrary-depth move engine
+  - Beginner CFOP pipeline (Cross → corners → middle → LL)
+  - **Pattern-aware 2-look OLL** (dot / L / line detection)
+  - **Pattern-aware corner OLL** (Sune / Pi / Headlights)
+  - PLL tables (A-perm, Ua/Ub, H, T, Y, J …)
+  - **Kociemba two-phase skeleton** (falls back to CFOP until pruning tables land)
+- **n×n**: ReductionSolver skeleton
+- Material You UI + live Solve button
 
 ## Quick Start
 
 ```bash
 git clone https://github.com/windsorroyalapps/RubiksCubeSolver.git
 cd RubiksCubeSolver
-# Open in Android Studio → Sync → Run on device/emulator
+# Android Studio → Sync → Run
 ```
 
 ## Status
 
-- [x] Android + NDK + Compose project
-- [x] Arbitrary-n move engine
-- [x] Edge / corner query helpers
-- [x] White cross detection + search/insert
-- [x] Full beginner layer-by-layer solver (Cross → LL)
-- [x] CFOPSolver + ReductionSolver linked and callable from UI
-- [ ] Pattern-based full OLL/PLL tables
-- [ ] Optimal Kociemba two-phase
-- [ ] Real big-cube center & edge pairing
-- [ ] First production signed APK
-
-Hit **Solve** in the app and the native beginner CFOP engine runs end-to-end.
+- [x] Android + NDK + Compose
+- [x] Arbitrary-n move engine + edge/corner helpers
+- [x] Full beginner CFOP path
+- [x] Pattern recognition for yellow cross + corner OLL
+- [x] OLL / PLL algorithm tables
+- [x] Kociemba two-phase skeleton (wired as preferred solver)
+- [ ] Full pruning tables + IDA* for Kociemba
+- [ ] Complete 57 OLL + 21 PLL recognition
+- [ ] Real big-cube centers & edge pairing
+- [ ] Production signed APK
 
 ---
 *Android/BMW hacking style. Ship or die.*
