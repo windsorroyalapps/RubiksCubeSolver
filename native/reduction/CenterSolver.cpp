@@ -1,4 +1,5 @@
 #include "CenterSolver.h"
+#include "ClusterScheduler.h"
 
 #include <algorithm>
 
@@ -12,9 +13,8 @@ static int centerScore(const Cube& work, int face) {
     int n = work.size();
     Color target = static_cast<Color>(face);
     int correct = 0, total = 0;
-    int start = 1, end = n - 1; // ignore outer frame (edges/corners)
-    for (int r = start; r < end; ++r) {
-        for (int c = start; c < end; ++c) {
+    for (int r = 1; r < n - 1; ++r) {
+        for (int c = 1; c < n - 1; ++c) {
             ++total;
             if (work.get(face, r, c) == target) ++correct;
         }
@@ -31,7 +31,6 @@ static int opposite(int face) {
     }
 }
 
-// Adjacent faces useful for cross-axis center transfers
 static void adjacentFaces(int face, int& a1, int& a2, int& a3, int& a4) {
     switch (face) {
         case U: a1 = F; a2 = R; a3 = B; a4 = L; break;
@@ -61,58 +60,39 @@ std::vector<Move> CenterSolver::solveFace(Cube& work, int face) {
     int adj[4];
     adjacentFaces(face, adj[0], adj[1], adj[2], adj[3]);
 
-    // Goal: push centerScore to 100 (or >= 95 fallback)
     for (int attempt = 0; attempt < 48 && centerScore(work, face) < 100; ++attempt) {
         int bestGain = -1;
         std::vector<Move> bestSeq;
         int scoreBefore = centerScore(work, face);
 
-        // Trial set: opposite-slice + adjacent-slice commutators at every inner depth
         for (int depth = 1; depth < maxDepth; ++depth) {
-            // 1) classic opposite-slice
             {
                 Move faceTurn{face, 0, 1};
                 Move slice{opp, depth, 1};
                 auto seq = commutator(faceTurn, slice);
                 for (auto& m : seq) work.apply(m);
                 int gain = centerScore(work, face) - scoreBefore;
-                for (auto it = seq.rbegin(); it != seq.rend(); ++it) {
-                    Move inv{it->face, it->depth, it->turns == 2 ? 2 : -it->turns};
-                    work.apply(inv);
-                }
-                if (gain > bestGain) {
-                    bestGain = gain;
-                    bestSeq = seq;
-                }
+                for (auto it = seq.rbegin(); it != seq.rend(); ++it)
+                    work.apply(Move{it->face, it->depth, it->turns == 2 ? 2 : -it->turns});
+                if (gain > bestGain) { bestGain = gain; bestSeq = seq; }
             }
-            // 2) adjacent-slice transfers (helps belt faces especially)
             for (int ai = 0; ai < 4; ++ai) {
                 Move faceTurn{face, 0, 1};
                 Move slice{adj[ai], depth, 1};
                 auto seq = commutator(faceTurn, slice);
                 for (auto& m : seq) work.apply(m);
                 int gain = centerScore(work, face) - scoreBefore;
-                for (auto it = seq.rbegin(); it != seq.rend(); ++it) {
-                    Move inv{it->face, it->depth, it->turns == 2 ? 2 : -it->turns};
-                    work.apply(inv);
-                }
-                if (gain > bestGain) {
-                    bestGain = gain;
-                    bestSeq = seq;
-                }
+                for (auto it = seq.rbegin(); it != seq.rend(); ++it)
+                    work.apply(Move{it->face, it->depth, it->turns == 2 ? 2 : -it->turns});
+                if (gain > bestGain) { bestGain = gain; bestSeq = seq; }
             }
         }
 
-        if (bestGain > 0 && !bestSeq.empty()) {
-            append(bestSeq);
-        } else {
-            // Reorient face to change alignment when no progressive commutator found
-            append({Move{face, 0, 1}});
-        }
+        if (bestGain > 0 && !bestSeq.empty()) append(bestSeq);
+        else append({Move{face, 0, 1}});
 
         if (centerScore(work, face) >= 100) break;
     }
-
     return moves;
 }
 
@@ -120,11 +100,34 @@ std::vector<Move> CenterSolver::solve(Cube& work) {
     std::vector<Move> solution;
     if (work.size() < 4) return solution;
 
-    // U/D first (stable axis), then belt faces
+    auto append = [&](const std::vector<Move>& seq) {
+        solution.insert(solution.end(), seq.begin(), seq.end());
+    };
+
+    // ---- Phase A: cluster scheduling (Demaine parallel setup) ----
+    // Group unsolved center facelets by shared preferred (face,depth,turns).
+    // One commutator per group serves many clusters at once.
+    for (int pass = 0; pass < 3; ++pass) {
+        auto ordered = ClusterScheduler::schedule(work);
+        if (ordered.empty()) break;
+
+        auto groups = ClusterScheduler::batchGroups(ordered);
+        for (const auto& group : groups) {
+            if (group.empty()) continue;
+            const auto& need = group.front();
+            Move faceTurn{need.id.face, 0, 1};
+            Move slice{need.preferredFace, need.preferredDepth, need.preferredTurns};
+            auto seq = commutator(faceTurn, slice);
+            for (const auto& m : seq) work.apply(m);
+            append(seq);
+        }
+    }
+
+    // ---- Phase B: score-guided face cleanup ----
     const int order[] = {U, D, F, B, L, R};
     for (int face : order) {
-        auto stage = solveFace(work, face);
-        solution.insert(solution.end(), stage.begin(), stage.end());
+        append(solveFace(work, face));
     }
+
     return solution;
 }
