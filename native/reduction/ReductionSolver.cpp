@@ -9,12 +9,7 @@
 
 #include <sstream>
 
-// Last bound report (for JNI / debugging)
 static BoundReport g_lastBoundReport{};
-
-const BoundReport& ReductionSolver_lastBoundReport() {
-    return g_lastBoundReport;
-}
 
 std::vector<Move> ReductionSolver::solveCenters(Cube& work) {
     return CenterSolver::solve(work);
@@ -32,6 +27,7 @@ std::vector<Move> ReductionSolver::solveAs3x3(Cube& work) {
 
 std::vector<Move> ReductionSolver::solve(const Cube& cube) {
     if (cube.size() < 4) {
+        g_lastBoundReport = {};
         return Kociemba::solve(cube);
     }
 
@@ -53,12 +49,10 @@ std::vector<Move> ReductionSolver::solve(const Cube& cube) {
 
     append(solveAs3x3(work), &stages.reduce3x3);
 
-    // Demaine-style post-process
     solution = BatchSolver::optimize(solution);
     stages.afterBatch = BoundHarness::count(solution);
 
     g_lastBoundReport = BoundHarness::report(cube.size(), stages);
-
     return solution;
 }
 
@@ -74,7 +68,6 @@ std::string ReductionSolver::solveToNotation(const Cube& cube) {
         else if (m.turns == -1 || m.turns == 3) oss << '\'';
         if (i + 1 < moves.size()) oss << ' ';
     }
-    // Optionally append bound comment for debug builds — keep notation clean
     return oss.str();
 }
 
