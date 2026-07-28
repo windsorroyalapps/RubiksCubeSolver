@@ -1,38 +1,43 @@
 #include "ReductionSolver.h"
+#include "CenterSolver.h"
+#include "EdgePairing.h"
 #include "../cfop/CFOPSolver.h"
+#include "../cfop/Kociemba.h"
 
 #include <sstream>
 
-std::vector<Move> ReductionSolver::solveCenters(Cube& /*work*/) {
-    // TODO: center commutators for arbitrary n
-    // For odd n centers are fixed; for even n we choose color scheme.
-    return {};
+std::vector<Move> ReductionSolver::solveCenters(Cube& work) {
+    return CenterSolver::solve(work);
 }
 
-std::vector<Move> ReductionSolver::pairEdges(Cube& /*work*/) {
-    // TODO: freeslice / pair-by-pair edge matching
-    return {};
+std::vector<Move> ReductionSolver::pairEdges(Cube& work) {
+    return EdgePairing::pairAll(work);
 }
 
 std::vector<Move> ReductionSolver::solveAs3x3(Cube& work) {
-    // Once centers + edges are done, treat outer layer as 3x3
-    return CFOPSolver::solve(work);
+    // After reduction the outer layer behaves like 3x3
+    // Prefer Kociemba, fall back to CFOP
+    if (work.size() >= 3) {
+        // Create a logical 3x3 view by using Kociemba/CFOP on the cube
+        // (outer facelets only matter for the 3x3 stage)
+        auto sol = Kociemba::solve(work);
+        if (!sol.empty()) return sol;
+        return CFOPSolver::solve(work);
+    }
+    return {};
 }
 
 std::vector<Move> ReductionSolver::solve(const Cube& cube) {
     if (cube.size() < 4) {
-        // Fall back to CFOP for 3x3
-        return CFOPSolver::solve(cube);
+        return Kociemba::solve(cube);
     }
 
     Cube work = cube;
     std::vector<Move> solution;
 
     auto append = [&](const std::vector<Move>& moves) {
-        for (const auto& m : moves) {
-            work.apply(m);
-            solution.push_back(m);
-        }
+        // moves already applied inside solvers that take Cube&
+        solution.insert(solution.end(), moves.begin(), moves.end());
     };
 
     append(solveCenters(work));
@@ -48,6 +53,8 @@ std::string ReductionSolver::solveToNotation(const Cube& cube) {
     std::ostringstream oss;
     for (size_t i = 0; i < moves.size(); ++i) {
         const auto& m = moves[i];
+        // Include depth marker for inner slices when depth > 0
+        if (m.depth > 0) oss << m.depth;
         oss << faces[m.face];
         if (m.turns == 2) oss << '2';
         else if (m.turns == -1 || m.turns == 3) oss << '\'';
