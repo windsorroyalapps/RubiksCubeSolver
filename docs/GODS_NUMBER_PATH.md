@@ -14,25 +14,27 @@
 
 ### Kociemba phase 1
 - **Coord-space IDA*** (no facelet apply per node)
-- Depth cap raised to **14**
+- Depth cap raised to **16** (Gods-regime)
+- **Multi-probe**: primary search + one U-reoriented secondary probe; keep shorter path
 - Applies the found move list to the live cube once
 
 ### Phase 2
 - Restricted generators `{U,D,F2,B2,L2,R2}` facelet IDA*, depth 12
 - CFOP fallback if either phase fails
 
-## Toward true ≤20 on 3×3
+## Toward true ≤20
 
 | Step | Status |
 |------|--------|
 | Move tables | Done (sampled + propagated) |
 | BFS pruning | Done |
 | Coord-space search | Done |
+| Phase-1 depth 16 + multi-probe | Done |
 | Full encode/decode all 2187/2048/495 from indices | Next (denser tables) |
-| Multiple phase-1 probes | Next |
+| More phase-1 probes (axis + inverse starts) | Next |
 | Optimal cleanup if len > 20 | Next |
 
-With denser tables and multi-probe phase-1, typical solutions drop into the high teens; the hard tail needs the optimal pass.
+With denser tables and additional probes, typical solutions drop into the high teens; the hard tail needs the optimal pass.
 
 ## nxn (n > 3) — God's algorithm status
 

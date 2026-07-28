@@ -7,6 +7,45 @@
 #include <sstream>
 #include <functional>
 
+// Core IDA* phase-1 in coordinate space. Returns move indices 0..17.
+static std::vector<int> phase1Search(int tw, int fl, int sl, int maxDepth) {
+    std::vector<int> pathMoves;
+    std::vector<int> bestMoves;
+
+    std::function<bool(int,int,int,int,int,int)> search =
+        [&](int depth, int limit, int tw, int fl, int sl, int lastFace) -> bool {
+        if (tw == 0 && fl == 0 && sl == 0) {
+            bestMoves = pathMoves;
+            return true;
+        }
+        CoordCube cc;
+        cc.twist = static_cast<int16_t>(tw);
+        cc.flip  = static_cast<int16_t>(fl);
+        cc.slice = static_cast<int16_t>(sl);
+        if (depth + Pruning::phase1Heuristic(cc) > limit) return false;
+
+        for (int m = 0; m < MoveTables::NUM_MOVES; ++m) {
+            int face = MoveTables::moveFace(m);
+            if (face == lastFace) continue;
+
+            int ntw = MoveTables::twistMove(tw, m);
+            int nfl = MoveTables::flipMove(fl, m);
+            int nsl = MoveTables::sliceMove(sl, m);
+
+            pathMoves.push_back(m);
+            if (search(depth + 1, limit, ntw, nfl, nsl, face)) return true;
+            pathMoves.pop_back();
+        }
+        return false;
+    };
+
+    for (int depth = 1; depth <= maxDepth; ++depth) {
+        pathMoves.clear();
+        if (search(0, depth, tw, fl, sl, -1)) return bestMoves;
+    }
+    return {};
+}
+
 std::vector<Move> Kociemba::phase1(Cube& work) {
     MoveTables::init();
     Pruning::init();
@@ -18,45 +57,30 @@ std::vector<Move> Kociemba::phase1(Cube& work) {
 
     if (tw == 0 && fl == 0 && sl == 0) return {};
 
-    // IDA* in pure coordinate space (fast)
-    const int MAX_DEPTH = 14; // push toward God's bound regime
-    std::vector<int> pathMoves; // move indices 0..17
-    std::vector<int> bestMoves;
+    // Gods-regime depth: 16 is enough for almost all positions once tables are dense
+    const int MAX_DEPTH = 16;
 
-    std::function<bool(int,int,int,int,int,int)> search =
-        [&](int depth, int maxDepth, int tw, int fl, int sl, int lastFace) -> bool {
-        if (tw == 0 && fl == 0 && sl == 0) {
-            bestMoves = pathMoves;
-            return true;
-        }
-        CoordCube cc;
-        cc.twist = static_cast<int16_t>(tw);
-        cc.flip  = static_cast<int16_t>(fl);
-        cc.slice = static_cast<int16_t>(sl);
-        if (depth + Pruning::phase1Heuristic(cc) > maxDepth) return false;
+    auto bestIdx = phase1Search(tw, fl, sl, MAX_DEPTH);
 
-        for (int m = 0; m < MoveTables::NUM_MOVES; ++m) {
-            int face = MoveTables::moveFace(m);
-            if (face == lastFace) continue;
-            // also skip same-axis inverse redundancy lightly: U then D ok
-
-            int ntw = MoveTables::twistMove(tw, m);
-            int nfl = MoveTables::flipMove(fl, m);
-            int nsl = MoveTables::sliceMove(sl, m);
-
-            pathMoves.push_back(m);
-            if (search(depth + 1, maxDepth, ntw, nfl, nsl, face)) return true;
-            pathMoves.pop_back();
-        }
-        return false;
-    };
-
-    for (int depth = 1; depth <= MAX_DEPTH; ++depth) {
-        pathMoves.clear();
-        if (search(0, depth, tw, fl, sl, -1)) {
-            // Convert move indices to Moves and apply to work
+    // Second probe: apply a single U turn then search again; keep the shorter path.
+    // (Cheap multi-start that often finds a different G1 entry.)
+    if (!bestIdx.empty() && static_cast<int>(bestIdx.size()) > 8) {
+        Cube probe = work;
+        probe.apply(Move{U, 0, 1});
+        CoordCube pcc = CoordCube::fromCube(probe);
+        auto alt = phase1Search(pcc.twist % MoveTables::TWIST_N,
+                                pcc.flip  % MoveTables::FLIP_N,
+                                pcc.slice % MoveTables::SLICE_N,
+                                MAX_DEPTH);
+        if (!alt.empty() && alt.size() + 1 < bestIdx.size()) {
+            // prepend the U and use the shorter combined path
+            bestIdx = alt;
+            bestIdx.insert(bestIdx.begin(), /*U face turn index*/ 0); // assumes move 0 = U1; safe fallback below
+            // Rebuild properly: apply U then alt moves
             std::vector<Move> result;
-            for (int m : bestMoves) {
+            result.push_back(Move{U, 0, 1});
+            work.apply(result.back());
+            for (int m : alt) {
                 Move mv{MoveTables::moveFace(m), 0, MoveTables::moveTurns(m)};
                 work.apply(mv);
                 result.push_back(mv);
@@ -64,7 +88,16 @@ std::vector<Move> Kociemba::phase1(Cube& work) {
             return result;
         }
     }
-    return {};
+
+    if (bestIdx.empty()) return {};
+
+    std::vector<Move> result;
+    for (int m : bestIdx) {
+        Move mv{MoveTables::moveFace(m), 0, MoveTables::moveTurns(m)};
+        work.apply(mv);
+        result.push_back(mv);
+    }
+    return result;
 }
 
 std::vector<Move> Kociemba::phase2(Cube& work) {
@@ -132,8 +165,8 @@ std::vector<Move> Kociemba::solve(const Cube& cube) {
 
     p1.insert(p1.end(), p2.begin(), p2.end());
 
-    // Soft push toward 20: if still long, caller can accept; true optimal
-    // needs multiple phase-1 probes (future).
+    // Soft push toward 20: multi-probe already applied above.
+    // True optimal still needs denser tables + more probes (future).
     return p1;
 }
 
