@@ -1,42 +1,47 @@
 # RubiksCubeSolver
 
 **Android + Native C++ Rubik's Cube Solver**  
-3×3 CFOP + Kociemba two-phase, extensible to nxn reduction.
+3×3 CFOP + Kociemba two-phase · nxn Reduction (centers → edges → 3×3)
 
 Built by an Android/BMW hacking genius who ships clean APKs and never leaves a broken production build on the table.
 
 ## Features
 
-- **3×3**
-  - Facelet model + full move engine
-  - Beginner CFOP (Cross → LL) with **pattern-aware OLL/PLL**
-  - **Kociemba two-phase** with real coordinates:
-    - `twist` / `flip` / `slice` extracted from facelets
-    - Phase-1 IDA* → G1 subgroup
-    - Phase-2 IDA* → solved (restricted moves)
-    - Automatic CFOP fallback if depth limit hit
-- **n×n**: ReductionSolver skeleton
-- Material You UI + Solve button wired to native engine
+### 3×3
+- Facelet model + full move engine
+- Beginner CFOP with pattern-aware OLL/PLL
+- **Kociemba two-phase** (twist/flip/slice coordinates + IDA*)
+- Automatic CFOP fallback
+
+### n×n (4×4+)
+- **CenterSolver** – commutator-based center gathering
+- **EdgePairing** – freeslice wing pairing
+- **ReductionSolver** – full pipeline then Kociemba/CFOP
+
+### App
+- Material You UI
+- Scramble / Solve / Reset / Create 5×5
+- Native engine via JNI
 
 ## Quick Start
 
 ```bash
 git clone https://github.com/windsorroyalapps/RubiksCubeSolver.git
 cd RubiksCubeSolver
-# Android Studio → Sync Gradle → Run
+# Android Studio → Sync → Run
 ```
 
 ## Status
 
-- [x] Android + NDK + Compose project
+- [x] Android + NDK + Compose
 - [x] Arbitrary-n move engine
-- [x] Full beginner CFOP + pattern OLL/PLL
-- [x] CoordCube (twist / flip / slice)
-- [x] Kociemba phase-1 & phase-2 IDA* search
-- [x] JNI solve path: Kociemba → CFOP fallback
-- [ ] Precomputed pruning / move tables (speed)
-- [ ] Full 57 OLL + 21 PLL IDs
-- [ ] Big-cube centers & edge pairing
+- [x] CFOP + pattern OLL/PLL
+- [x] Kociemba coordinates + IDA*
+- [x] CenterSolver (nxn)
+- [x] EdgePairing (nxn)
+- [x] Reduction pipeline wired end-to-end
+- [ ] Pruning tables for faster Kociemba
+- [ ] Even-order parity handlers
 - [ ] Production signed APK
 
 ---
