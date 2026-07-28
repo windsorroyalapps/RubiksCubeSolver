@@ -14,6 +14,7 @@ add_library(
     ${NATIVE_ROOT}/cfop/CoordCube.cpp
     ${NATIVE_ROOT}/cfop/Pruning.cpp
     ${NATIVE_ROOT}/cfop/MoveTables.cpp
+    ${NATIVE_ROOT}/cfop/GodsAlgorithm.cpp
     ${NATIVE_ROOT}/reduction/ReductionSolver.cpp
     ${NATIVE_ROOT}/reduction/CenterSolver.cpp
     ${NATIVE_ROOT}/reduction/EdgePairing.cpp
