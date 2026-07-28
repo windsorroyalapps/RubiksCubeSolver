@@ -3,10 +3,18 @@
 #include "EdgePairing.h"
 #include "ParityHandler.h"
 #include "BatchSolver.h"
+#include "BoundHarness.h"
 #include "../cfop/CFOPSolver.h"
 #include "../cfop/Kociemba.h"
 
 #include <sstream>
+
+// Last bound report (for JNI / debugging)
+static BoundReport g_lastBoundReport{};
+
+const BoundReport& ReductionSolver_lastBoundReport() {
+    return g_lastBoundReport;
+}
 
 std::vector<Move> ReductionSolver::solveCenters(Cube& work) {
     return CenterSolver::solve(work);
@@ -29,29 +37,28 @@ std::vector<Move> ReductionSolver::solve(const Cube& cube) {
 
     Cube work = cube;
     std::vector<Move> solution;
+    StageLengths stages;
 
-    auto append = [&](const std::vector<Move>& moves) {
+    auto append = [&](const std::vector<Move>& moves, int* counter) {
         solution.insert(solution.end(), moves.begin(), moves.end());
+        if (counter) *counter += BoundHarness::count(moves);
     };
 
-    // Stage moves (may repeat the same slice for many clusters)
-    append(solveCenters(work));
-    append(pairEdges(work));
+    append(solveCenters(work), &stages.centers);
+    append(pairEdges(work), &stages.edges);
 
     if (work.size() % 2 == 0) {
-        append(ParityHandler::fix(work));
+        append(ParityHandler::fix(work), &stages.parity);
     }
 
-    append(solveAs3x3(work));
+    append(solveAs3x3(work), &stages.reduce3x3);
 
-    // Demaine-style post-process:
-    // compress runs + batch windows so shared moves collapse (parallelism).
-    // Naive: O(n^2) cluster work; after batching: closer to O(n^2 / log n) length.
+    // Demaine-style post-process
     solution = BatchSolver::optimize(solution);
+    stages.afterBatch = BoundHarness::count(solution);
 
-    // Re-apply optimized sequence on a fresh cube is NOT done here:
-    // callers use notation; for correctness of returned list we keep the
-    // optimized move list as the solution encoding.
+    g_lastBoundReport = BoundHarness::report(cube.size(), stages);
+
     return solution;
 }
 
@@ -67,5 +74,10 @@ std::string ReductionSolver::solveToNotation(const Cube& cube) {
         else if (m.turns == -1 || m.turns == 3) oss << '\'';
         if (i + 1 < moves.size()) oss << ' ';
     }
+    // Optionally append bound comment for debug builds — keep notation clean
     return oss.str();
+}
+
+std::string ReductionSolver::lastBoundReportString() {
+    return g_lastBoundReport.toString();
 }
