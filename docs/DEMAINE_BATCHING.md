@@ -16,18 +16,20 @@ Parallel: one slice move updates many cubies; batch shared needs
 | Step | What |
 |------|------|
 | `compress` | Merge consecutive same (face, depth) turns; drop 0-mod-4 |
-| `batchWindow` | In each window of size W, keep **first** of each identical move (collapse duplicates = shared work) |
+| `batchWindow` | In each window of size W, keep **first** of each identical move |
 | `optimize` | compress → windows 4,8,16,32 → compress again |
 
-Wired at the end of `ReductionSolver::solve` so nxn solutions are post-processed.
+Wired at the end of `ReductionSolver::solve`.
+
+**Concrete walk-through:** [BATCHSOLVER_EXAMPLE.md](BATCHSOLVER_EXAMPLE.md)
 
 Helpers:
-- `estimatedClusters(n)` ≈ \( \Theta(n^2) \) work units
-- `asymptoticTarget(n)` ≈ \( 4 \, n^2 / \ln n \) (shape only)
+- `estimatedClusters(n)` ≈ \( \Theta(n^2) \)
+- `asymptoticTarget(n)` ≈ \( 4 \, n^2 / \ln n \)
 
 ## Honest note
 
-Window batching is a **practical approximation** of Demaine parallelism, not a full proof-carrying construction. It shortens repeated identical slice requests that naive center/edge loops emit. True \( O(n^2/\log n) \) needs careful scheduling of cluster sequences so batching never breaks correctness; we still rely on reduction stages being mostly correct before optimize.
+Window batching is a **practical approximation** of Demaine parallelism, not a full proof-carrying construction.
 
 ## Pipeline
 
