@@ -12,6 +12,8 @@
  *   even n: 92n^2 - 307n + 257
  *
  * Asymptotic shape target: c * n^2 / ln(n)  (Demaine Theta)
+ *   c ≈ 3.8 calibrated to community 4×4 (~40-48) / 5×5 (~55-70) estimates.
+ *   Note: published 4×4 OBTM upper is 54 (not the same as this constructive U(4)=501).
  *
  * Harness records per-stage move counts and checks length <= U(n).
  */
@@ -43,7 +45,7 @@ public:
     // Constructive upper bound U(n)
     static int constructiveUpper(int n);
 
-    // Demaine-shaped target (placeholder constant c=4)
+    // Demaine-shaped target (c≈3.8 fitted to community estimates)
     static double asymptoticTarget(int n);
 
     // Build report from measured stage lengths

@@ -18,8 +18,10 @@ int BoundHarness::constructiveUpper(int n) {
 double BoundHarness::asymptoticTarget(int n) {
     if (n < 3) return static_cast<double>(constructiveUpper(n));
     double nn = static_cast<double>(n);
-    // Shape only; constant 4 is a placeholder scale factor
-    return 4.0 * (nn * nn) / std::log(nn);
+    // Demaine Theta(n^2 / log n). Scale ~3.8 fitted so that
+    // community 4x4 (~40-48) and 5x5 (~55-70) estimates sit near the curve.
+    // (n^2 / ln(n) * 3.8 ≈ 44 for n=4, ≈59 for n=5.)
+    return 3.8 * (nn * nn) / std::log(nn);
 }
 
 BoundReport BoundHarness::report(int n, const StageLengths& stages) {
