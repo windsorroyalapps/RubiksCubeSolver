@@ -18,7 +18,7 @@ Asymptotic (Demaine et al. 2011):
 | n | Lower (known / counting) | Community estimate | Constructive upper* | Status |
 |---|--------------------------|--------------------|---------------------|--------|
 | 3 | **20** | **20** | **20** | **Proven** |
-| 4 | ~29–35 | **~40–48** | ~501 | Open |
+| 4 | ~29–35 | **~40–48** | ~501 | Open (OBTM ≤54) |
 | 5 | ~40+ | **~55–70** | ~878 | Open |
 | 6 | — | **~80–100** | ~1321 | Open |
 | 7 | — | **~110–140** | ~1852 | Open |
@@ -34,11 +34,11 @@ Asymptotic (Demaine et al. 2011):
 
 | Metric | Lower | Upper | Notes |
 |--------|-------|-------|--------|
-| OBTM | 35 | 55 | cubezzz / speedsolving discussions (2015-era) |
+| OBTM | 35 | **54** | cubezzz / speedsolving (2015-era, tightened from 55) |
 | STM / SSTM | 32 | 53 | same sources |
 | Block turn | 29 | 53 | same sources |
 | Older FTM-style | ≥33 | 67–82 | forum upper bounds (block / single / face) |
-| Conjecture (HTM) | — | ~41 | informal conjecture on MathOverflow thread |
+| Conjecture (HTM) | — | ~41 | informal conjecture |
 | Conjecture (QTM) | — | ~48 | same |
 
 Nobody has proven exact g(4).
@@ -91,14 +91,14 @@ Raw order-of-magnitude (natural log). **Not** calibrated to equal 20 at n=3; onl
 | 9 | 81 | 2.20 | ~36.9 |
 | 10 | 100 | 2.30 | ~43.4 |
 
-If you scale so that the constant roughly matches 3×3 (× ~20/ (9/ln3) ≈ 2.4), you get ballpark numbers in the same region as the "community estimate" column in Table 1 — still only heuristic.
+If you scale so that the constant roughly matches 3×3 (× ~20/ (9/ln3) ≈ 2.4), you get ballpark numbers in the same region as the "community estimate" column in Table 1 — still only heuristic. BoundHarness currently uses a placeholder scale of 4.
 
 ---
 
 ## How to read this
 
 1. **Exact g(n) for n≥4 is open** (and computing diameter is NP-hard in related models).
-2. **Best practical numbers** for 4×4 live in the **30s–50s** depending on metric; 5×5 likely **50s–70s** HTM-scale, with weaker published proofs.
+2. **Best practical numbers** for 4×4 live in the **30s–50s** depending on metric (OBTM upper now 54); 5×5 likely **50s–70s** HTM-scale, with weaker published proofs.
 3. **Constructive uppers** (hundreds–thousands) come from reduction algorithms like the one in this repo — correct but not optimal.
 4. **True God's Number** grows like \( \Theta(n^2/\log n) \), so 10×10 is only a few times harder than 5×5 in optimal-move terms, not 4× harder like n² alone.
 
@@ -106,4 +106,4 @@ If you scale so that the constant roughly matches 3×3 (× ~20/ (9/ln3) ≈ 2.4)
 
 ## Repo link
 
-Our solver uses reduction (centers → edges → parity → 3×3), which realizes a **constructive** (not optimal) upper bound for every n.
+Our solver uses reduction (centers → edges → parity → 3×3) + Demaine-style batching, which realises a **constructive** (not optimal) upper bound for every n and approaches the asymptotic order.
