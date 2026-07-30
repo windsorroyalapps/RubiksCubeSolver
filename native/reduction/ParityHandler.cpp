@@ -42,34 +42,40 @@ static void applyAll(Cube& work, const std::vector<Move>& moves) {
 bool ParityHandler::hasOLLParity(const Cube& c) {
     if (c.size() < 4 || (c.size() % 2) != 0) return false;
 
-    // After reduction, OLL parity = odd number of flipped wing-pairs
-    // on the last layer relative to a 3x3 model.
-    // Proxy: count outer-layer edges on U whose adjacent side color
-    // does not match the side center (misoriented dedge).
+    // After reduction, OLL parity = odd number of flipped wing-pairs on last layer.
+    // Sample multiple wing depths (not only mid) so n>4 is covered better.
     int n = c.size();
-    int mid = n / 2;
     int bad = 0;
 
-    // UF edge: U facelet at (n-1, mid), F facelet at (0, mid)
-    Color uUF = c.get(U, n - 1, mid);
-    Color fUF = c.get(F, 0, mid);
-    if (!((uUF == Color::U || uUF == Color::D) || (fUF == Color::U || fUF == Color::D)))
-        ++bad;
+    auto checkEdge = [&](int faceU_row, int faceU_col, int sideFace, int sideRow, int sideCol) {
+        Color u = c.get(U, faceU_row, faceU_col);
+        Color s = c.get(sideFace, sideRow, sideCol);
+        // Oriented if U/D color sits on U face, or side is U/D (rare after centers)
+        bool oriented = (u == Color::U || u == Color::D) ||
+                        (s == Color::U || s == Color::D);
+        if (!oriented) ++bad;
+    };
 
-    Color uUR = c.get(U, mid, n - 1);
-    Color rUR = c.get(R, 0, mid);
-    if (!((uUR == Color::U || uUR == Color::D) || (rUR == Color::U || rUR == Color::D)))
-        ++bad;
+    // Depths to sample: mid always; also 1 and n-2 when they differ
+    int depths[3];
+    int nd = 0;
+    depths[nd++] = n / 2;
+    if (n > 4) {
+        depths[nd++] = 1;
+        depths[nd++] = n - 2;
+    }
 
-    Color uUB = c.get(U, 0, mid);
-    Color bUB = c.get(B, 0, mid);
-    if (!((uUB == Color::U || uUB == Color::D) || (bUB == Color::U || bUB == Color::D)))
-        ++bad;
-
-    Color uUL = c.get(U, mid, 0);
-    Color lUL = c.get(L, 0, mid);
-    if (!((uUL == Color::U || uUL == Color::D) || (lUL == Color::U || lUL == Color::D)))
-        ++bad;
+    for (int i = 0; i < nd; ++i) {
+        int d = depths[i];
+        // UF
+        checkEdge(n - 1, d, F, 0, d);
+        // UR
+        checkEdge(d, n - 1, R, 0, d);
+        // UB
+        checkEdge(0, d, B, 0, d);
+        // UL
+        checkEdge(d, 0, L, 0, d);
+    }
 
     // OLL parity presents as a single "flipped" edge in 3x3 terms => odd count
     return (bad % 2) == 1;
@@ -79,27 +85,35 @@ bool ParityHandler::hasPLLParity(const Cube& c) {
     if (c.size() < 4 || (c.size() % 2) != 0) return false;
 
     // PLL parity = odd permutation of the 12 dedges (two edges swapped).
-    // Proxy after OLL: check whether opposite edge colors form consistent pairs.
+    // Multi-depth side-color match count for robustness on n>4.
     int n = c.size();
-    int mid = n / 2;
-
-    // Side colors of the four U edges
-    Color sUF = c.get(F, 0, mid);
-    Color sUR = c.get(R, 0, mid);
-    Color sUB = c.get(B, 0, mid);
-    Color sUL = c.get(L, 0, mid);
-
-    // In a solved-or-even-perm state, opposite sides should not both be "adjacent-only" mismatches
-    // Count cycles of length 2 among the four
     int matches = 0;
-    if (sUF == Color::F) ++matches;
-    if (sUR == Color::R) ++matches;
-    if (sUB == Color::B) ++matches;
-    if (sUL == Color::L) ++matches;
+    int samples = 0;
 
-    // 4 = solved edges, 1 or 3 often indicates odd perm / parity case
-    // 0 or 2 can be even perms (H, Z, U-perms etc.)
-    return matches == 1 || matches == 3;
+    int depths[3];
+    int nd = 0;
+    depths[nd++] = n / 2;
+    if (n > 4) {
+        depths[nd++] = 1;
+        depths[nd++] = n - 2;
+    }
+
+    for (int i = 0; i < nd; ++i) {
+        int d = depths[i];
+        if (c.get(F, 0, d) == Color::F) ++matches;
+        if (c.get(R, 0, d) == Color::R) ++matches;
+        if (c.get(B, 0, d) == Color::B) ++matches;
+        if (c.get(L, 0, d) == Color::L) ++matches;
+        samples += 4;
+    }
+
+    // Normalize: expected full match = samples. Odd residual suggests parity.
+    int residual = samples - matches;
+    // Classic mid-only heuristic: matches == 1 or 3 on 4 samples.
+    // For multi-sample, treat odd residual in the low band as parity-like.
+    if (nd == 1)
+        return matches == 1 || matches == 3;
+    return (residual % 2 == 1) && residual > 0 && residual < samples;
 }
 
 std::vector<Move> ParityHandler::fixOLLParity(Cube& work) {
