@@ -52,7 +52,8 @@ std::vector<Move> ReductionSolver::solve(const Cube& cube) {
     solution = BatchSolver::optimize(solution);
     stages.afterBatch = BoundHarness::count(solution);
 
-    g_lastBoundReport = BoundHarness::report(cube.size(), stages);
+    // Dual metrics (SSTM + OBTM) for comparison against community ceilings
+    g_lastBoundReport = BoundHarness::report(cube.size(), stages, solution);
     return solution;
 }
 

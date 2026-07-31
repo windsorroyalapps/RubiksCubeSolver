@@ -29,7 +29,7 @@ MoveTables · BFS pruning · coord-space IDA* · `GodsAlgorithm`
 ```text
 ClusterScheduler → BatchGroups → Centers (never-break) → Edges (wing-count)
   → Parity (multi-depth, even n) → 3×3 → BatchSolver::optimize
-  → BoundHarness report
+  → BoundHarness report (SSTM + OBTM dual metrics)
 ```
 
 Demaine insight: batch shared slice moves toward **O(n² / log n)** spirit.  
@@ -51,12 +51,13 @@ Exact diameter open for n≥4; this is the universal constructive algorithm that
 | 9 | **3182** |
 | 10 | **3981** |
 
-4×4 OBTM community upper now **54** (not constructive). After each nxn solve, stage lengths are compared to U(n) and to ~n²/log n (scale ≈ 3.8).
+4×4 OBTM community upper now **54** (not constructive). After each nxn solve, stage lengths are compared to U(n) and to ~n²/log n (scale ≈ 3.8).  
+**New:** dual **SSTM / OBTM** counts emitted so we can measure against the 54-move 4×4 ceiling live.
 
 ```kotlin
 NativeSolver.create(5)
 val sol = NativeSolver.solve()
-val report = NativeSolver.boundReport()   // centers/edges/.../U(n)=878/...
+val report = NativeSolver.boundReport()   // centers/edges/.../sstm=.../obtm=.../U(n)=878/...
 val u4 = NativeSolver.constructiveUpper(4) // 501
 ```
 
@@ -74,7 +75,7 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 | API | Role |
 |-----|------|
 | `create` / `solve` / `applyNotation` | Cube session |
-| `boundReport()` | Last BoundHarness string |
+| `boundReport()` | Last BoundHarness string (now includes sstm/obtm) |
 | `constructiveUpper(n)` | U(n) table |
 
 → [docs/JNI_WRAPPER.md](docs/JNI_WRAPPER.md)
@@ -91,7 +92,7 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 | [KOCIEMBA_TWO_PHASE.md](docs/KOCIEMBA_TWO_PHASE.md) | Two-phase + IDA* |
 | [DEMAINE_BATCHING.md](docs/DEMAINE_BATCHING.md) | n²/log n batching |
 | [CLUSTER_SCHEDULING.md](docs/CLUSTER_SCHEDULING.md) | Shared-move schedule |
-| [BOUND_HARNESS.md](docs/BOUND_HARNESS.md) | U(n) instrumentation |
+| [BOUND_HARNESS.md](docs/BOUND_HARNESS.md) | U(n) instrumentation + OBTM/SSTM |
 | [JNI_WRAPPER.md](docs/JNI_WRAPPER.md) | Kotlin ↔ C++ |
 
 ---
@@ -102,13 +103,13 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 - [x] nxn reduction + parity (complete for any n≥4)
 - [x] ClusterScheduler + BatchGroups + BatchSolver (Demaine-style)
 - [x] BoundHarness (U(n) table + stage report + asymptotic)
+- [x] **OBTM / SSTM dual metrics** (live comparison to 4×4 OBTM ≤54)
 - [x] JNI: solve + boundReport + constructiveUpper
 - [x] Documented constructive algorithm + Θ(n²/log n) + best-known 4×4 OBTM ≤54
 - [x] **Centers never-break** (global multi-face score + protect 100% faces)
 - [x] **Edge wing-count** (real facelet pairedWings, 3-pass freeslice)
 - [x] **Parity multi-depth** (even-n OLL/PLL proxy samples 1, mid, n-2)
 - [ ] Perfect offline 3×3 pruning DBs
-- [ ] OBTM / SSTM move accounting vs 54-move 4×4 ceiling
 - [ ] Reduced-state IDA* scaffolding for 4×4 / 5×5 constructive tighten
 - [ ] Production signed APK
 
@@ -116,14 +117,14 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 
 ## Next steps / approaches to try next time (current automation work)
 
-1. **OBTM metrics** – tag each Move as outer-block vs single-slice; emit dual counts so BoundHarness can compare against 4×4 OBTM ≤54 and community 5×5 claims.
-2. **Center BFS orbits** – for n≤6 replace remaining greedy with short BFS on center orbits (exact placement of remaining incorrect cells).
-3. **Edge buffer tracking** – explicit buffer wing + never-touch already-paired orbits (Yau cross for large n).
-4. **Full wing parity** – orientation + permutation parity from the complete set of (n-2) wings (drop residual proxy).
-5. **4×4 / 5×5 search** – once centers+edges solid, add reduced-coordinate IDA* / bidirectional search to push constructive U(n) down toward community estimates.
-6. **3×3 dense DBs** – full-index BFS pruning so phase-1 routinely ≤12 and totals hit the 20 ceiling.
-7. **APK** – signed release, Material You polish, on-device size selector to 20×20 (higher offline).
-8. **Asymptotic fit** – re-calibrate BoundHarness scale if new community 4×4/5×5 numbers appear; keep U(n) as hard constructive guarantee.
+1. **Center BFS orbits** – for n≤6 replace remaining greedy with short BFS on center orbits (exact placement of remaining incorrect cells).
+2. **Edge buffer tracking** – explicit buffer wing + never-touch already-paired orbits (Yau cross for large n).
+3. **Full wing parity** – orientation + permutation parity from the complete set of (n-2) wings (drop residual proxy).
+4. **4×4 / 5×5 search** – once centers+edges solid, add reduced-coordinate IDA* / bidirectional search to push constructive U(n) down toward community estimates.
+5. **3×3 dense DBs** – full-index BFS pruning so phase-1 routinely ≤12 and totals hit the 20 ceiling.
+6. **Production signed APK** – signed release, Material You polish, on-device size selector to 20×20 (higher offline).
+7. **Asymptotic fit** – re-calibrate BoundHarness scale if new community 4×4/5×5 numbers appear; keep U(n) as hard constructive guarantee.
+8. **OBTM stage breakdown** – optional per-stage OBTM so we can see which phase is furthest from the 54-move 4×4 ceiling.
 
 ---
 

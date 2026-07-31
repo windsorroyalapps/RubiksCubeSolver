@@ -71,7 +71,7 @@ These are far from optimal but are explicit, implementable algorithms that **alw
    (**multi-depth** sampling for n>4)
 4. **3×3 stage** – treat the reduced cube as a normal 3×3 and run multi-probe Kociemba (or CFOP fallback)
 5. **BatchSolver::optimize** – windowed collapse of identical (face,depth,turns) moves (log-factor spirit)
-6. **BoundHarness** – report stage lengths vs U(n) and vs ~n²/log n (scale ≈ 3.8)
+6. **BoundHarness** – report stage lengths vs U(n) and vs ~n²/log n (scale ≈ 3.8) **+ dual OBTM/SSTM counts**
 
 This pipeline is complete for every n ≥ 4 (software limit ~ memory for the facelet array).  
 It realises a true algorithm that solves every position and approaches the asymptotic order via batching.
@@ -85,26 +85,25 @@ It realises a true algorithm that solves every position and approaches the asymp
 | Even-n parity | `ParityHandler.*` | OLL + PLL algs + multi-depth detectors |
 | Orchestrator | `ReductionSolver.*` | Full pipeline |
 | 3×3 engine | `Kociemba` + `GodsAlgorithm` + `CFOPSolver` | Phase-1 + IDA* path + CFOP fallback |
-| Bound instrumentation | `BoundHarness.*` | U(n) table + stage report + asymptotic |
+| Bound instrumentation | `BoundHarness.*` | U(n) table + stage report + asymptotic **+ OBTM/SSTM** |
 | Post-process batching | `BatchSolver.*` | compress + window collapse |
 
-## Progress note (automation session)
+## Progress note (automation session 2026-08-01)
 
-- Tightened **CenterSolver**: global 0–600 score; reject any commutator that drops global correctness; skip faces already at 100%; extra BatchGroups passes; 1/2/−1 turn probes.
-- Tightened **EdgePairing**: `pairedWings` now scans all (n−2) wing offsets via facelets; 3-pass pairAll; solid edges never re-touched.
-- Tightened **ParityHandler**: OLL/PLL proxies sample mid + depth 1 + depth n−2 on even n>4.
-- Exact **g(n) for n≥4 remains open** (intractable). What we ship is the complete constructive algorithm + documented U(n) + Θ(n²/log n) path + best published 4×4 OBTM ≤54 reference.
+- **OBTM / SSTM dual metrics shipped**: BoundHarness now counts SSTM (every Move) and OBTM (collapse consecutive depth-0 same-face turns). Final report emits `sstm=` / `obtm=` and flags `vs4x4OBTM54=under|over` for n=4.
+- ReductionSolver feeds the final optimised sequence into the dual-metric report.
+- Exact **g(n) for n≥4 remains open** (intractable). What we ship is the complete constructive algorithm + documented U(n) + Θ(n²/log n) path + best published 4×4 OBTM ≤54 reference + live dual counts.
 
 ## Next steps (automation roadmap — current work)
 
-1. **OBTM / SSTM accounting** – dual move counts so we can measure against the 54-move 4×4 ceiling and community 5×5 numbers.
-2. **Center BFS orbits** – short exact BFS for remaining incorrect cells on n≤6.
-3. **Edge buffer + Yau** – explicit buffer tracking; Yau-style cross reduction for large n.
-4. **Full wing parity** – orientation + permutation from complete (n−2) wing set.
-5. **4×4 / 5×5 IDA*** – reduced coordinates once centers+edges fixed → push constructive U(n) lower.
-6. **Production signed APK** – signed release, Material You, size selector to 20×20.
-7. **Dense 3×3 pruning DBs** – full-index BFS so solutions routinely hit the 20 ceiling.
-8. **Asymptotic constant** – re-fit scale if better community estimates appear; keep U(n) as hard guarantee.
+1. **Center BFS orbits** – for n≤6 replace remaining greedy with short BFS on center orbits (exact placement of remaining incorrect cells).
+2. **Edge buffer tracking** – explicit buffer wing + never-touch already-paired orbits (Yau cross for large n).
+3. **Full wing parity** – orientation + permutation parity from the complete set of (n-2) wings (drop residual proxy).
+4. **4×4 / 5×5 search** – once centers+edges solid, add reduced-coordinate IDA* / bidirectional search to push constructive U(n) down toward community estimates.
+5. **3×3 dense DBs** – full-index BFS pruning so phase-1 routinely ≤12 and totals hit the 20 ceiling.
+6. **Production signed APK** – signed release, Material You polish, on-device size selector to 20×20 (higher offline).
+7. **Asymptotic fit** – re-calibrate BoundHarness scale if new community 4×4/5×5 numbers appear; keep U(n) as hard constructive guarantee.
+8. **OBTM stage breakdown** – optional per-stage OBTM so we can see which phase is furthest from the 54-move 4×4 ceiling.
 
 ## References
 
@@ -114,4 +113,4 @@ It realises a true algorithm that solves every position and approaches the asymp
 - Community upper-bound derivations (92n² series)
 
 ---
-*Android/BMW hacking genius mode: ship the algorithm, document the bound, iterate the search. Next commit: OBTM metrics + center BFS orbits + APK path.*
+*Android/BMW hacking genius mode: ship the algorithm, document the bound, iterate the search. Next commit: center BFS orbits + edge buffer/Yau + APK path.*

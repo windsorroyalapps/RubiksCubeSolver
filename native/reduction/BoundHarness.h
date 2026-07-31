@@ -15,14 +15,24 @@
  *   c ≈ 3.8 calibrated to community 4×4 (~40-48) / 5×5 (~55-70) estimates.
  *   Note: published 4×4 OBTM upper is 54 (not the same as this constructive U(4)=501).
  *
+ * Dual metrics:
+ *   SSTM  = single-slice / every Move counts 1
+ *   OBTM  = outer-block: consecutive depth==0 same-face turns collapse to 1;
+ *           every inner slice (depth>0) still counts 1
+ *
  * Harness records per-stage move counts and checks length <= U(n).
+ * finalObtm lets us compare against the community 4×4 OBTM ≤54 ceiling.
  */
 struct StageLengths {
     int centers = 0;
     int edges = 0;
     int parity = 0;
     int reduce3x3 = 0;
-    int afterBatch = 0;  // final length after BatchSolver
+    int afterBatch = 0;  // final length after BatchSolver (SSTM-style)
+
+    // Optional dual-metric finals (filled by report when sequence available)
+    int finalObtm = 0;
+    int finalSstm = 0;
 
     int totalRaw() const { return centers + edges + parity + reduce3x3; }
     int totalFinal() const { return afterBatch > 0 ? afterBatch : totalRaw(); }
@@ -36,6 +46,8 @@ struct BoundReport {
     bool withinUpper = false;   // final <= U(n)
     double ratioToUpper = 0;    // final / U(n)
     double ratioToAsymptotic = 0;
+    int obtm = 0;               // OBTM of final sequence (if provided)
+    int sstm = 0;               // SSTM of final sequence
 
     std::string toString() const;
 };
@@ -51,8 +63,22 @@ public:
     // Build report from measured stage lengths
     static BoundReport report(int n, const StageLengths& stages);
 
-    // Convenience: count moves in a sequence
+    // Build report and attach dual metrics from the final move sequence
+    static BoundReport report(int n, const StageLengths& stages,
+                              const std::vector<Move>& finalSeq);
+
+    // Convenience: count moves in a sequence (SSTM)
     static int count(const std::vector<Move>& moves) {
         return static_cast<int>(moves.size());
     }
+
+    // Single-slice turn metric: every Move is one turn
+    static int countSstm(const std::vector<Move>& moves) {
+        return static_cast<int>(moves.size());
+    }
+
+    // Outer-block turn metric approximation:
+    // consecutive depth==0 moves on the same face collapse into one block turn;
+    // every inner-slice (depth > 0) still counts as its own move.
+    static int countObtm(const std::vector<Move>& moves);
 };

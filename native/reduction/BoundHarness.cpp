@@ -24,6 +24,20 @@ double BoundHarness::asymptoticTarget(int n) {
     return 3.8 * (nn * nn) / std::log(nn);
 }
 
+int BoundHarness::countObtm(const std::vector<Move>& moves) {
+    if (moves.empty()) return 0;
+    int count = 0;
+    for (size_t i = 0; i < moves.size(); ++i) {
+        // Collapse consecutive outer-face (depth==0) turns on the same face
+        if (i > 0 && moves[i].depth == 0 && moves[i - 1].depth == 0 &&
+            moves[i].face == moves[i - 1].face) {
+            continue;
+        }
+        ++count;
+    }
+    return count;
+}
+
 BoundReport BoundHarness::report(int n, const StageLengths& stages) {
     BoundReport r;
     r.n = n;
@@ -39,6 +53,20 @@ BoundReport BoundHarness::report(int n, const StageLengths& stages) {
     r.ratioToAsymptotic = (r.asymptoticTarget > 0.0)
         ? static_cast<double>(finalLen) / r.asymptoticTarget
         : 0.0;
+    r.sstm = stages.finalSstm > 0 ? stages.finalSstm : finalLen;
+    r.obtm = stages.finalObtm;  // may be 0 if not filled
+    return r;
+}
+
+BoundReport BoundHarness::report(int n, const StageLengths& stages,
+                                   const std::vector<Move>& finalSeq) {
+    StageLengths s = stages;
+    s.finalSstm = countSstm(finalSeq);
+    s.finalObtm = countObtm(finalSeq);
+    if (s.afterBatch == 0) s.afterBatch = s.finalSstm;
+    BoundReport r = report(n, s);
+    r.sstm = s.finalSstm;
+    r.obtm = s.finalObtm;
     return r;
 }
 
@@ -51,10 +79,15 @@ std::string BoundReport::toString() const {
         << " 3x3=" << stages.reduce3x3
         << " raw=" << stages.totalRaw()
         << " final=" << stages.totalFinal()
+        << " sstm=" << sstm
+        << " obtm=" << obtm
         << " U(n)=" << constructiveUpper
         << " asym~" << static_cast<int>(asymptoticTarget)
         << " withinU=" << (withinUpper ? "yes" : "NO")
         << " final/U=" << ratioToUpper
         << " final/asym=" << ratioToAsymptotic;
+    if (n == 4 && obtm > 0) {
+        oss << " vs4x4OBTM54=" << (obtm <= 54 ? "under" : "over");
+    }
     return oss.str();
 }
