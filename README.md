@@ -8,6 +8,7 @@
 ```bash
 git clone https://github.com/windsorroyalapps/RubiksCubeSolver.git
 # Android Studio → Sync → Run → Scramble → Solve
+# or: GitHub Actions → Build Production APK artifact
 ```
 
 ---
@@ -52,7 +53,7 @@ Exact diameter open for n≥4; this is the universal constructive algorithm that
 | 10 | **3981** |
 
 4×4 OBTM community upper now **54** (not constructive). After each nxn solve, stage lengths are compared to U(n) and to ~n²/log n (scale ≈ 3.8).  
-**New:** dual **SSTM / OBTM** counts emitted so we can measure against the 54-move 4×4 ceiling live.
+**Dual SSTM / OBTM** counts emitted so we can measure against the 54-move 4×4 ceiling live.
 
 ```kotlin
 NativeSolver.create(5)
@@ -109,23 +110,25 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 - [x] **Centers never-break** (global multi-face score + protect 100% faces)
 - [x] **Edge wing-count** (real facelet pairedWings, 3-pass freeslice)
 - [x] **Parity multi-depth** (even-n OLL/PLL proxy samples 1, mid, n-2)
+- [x] **CI APK production** (GitHub Actions builds + uploads debug APK artifact on every push)
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Reduced-state IDA* scaffolding for 4×4 / 5×5 constructive tighten
-- [ ] Production signed APK
+- [ ] Production signed APK (release keystore + Material You polish)
 
 ---
 
-## Next steps / approaches to try next time (current automation work)
+## Next steps / approaches to try next time (current automation work — 2026-08-02)
 
-1. **Center BFS orbits** – for n≤6 replace remaining greedy with short BFS on center orbits (exact placement of remaining incorrect cells).
+1. **Center BFS orbits** – for n≤6 replace remaining greedy with short BFS on center orbits (exact placement of remaining incorrect cells). Highest leverage for tightening U(4)/U(5).
 2. **Edge buffer tracking** – explicit buffer wing + never-touch already-paired orbits (Yau cross for large n).
 3. **Full wing parity** – orientation + permutation parity from the complete set of (n-2) wings (drop residual proxy).
-4. **4×4 / 5×5 search** – once centers+edges solid, add reduced-coordinate IDA* / bidirectional search to push constructive U(n) down toward community estimates.
+4. **4×4 / 5×5 search** – once centers+edges solid, add reduced-coordinate IDA* / bidirectional search to push constructive U(n) down toward community estimates (~40–54 OBTM for 4×4).
 5. **3×3 dense DBs** – full-index BFS pruning so phase-1 routinely ≤12 and totals hit the 20 ceiling.
-6. **Production signed APK** – signed release, Material You polish, on-device size selector to 20×20 (higher offline).
+6. **Production signed APK** – signed release, Material You polish, on-device size selector to 20×20 (higher offline); wire CI to produce release APK when keystore secret present.
 7. **Asymptotic fit** – re-calibrate BoundHarness scale if new community 4×4/5×5 numbers appear; keep U(n) as hard constructive guarantee.
 8. **OBTM stage breakdown** – optional per-stage OBTM so we can see which phase is furthest from the 54-move 4×4 ceiling.
+9. **Gradle wrapper binary** – commit full `gradlew` + jar so CI and local builds are identical without system gradle.
 
 ---
 
-*Android/BMW hacking style. Ship the algorithm, document the bound, iterate until the APK is production. Ship or die.*
+*Android/BMW hacking genius mode. Ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search until constructive U(n) collapses toward true God's Number. Ship or die.*

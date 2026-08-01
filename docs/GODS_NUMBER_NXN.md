@@ -94,16 +94,23 @@ It realises a true algorithm that solves every position and approaches the asymp
 - ReductionSolver feeds the final optimised sequence into the dual-metric report.
 - Exact **g(n) for n≥4 remains open** (intractable). What we ship is the complete constructive algorithm + documented U(n) + Θ(n²/log n) path + best published 4×4 OBTM ≤54 reference + live dual counts.
 
-## Next steps (automation roadmap — current work)
+## Progress note (automation session 2026-08-02)
 
-1. **Center BFS orbits** – for n≤6 replace remaining greedy with short BFS on center orbits (exact placement of remaining incorrect cells).
+- **CI APK production shipped**: `.github/workflows/build-apk.yml` builds debug APK on every push to main, uploads artifact `rubikscubesolver-debug-apk`. Native C++ + Kotlin path exercised in the cloud.
+- Algorithm status unchanged: complete constructive solver for **any n > 3** (centers → edges → parity → 3×3 + batching). Exact God's Number still open; we continue working backward from U(n) and community OBTM ceilings.
+- Next high-leverage code: Center BFS orbits for n≤6 (replace residual greedy) to start collapsing constructive lengths toward the 54 OBTM 4×4 reference.
+
+## Next steps (automation roadmap — current work 2026-08-02)
+
+1. **Center BFS orbits** – for n≤6 replace remaining greedy with short BFS on center orbits (exact placement of remaining incorrect cells). Highest leverage for tightening U(4)/U(5).
 2. **Edge buffer tracking** – explicit buffer wing + never-touch already-paired orbits (Yau cross for large n).
 3. **Full wing parity** – orientation + permutation parity from the complete set of (n-2) wings (drop residual proxy).
-4. **4×4 / 5×5 search** – once centers+edges solid, add reduced-coordinate IDA* / bidirectional search to push constructive U(n) down toward community estimates.
+4. **4×4 / 5×5 search** – once centers+edges solid, add reduced-coordinate IDA* / bidirectional search to push constructive U(n) down toward community estimates (~40–54 OBTM for 4×4).
 5. **3×3 dense DBs** – full-index BFS pruning so phase-1 routinely ≤12 and totals hit the 20 ceiling.
-6. **Production signed APK** – signed release, Material You polish, on-device size selector to 20×20 (higher offline).
+6. **Production signed APK** – signed release, Material You polish, on-device size selector to 20×20; wire CI release when keystore secret present.
 7. **Asymptotic fit** – re-calibrate BoundHarness scale if new community 4×4/5×5 numbers appear; keep U(n) as hard constructive guarantee.
 8. **OBTM stage breakdown** – optional per-stage OBTM so we can see which phase is furthest from the 54-move 4×4 ceiling.
+9. **Gradle wrapper binary** – commit full `gradlew` + jar so CI and local builds are identical without system gradle.
 
 ## References
 
@@ -113,4 +120,4 @@ It realises a true algorithm that solves every position and approaches the asymp
 - Community upper-bound derivations (92n² series)
 
 ---
-*Android/BMW hacking genius mode: ship the algorithm, document the bound, iterate the search. Next commit: center BFS orbits + edge buffer/Yau + APK path.*
+*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Next commit: center BFS orbits + tighter constructive for 4×4/5×5.*

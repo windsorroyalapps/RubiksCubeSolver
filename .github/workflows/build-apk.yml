@@ -1,0 +1,61 @@
+name: Build Production APK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Grant execute permission for gradlew
+        run: |
+          if [ ! -f gradlew ]; then
+            # Generate wrapper if missing (repo has properties only)
+            gradle wrapper --gradle-version 8.9 || true
+          fi
+          chmod +x gradlew 2>/dev/null || true
+
+      - name: Build Debug APK (native + Kotlin)
+        run: |
+          # Use system gradle if no wrapper binary
+          if [ -f gradlew ]; then
+            ./gradlew assembleDebug --stacktrace
+          else
+            gradle assembleDebug --stacktrace
+          fi
+
+      - name: Check APK artifact
+        run: |
+          APK=$(find app/build/outputs/apk -name "*.apk" 2>/dev/null | head -1)
+          if [ -n "$APK" ]; then
+            echo "APK produced: $APK"
+            ls -lh "$APK"
+            echo "APK_SIZE=$(stat -c%s "$APK")" >> $GITHUB_ENV
+          else
+            echo "No APK found — checking build outputs"
+            find app/build -type f -name "*.apk" -o -name "*.so" | head -20 || true
+            exit 1
+          fi
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rubikscubesolver-debug-apk
+          path: app/build/outputs/apk/**/*.apk
+          retention-days: 14
