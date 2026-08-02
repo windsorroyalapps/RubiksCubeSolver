@@ -28,7 +28,7 @@ MoveTables · BFS pruning · coord-space IDA* · `GodsAlgorithm`
 ## n×n path (practical God's algorithm for any n > 3)
 
 ```text
-ClusterScheduler → BatchGroups → Centers (never-break) → Edges (wing-count)
+ClusterScheduler → BatchGroups → Centers (never-break + residual short-search n≤6) → Edges (wing-count)
   → Parity (multi-depth, even n) → 3×3 → BatchSolver::optimize
   → BoundHarness report (SSTM + OBTM dual metrics)
 ```
@@ -111,23 +111,26 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 - [x] **Edge wing-count** (real facelet pairedWings, 3-pass freeslice)
 - [x] **Parity multi-depth** (even-n OLL/PLL proxy samples 1, mid, n-2)
 - [x] **CI APK production** (GitHub Actions builds + uploads debug APK artifact on every push)
+- [x] **Center residual short-search** (n≤6 light BFS-style cleanup of remaining incorrect cells)
 - [ ] Perfect offline 3×3 pruning DBs
+- [ ] Full center-orbit BFS (exact placement, n≤5) replacing residual
 - [ ] Reduced-state IDA* scaffolding for 4×4 / 5×5 constructive tighten
 - [ ] Production signed APK (release keystore + Material You polish)
 
 ---
 
-## Next steps / approaches to try next time (current automation work — 2026-08-02)
+## Next steps / approaches to try next time (current automation work — 2026-08-03)
 
-1. **Center BFS orbits** – for n≤6 replace remaining greedy with short BFS on center orbits (exact placement of remaining incorrect cells). Highest leverage for tightening U(4)/U(5).
-2. **Edge buffer tracking** – explicit buffer wing + never-touch already-paired orbits (Yau cross for large n).
+1. **Full center-orbit BFS** – replace residual short-search with true short BFS on center orbits for n≤5 (exact placement of remaining incorrect cells). Highest leverage for tightening constructive lengths on 4×4/5×5 toward OBTM ≤54.
+2. **Edge buffer tracking** – explicit buffer wing + never-touch already-paired orbits (Yau-style cross for large n).
 3. **Full wing parity** – orientation + permutation parity from the complete set of (n-2) wings (drop residual proxy).
-4. **4×4 / 5×5 search** – once centers+edges solid, add reduced-coordinate IDA* / bidirectional search to push constructive U(n) down toward community estimates (~40–54 OBTM for 4×4).
+4. **4×4 / 5×5 reduced-coordinate search** – once centers+edges solid, add reduced-coordinate IDA* / bidirectional search to push constructive U(n) down toward community estimates (~40–54 OBTM for 4×4).
 5. **3×3 dense DBs** – full-index BFS pruning so phase-1 routinely ≤12 and totals hit the 20 ceiling.
 6. **Production signed APK** – signed release, Material You polish, on-device size selector to 20×20 (higher offline); wire CI to produce release APK when keystore secret present.
 7. **Asymptotic fit** – re-calibrate BoundHarness scale if new community 4×4/5×5 numbers appear; keep U(n) as hard constructive guarantee.
 8. **OBTM stage breakdown** – optional per-stage OBTM so we can see which phase is furthest from the 54-move 4×4 ceiling.
 9. **Gradle wrapper binary** – commit full `gradlew` + jar so CI and local builds are identical without system gradle.
+10. **APK artifact verification loop** – after each push, confirm CI uploaded debug APK, size/check native .so presence, iterate until production-ready signed path exists.
 
 ---
 

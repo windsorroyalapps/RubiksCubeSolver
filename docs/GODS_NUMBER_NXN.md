@@ -64,7 +64,7 @@ These are far from optimal but are explicit, implementable algorithms that **alw
 **Reduction method + Demaine-style batching** is the universal constructive algorithm:
 
 1. **Centers** – gather all center facelets of each colour into solid (n-2)×(n-2) blocks  
-   (ClusterScheduler → BatchGroups shared-slice commutators + score-driven cleanup with **never-break** global multi-face score)
+   (ClusterScheduler → BatchGroups shared-slice commutators + score-driven cleanup with **never-break** global multi-face score + **residual short-search** for n≤6)
 2. **Edge pairing** – match the (n-2) wings belonging to each of the 12 edges  
    (freeslice / multi-pass + **real wing-count** skip so solid edges stay solid)
 3. **Parity** (even n only) – fix OLL parity ("flipped" dedge) then PLL parity (odd edge permutation)  
@@ -80,7 +80,7 @@ It realises a true algorithm that solves every position and approaches the asymp
 
 | Component | File(s) | Status |
 |-----------|---------|--------|
-| Center commutators + batch groups | `CenterSolver.*` + `BatchGroups.*` + `ClusterScheduler.*` | Working + never-break global score |
+| Center commutators + batch groups | `CenterSolver.*` + `BatchGroups.*` + `ClusterScheduler.*` | Working + never-break global score + residual short-search n≤6 |
 | Edge freeslice | `EdgePairing.*` | Working multi-pass + wing-count |
 | Even-n parity | `ParityHandler.*` | OLL + PLL algs + multi-depth detectors |
 | Orchestrator | `ReductionSolver.*` | Full pipeline |
@@ -100,17 +100,24 @@ It realises a true algorithm that solves every position and approaches the asymp
 - Algorithm status unchanged: complete constructive solver for **any n > 3** (centers → edges → parity → 3×3 + batching). Exact God's Number still open; we continue working backward from U(n) and community OBTM ceilings.
 - Next high-leverage code: Center BFS orbits for n≤6 (replace residual greedy) to start collapsing constructive lengths toward the 54 OBTM 4×4 reference.
 
-## Next steps (automation roadmap — current work 2026-08-02)
+## Progress note (automation session 2026-08-03)
 
-1. **Center BFS orbits** – for n≤6 replace remaining greedy with short BFS on center orbits (exact placement of remaining incorrect cells). Highest leverage for tightening U(4)/U(5).
-2. **Edge buffer tracking** – explicit buffer wing + never-touch already-paired orbits (Yau cross for large n).
+- **Center residual short-search shipped** for n≤6: after face greedy + BatchGroups, a bounded residual phase tries short commutator sequences that reduce absolute incorrect center cells while never dropping the global never-break score. Acts as a light BFS-style cleanup of remaining cells; keeps mobile responsive (depth-limited).
+- More commutator variants (slice-first + 2-turn slices) + higher attempt budgets in solveFace.
+- Exact g(n) for n≥4 still open. Constructive algorithm remains complete and universal. Next: replace residual with true center-orbit BFS for n≤5, then reduced-coordinate IDA* on 4×4/5×5 to push lengths toward community OBTM ceilings.
+
+## Next steps (automation roadmap — current work 2026-08-03)
+
+1. **Full center-orbit BFS** – replace residual short-search with true short BFS on center orbits for n≤5 (exact placement of remaining incorrect cells). Highest leverage for tightening constructive lengths on 4×4/5×5 toward OBTM ≤54.
+2. **Edge buffer tracking** – explicit buffer wing + never-touch already-paired orbits (Yau-style cross for large n).
 3. **Full wing parity** – orientation + permutation parity from the complete set of (n-2) wings (drop residual proxy).
-4. **4×4 / 5×5 search** – once centers+edges solid, add reduced-coordinate IDA* / bidirectional search to push constructive U(n) down toward community estimates (~40–54 OBTM for 4×4).
+4. **4×4 / 5×5 reduced-coordinate search** – once centers+edges solid, add reduced-coordinate IDA* / bidirectional search to push constructive U(n) down toward community estimates (~40–54 OBTM for 4×4).
 5. **3×3 dense DBs** – full-index BFS pruning so phase-1 routinely ≤12 and totals hit the 20 ceiling.
 6. **Production signed APK** – signed release, Material You polish, on-device size selector to 20×20; wire CI release when keystore secret present.
 7. **Asymptotic fit** – re-calibrate BoundHarness scale if new community 4×4/5×5 numbers appear; keep U(n) as hard constructive guarantee.
 8. **OBTM stage breakdown** – optional per-stage OBTM so we can see which phase is furthest from the 54-move 4×4 ceiling.
 9. **Gradle wrapper binary** – commit full `gradlew` + jar so CI and local builds are identical without system gradle.
+10. **APK artifact verification loop** – after each push, confirm CI uploaded debug APK, size/check native .so presence, iterate until production-ready signed path exists.
 
 ## References
 
@@ -120,4 +127,4 @@ It realises a true algorithm that solves every position and approaches the asymp
 - Community upper-bound derivations (92n² series)
 
 ---
-*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Next commit: center BFS orbits + tighter constructive for 4×4/5×5.*
+*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Next commit: full center-orbit BFS + tighter constructive for 4×4/5×5.*

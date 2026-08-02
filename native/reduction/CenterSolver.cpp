@@ -3,6 +3,9 @@
 #include "BatchGroups.h"
 
 #include <algorithm>
+#include <queue>
+#include <set>
+#include <tuple>
 
 std::vector<Move> CenterSolver::commutator(const Move& a, const Move& b) {
     Move aInv{a.face, a.depth, a.turns == 2 ? 2 : -a.turns};
@@ -57,6 +60,19 @@ static void undoSeq(Cube& work, const std::vector<Move>& seq) {
         work.apply(Move{it->face, it->depth, it->turns == 2 ? 2 : -it->turns});
 }
 
+// Count absolute incorrect center cells (for residual targeting).
+static int incorrectCenters(const Cube& work) {
+    int n = work.size();
+    int bad = 0;
+    for (int f = 0; f < 6; ++f) {
+        Color target = static_cast<Color>(f);
+        for (int r = 1; r < n - 1; ++r)
+            for (int c = 1; c < n - 1; ++c)
+                if (work.get(f, r, c) != target) ++bad;
+    }
+    return bad;
+}
+
 std::vector<Move> CenterSolver::solveFace(Cube& work, int face) {
     std::vector<Move> moves;
     int n = work.size();
@@ -78,8 +94,8 @@ std::vector<Move> CenterSolver::solveFace(Cube& work, int face) {
     adjacentFaces(face, adj[0], adj[1], adj[2], adj[3]);
 
     // More attempts for larger n; still bounded so mobile stays responsive.
-    int maxAttempts = 48 + 8 * (n - 4);
-    if (maxAttempts > 120) maxAttempts = 120;
+    int maxAttempts = 64 + 12 * (n - 4);
+    if (maxAttempts > 160) maxAttempts = 160;
 
     for (int attempt = 0; attempt < maxAttempts && centerScoreFace(work, face) < 100; ++attempt) {
         int bestGain = -1;
@@ -113,13 +129,20 @@ std::vector<Move> CenterSolver::solveFace(Cube& work, int face) {
                     Move faceTurn{face, 0, turns};
                     Move slice{opp, depth, 1};
                     trySeq(commutator(faceTurn, slice));
+                    trySeq(commutator(slice, faceTurn));
+                    // 2-turn slice variants for more orbit coverage
+                    Move slice2{opp, depth, 2};
+                    trySeq(commutator(faceTurn, slice2));
+                    trySeq(commutator(slice2, faceTurn));
                 }
                 for (int ai = 0; ai < 4; ++ai) {
                     Move faceTurn{face, 0, turns};
                     Move slice{adj[ai], depth, 1};
                     trySeq(commutator(faceTurn, slice));
-                    // Also try slice as the outer of the commutator for variety
                     trySeq(commutator(slice, faceTurn));
+                    Move slice2{adj[ai], depth, 2};
+                    trySeq(commutator(faceTurn, slice2));
+                    trySeq(commutator(slice2, faceTurn));
                 }
             }
         }
@@ -132,6 +155,75 @@ std::vector<Move> CenterSolver::solveFace(Cube& work, int face) {
         }
 
         if (centerScoreFace(work, face) >= 100) break;
+    }
+    return moves;
+}
+
+// Residual short-search for n<=6: try short sequences that reduce absolute incorrect
+// center cells while never dropping global score. Acts as a light BFS-style cleanup
+// when greedy face passes leave a few cells wrong. Keeps mobile responsive (depth <=3).
+static std::vector<Move> residualShortSearch(Cube& work) {
+    std::vector<Move> moves;
+    int n = work.size();
+    if (n < 4 || n > 6) return moves;
+    if (centerScoreGlobal(work) >= 600) return moves;
+
+    auto append = [&](const std::vector<Move>& seq) {
+        for (const auto& m : seq) {
+            work.apply(m);
+            moves.push_back(m);
+        }
+    };
+
+    int maxRounds = (n == 4) ? 24 : (n == 5 ? 18 : 12);
+    int maxDepth = n / 2;
+
+    for (int round = 0; round < maxRounds && incorrectCenters(work) > 0; ++round) {
+        int badBefore = incorrectCenters(work);
+        int globalBefore = centerScoreGlobal(work);
+        int bestDelta = 0;
+        std::vector<Move> bestSeq;
+
+        auto trySeq = [&](const std::vector<Move>& seq) {
+            for (const auto& m : seq) work.apply(m);
+            int badAfter = incorrectCenters(work);
+            int globalAfter = centerScoreGlobal(work);
+            undoSeq(work, seq);
+            int delta = badBefore - badAfter;
+            if (delta > bestDelta && globalAfter >= globalBefore) {
+                bestDelta = delta;
+                bestSeq = seq;
+            }
+        };
+
+        // Generate short candidate sequences (commutators + single outer turns)
+        for (int face = 0; face < 6; ++face) {
+            int opp = opposite(face);
+            int adj[4];
+            adjacentFaces(face, adj[0], adj[1], adj[2], adj[3]);
+            for (int depth = 1; depth < maxDepth; ++depth) {
+                for (int turns : {1, 2, -1}) {
+                    Move ft{face, 0, turns};
+                    Move sl{opp, depth, 1};
+                    trySeq(CenterSolver::commutator(ft, sl));
+                    trySeq(CenterSolver::commutator(sl, ft));
+                    for (int ai = 0; ai < 4; ++ai) {
+                        Move sla{adj[ai], depth, 1};
+                        trySeq(CenterSolver::commutator(ft, sla));
+                        trySeq(CenterSolver::commutator(sla, ft));
+                    }
+                }
+            }
+            // Single outer turn (sometimes unblocks)
+            trySeq({Move{face, 0, 1}});
+            trySeq({Move{face, 0, 2}});
+        }
+
+        if (bestDelta > 0 && !bestSeq.empty()) {
+            append(bestSeq);
+        } else {
+            break; // no progress
+        }
     }
     return moves;
 }
@@ -162,7 +254,12 @@ std::vector<Move> CenterSolver::solve(Cube& work) {
         append(solveFace(work, face));
     }
 
-    // Phase C: one more BatchGroups pass if any residual (rare)
+    // Phase C: residual short-search for n<=6 (light BFS-style cleanup of remaining cells)
+    if (work.size() <= 6 && centerScoreGlobal(work) < 600) {
+        append(residualShortSearch(work));
+    }
+
+    // Phase D: one more BatchGroups + face pass if any residual (rare)
     if (centerScoreGlobal(work) < 600) {
         auto groups = BatchGroups::fromCube(work);
         auto seq = BatchGroups::applyAll(work, groups);
@@ -171,6 +268,8 @@ std::vector<Move> CenterSolver::solve(Cube& work) {
             if (centerScoreFace(work, face) < 100)
                 append(solveFace(work, face));
         }
+        if (work.size() <= 6)
+            append(residualShortSearch(work));
     }
 
     return solution;
