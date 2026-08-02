@@ -9,13 +9,14 @@
  * Even n: choose a consistent color scheme.
  *
  * Uses commutator-style sequences to place center pieces
- * without destroying already-solved centers.
+ * without destroying already-solved centers (never-break global score).
+ * For n<=6 a residual short-search phase cleans remaining incorrect cells
+ * with short sequences that never drop global score (light BFS-style).
  */
 class CenterSolver {
 public:
     static std::vector<Move> solve(Cube& work);
 
-private:
     // Build one face center (all facelets of that face matching center color)
     static std::vector<Move> solveFace(Cube& work, int face);
 
