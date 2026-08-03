@@ -10,8 +10,10 @@
  *
  * Uses commutator-style sequences to place center pieces
  * without destroying already-solved centers (never-break global score).
- * For n<=6 a residual short-search phase cleans remaining incorrect cells
- * with short sequences that never drop global score (light BFS-style).
+ *
+ * For n=4 and n=5 a true depth-limited center-orbit BFS cleans remaining
+ * incorrect cells (exact placement under never-break). For n=6 a residual
+ * short-search phase is used (state space larger).
  */
 class CenterSolver {
 public:

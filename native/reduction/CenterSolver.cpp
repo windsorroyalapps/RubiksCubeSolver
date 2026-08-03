@@ -5,7 +5,9 @@
 #include <algorithm>
 #include <queue>
 #include <set>
+#include <map>
 #include <tuple>
+#include <cstdint>
 
 std::vector<Move> CenterSolver::commutator(const Move& a, const Move& b) {
     Move aInv{a.face, a.depth, a.turns == 2 ? 2 : -a.turns};
@@ -71,6 +73,27 @@ static int incorrectCenters(const Cube& work) {
                 if (work.get(f, r, c) != target) ++bad;
     }
     return bad;
+}
+
+// Pack a compact state key for n<=5 center BFS.
+// For each face we encode the (n-2)*(n-2) center cells as correct/incorrect bits
+// (1 = correct). n=4 → 4 cells/face → 24 bits; n=5 → 9 cells/face → 54 bits
+// (we use uint64_t, enough for n=5).
+static uint64_t packCenterState(const Cube& work) {
+    int n = work.size();
+    uint64_t key = 0;
+    int bit = 0;
+    for (int f = 0; f < 6; ++f) {
+        Color target = static_cast<Color>(f);
+        for (int r = 1; r < n - 1; ++r) {
+            for (int c = 1; c < n - 1; ++c) {
+                if (work.get(f, r, c) == target)
+                    key |= (uint64_t{1} << bit);
+                ++bit;
+            }
+        }
+    }
+    return key;
 }
 
 std::vector<Move> CenterSolver::solveFace(Cube& work, int face) {
@@ -159,13 +182,12 @@ std::vector<Move> CenterSolver::solveFace(Cube& work, int face) {
     return moves;
 }
 
-// Residual short-search for n<=6: try short sequences that reduce absolute incorrect
-// center cells while never dropping global score. Acts as a light BFS-style cleanup
-// when greedy face passes leave a few cells wrong. Keeps mobile responsive (depth <=3).
+// Residual short-search for n==6 (state space larger): try short sequences that
+// reduce absolute incorrect center cells while never dropping global score.
 static std::vector<Move> residualShortSearch(Cube& work) {
     std::vector<Move> moves;
     int n = work.size();
-    if (n < 4 || n > 6) return moves;
+    if (n != 6) return moves;
     if (centerScoreGlobal(work) >= 600) return moves;
 
     auto append = [&](const std::vector<Move>& seq) {
@@ -175,7 +197,7 @@ static std::vector<Move> residualShortSearch(Cube& work) {
         }
     };
 
-    int maxRounds = (n == 4) ? 24 : (n == 5 ? 18 : 12);
+    int maxRounds = 12;
     int maxDepth = n / 2;
 
     for (int round = 0; round < maxRounds && incorrectCenters(work) > 0; ++round) {
@@ -196,7 +218,6 @@ static std::vector<Move> residualShortSearch(Cube& work) {
             }
         };
 
-        // Generate short candidate sequences (commutators + single outer turns)
         for (int face = 0; face < 6; ++face) {
             int opp = opposite(face);
             int adj[4];
@@ -214,7 +235,6 @@ static std::vector<Move> residualShortSearch(Cube& work) {
                     }
                 }
             }
-            // Single outer turn (sometimes unblocks)
             trySeq({Move{face, 0, 1}});
             trySeq({Move{face, 0, 2}});
         }
@@ -222,10 +242,146 @@ static std::vector<Move> residualShortSearch(Cube& work) {
         if (bestDelta > 0 && !bestSeq.empty()) {
             append(bestSeq);
         } else {
-            break; // no progress
+            break;
         }
     }
     return moves;
+}
+
+// True depth-limited BFS on center state for n=4 and n=5.
+// Explores sequences of outer turns + key commutators; never accepts a node
+// whose global score drops below the start. Returns the first path that reaches
+// 0 incorrect centers (or the best partial improvement if none found within budget).
+static std::vector<Move> centerOrbitBfs(Cube& work) {
+    std::vector<Move> result;
+    int n = work.size();
+    if (n < 4 || n > 5) return result;
+    if (incorrectCenters(work) == 0) return result;
+
+    const int maxDepth = (n == 4) ? 5 : 4;   // sequence length budget
+    const int maxNodes = (n == 4) ? 8000 : 12000;
+
+    // Generators: all outer turns + a curated set of center-preserving commutators
+    std::vector<std::vector<Move>> gens;
+    for (int face = 0; face < 6; ++face) {
+        for (int t : {1, 2, -1})
+            gens.push_back({Move{face, 0, t}});
+    }
+    int maxSlice = n / 2;
+    for (int face = 0; face < 6; ++face) {
+        int opp = opposite(face);
+        int adj[4];
+        adjacentFaces(face, adj[0], adj[1], adj[2], adj[3]);
+        for (int depth = 1; depth < maxSlice; ++depth) {
+            for (int turns : {1, -1}) {
+                Move ft{face, 0, turns};
+                Move sl{opp, depth, 1};
+                gens.push_back(CenterSolver::commutator(ft, sl));
+                gens.push_back(CenterSolver::commutator(sl, ft));
+                for (int ai = 0; ai < 2; ++ai) { // two adjacents enough for coverage
+                    Move sla{adj[ai], depth, 1};
+                    gens.push_back(CenterSolver::commutator(ft, sla));
+                }
+            }
+        }
+    }
+
+    struct Node {
+        uint64_t key;
+        int bad;
+        int global;
+        int depth;
+        int parent;
+        int genIdx; // which generator produced this node from parent
+    };
+
+    std::vector<Node> nodes;
+    nodes.reserve(maxNodes);
+    std::map<uint64_t, int> visited; // key -> node index
+
+    uint64_t startKey = packCenterState(work);
+    int startBad = incorrectCenters(work);
+    int startGlobal = centerScoreGlobal(work);
+    nodes.push_back({startKey, startBad, startGlobal, 0, -1, -1});
+    visited[startKey] = 0;
+
+    int bestNode = 0;
+    int bestBad = startBad;
+
+    // Work cube for applying generator sequences from root
+    // We rebuild path each time (short depth) to keep memory tiny.
+    auto applyPath = [&](Cube& c, int nodeIdx) {
+        std::vector<int> path;
+        for (int i = nodeIdx; i > 0; i = nodes[i].parent)
+            path.push_back(nodes[i].genIdx);
+        std::reverse(path.begin(), path.end());
+        for (int g : path) {
+            for (const auto& m : gens[g])
+                c.apply(m);
+        }
+    };
+
+    int head = 0;
+    while (head < (int)nodes.size() && (int)nodes.size() < maxNodes) {
+        const Node& cur = nodes[head];
+        if (cur.depth >= maxDepth) {
+            ++head;
+            continue;
+        }
+        if (cur.bad == 0) {
+            bestNode = head;
+            bestBad = 0;
+            break;
+        }
+
+        for (int g = 0; g < (int)gens.size(); ++g) {
+            Cube trial = work;
+            applyPath(trial, head);
+            for (const auto& m : gens[g])
+                trial.apply(m);
+
+            int gScore = centerScoreGlobal(trial);
+            if (gScore < startGlobal) continue; // never-break
+
+            uint64_t key = packCenterState(trial);
+            if (visited.count(key)) continue;
+
+            int bad = incorrectCenters(trial);
+            int idx = (int)nodes.size();
+            nodes.push_back({key, bad, gScore, cur.depth + 1, head, g});
+            visited[key] = idx;
+
+            if (bad < bestBad) {
+                bestBad = bad;
+                bestNode = idx;
+            }
+            if (bad == 0) {
+                bestNode = idx;
+                bestBad = 0;
+                head = (int)nodes.size(); // force exit
+                break;
+            }
+            if ((int)nodes.size() >= maxNodes) break;
+        }
+        ++head;
+    }
+
+    if (bestNode == 0 || bestBad >= startBad)
+        return result; // no improvement
+
+    // Reconstruct path from bestNode
+    std::vector<int> genPath;
+    for (int i = bestNode; i > 0; i = nodes[i].parent)
+        genPath.push_back(nodes[i].genIdx);
+    std::reverse(genPath.begin(), genPath.end());
+
+    for (int g : genPath) {
+        for (const auto& m : gens[g]) {
+            work.apply(m);
+            result.push_back(m);
+        }
+    }
+    return result;
 }
 
 std::vector<Move> CenterSolver::solve(Cube& work) {
@@ -243,19 +399,19 @@ std::vector<Move> CenterSolver::solve(Cube& work) {
         auto seq = BatchGroups::applyAll(work, groups);
         if (seq.empty()) break;
         append(seq);
-        // Early exit if centers already perfect
         if (centerScoreGlobal(work) >= 600) return solution;
     }
 
     // Phase B: score-guided face cleanup with never-break global guard
-    // Order: opposite pairs first (U/D then F/B then L/R) so mid-slice conflicts reduce
     const int order[] = {U, D, F, B, L, R};
     for (int face : order) {
         append(solveFace(work, face));
     }
 
-    // Phase C: residual short-search for n<=6 (light BFS-style cleanup of remaining cells)
-    if (work.size() <= 6 && centerScoreGlobal(work) < 600) {
+    // Phase C: full center-orbit BFS for n=4/5; residual short-search for n=6
+    if (work.size() <= 5 && centerScoreGlobal(work) < 600) {
+        append(centerOrbitBfs(work));
+    } else if (work.size() == 6 && centerScoreGlobal(work) < 600) {
         append(residualShortSearch(work));
     }
 
@@ -268,7 +424,9 @@ std::vector<Move> CenterSolver::solve(Cube& work) {
             if (centerScoreFace(work, face) < 100)
                 append(solveFace(work, face));
         }
-        if (work.size() <= 6)
+        if (work.size() <= 5)
+            append(centerOrbitBfs(work));
+        else if (work.size() == 6)
             append(residualShortSearch(work));
     }
 
