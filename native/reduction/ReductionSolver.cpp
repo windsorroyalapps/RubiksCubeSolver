@@ -4,6 +4,7 @@
 #include "ParityHandler.h"
 #include "BatchSolver.h"
 #include "BoundHarness.h"
+#include "ReducedSearch.h"
 #include "../cfop/CFOPSolver.h"
 #include "../cfop/Kociemba.h"
 
@@ -45,6 +46,15 @@ std::vector<Move> ReductionSolver::solve(const Cube& cube) {
 
     if (work.size() % 2 == 0) {
         append(ParityHandler::fix(work), &stages.parity);
+    }
+
+    // Reduced-coordinate search for 4x4 / 5x5 (scaffold → tighten constructive)
+    if (work.size() == 4 || work.size() == 5) {
+        auto improved = ReducedSearch::improve(work);
+        if (!improved.empty()) {
+            // Count under edges for now; later split stage in BoundHarness
+            append(improved, &stages.edges);
+        }
     }
 
     append(solveAs3x3(work), &stages.reduce3x3);
