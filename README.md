@@ -30,7 +30,8 @@ MoveTables · BFS pruning · coord-space IDA* · `GodsAlgorithm`
 ```text
 ClusterScheduler → BatchGroups → Centers (never-break + orbit-BFS n≤5 / residual n=6)
   → Edges (Yau buffer + solid-set never-touch) → Parity (full multi-depth wing, even n)
-  → 3×3 → BatchSolver::optimize → BoundHarness report (SSTM + OBTM dual metrics)
+  → ReducedSearch (4×4/5×5 IDA* scaffold) → 3×3 → BatchSolver::optimize
+  → BoundHarness report (SSTM + OBTM dual metrics)
 ```
 
 Demaine insight: batch shared slice moves toward **O(n² / log n)** spirit.  
@@ -115,17 +116,18 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 - [x] **CI APK production** (GitHub Actions builds + uploads debug APK artifact on every push)
 - [x] **Center residual short-search** (n=6 light cleanup)
 - [x] **Full center-orbit BFS** (n≤5 exact residual placement under never-break)
+- [x] **ReducedSearch scaffold** (4×4/5×5 depth-limited IDA* + residual heuristic, wired into ReductionSolver)
 - [ ] Perfect offline 3×3 pruning DBs
-- [ ] Reduced-state IDA* scaffolding for 4×4 / 5×5 constructive tighten
+- [ ] Full reduced coordinates + bidirectional search (tighten toward OBTM ≤54)
 - [ ] Production signed APK (release keystore + Material You polish)
 
 ---
 
 ## Next steps / approaches to try next time (current automation work — 2026-08-05)
 
-1. **4×4 / 5×5 reduced-coordinate search** – highest leverage now that centers + edges + parity are solid. Add reduced-coordinate IDA* / bidirectional search on the post-reduction state to push constructive lengths toward community OBTM ceilings (~40–54 for 4×4).
+1. **Full reduced coordinates + bidirectional** – replace residual heuristic with packed edge/center residual coordinates; add bidirectional IDA* so 4×4 constructive lengths collapse toward community OBTM ≤54. Highest leverage remaining.
 2. **3×3 dense DBs** – full-index BFS pruning tables so phase-1 routinely ≤12 and totals hit the proven 20 ceiling more often.
-3. **OBTM stage breakdown** – per-stage OBTM in BoundHarness so we can see which phase (centers vs edges vs parity vs 3×3) is furthest from the 54-move 4×4 ceiling.
+3. **OBTM stage breakdown** – per-stage OBTM in BoundHarness so we can see which phase (centers vs edges vs parity vs reduced vs 3×3) is furthest from the 54-move 4×4 ceiling.
 4. **Production signed APK** – release keystore secret in CI, Material You polish, on-device size selector to 20×20; verify APK artifact contains native .so.
 5. **Asymptotic fit** – re-calibrate BoundHarness scale if new community 4×4/5×5 numbers appear; keep U(n) as hard constructive guarantee.
 6. **Gradle wrapper binary** – commit full `gradlew` + jar so CI and local builds are identical without system gradle.
