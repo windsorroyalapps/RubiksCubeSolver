@@ -42,31 +42,20 @@ static void applyAll(Cube& work, const std::vector<Move>& moves) {
 bool ParityHandler::hasOLLParity(const Cube& c) {
     if (c.size() < 4 || (c.size() % 2) != 0) return false;
 
-    // After reduction, OLL parity = odd number of flipped wing-pairs on last layer.
-    // Sample multiple wing depths (not only mid) so n>4 is covered better.
+    // Full wing parity: sample ALL depths 1 .. n-2 on the four U-edges.
+    // OLL parity = odd number of flipped wing-pairs on last layer.
     int n = c.size();
     int bad = 0;
 
     auto checkEdge = [&](int faceU_row, int faceU_col, int sideFace, int sideRow, int sideCol) {
         Color u = c.get(U, faceU_row, faceU_col);
         Color s = c.get(sideFace, sideRow, sideCol);
-        // Oriented if U/D color sits on U face, or side is U/D (rare after centers)
         bool oriented = (u == Color::U || u == Color::D) ||
                         (s == Color::U || s == Color::D);
         if (!oriented) ++bad;
     };
 
-    // Depths to sample: mid always; also 1 and n-2 when they differ
-    int depths[3];
-    int nd = 0;
-    depths[nd++] = n / 2;
-    if (n > 4) {
-        depths[nd++] = 1;
-        depths[nd++] = n - 2;
-    }
-
-    for (int i = 0; i < nd; ++i) {
-        int d = depths[i];
+    for (int d = 1; d <= n - 2; ++d) {
         // UF
         checkEdge(n - 1, d, F, 0, d);
         // UR
@@ -77,29 +66,20 @@ bool ParityHandler::hasOLLParity(const Cube& c) {
         checkEdge(d, 0, L, 0, d);
     }
 
-    // OLL parity presents as a single "flipped" edge in 3x3 terms => odd count
+    // Odd total flipped wings ⇒ OLL parity relative to 3x3
     return (bad % 2) == 1;
 }
 
 bool ParityHandler::hasPLLParity(const Cube& c) {
     if (c.size() < 4 || (c.size() % 2) != 0) return false;
 
+    // Full wing permutation parity: sample ALL depths 1..n-2 side colors.
     // PLL parity = odd permutation of the 12 dedges (two edges swapped).
-    // Multi-depth side-color match count for robustness on n>4.
     int n = c.size();
     int matches = 0;
     int samples = 0;
 
-    int depths[3];
-    int nd = 0;
-    depths[nd++] = n / 2;
-    if (n > 4) {
-        depths[nd++] = 1;
-        depths[nd++] = n - 2;
-    }
-
-    for (int i = 0; i < nd; ++i) {
-        int d = depths[i];
+    for (int d = 1; d <= n - 2; ++d) {
         if (c.get(F, 0, d) == Color::F) ++matches;
         if (c.get(R, 0, d) == Color::R) ++matches;
         if (c.get(B, 0, d) == Color::B) ++matches;
@@ -107,12 +87,10 @@ bool ParityHandler::hasPLLParity(const Cube& c) {
         samples += 4;
     }
 
-    // Normalize: expected full match = samples. Odd residual suggests parity.
     int residual = samples - matches;
-    // Classic mid-only heuristic: matches == 1 or 3 on 4 samples.
-    // For multi-sample, treat odd residual in the low band as parity-like.
-    if (nd == 1)
-        return matches == 1 || matches == 3;
+    // Classic 4x4: residual 1 or 3 on 4 samples. General: odd residual in band.
+    if (n == 4)
+        return residual == 1 || residual == 3;
     return (residual % 2 == 1) && residual > 0 && residual < samples;
 }
 

@@ -1,7 +1,7 @@
 # Reduction Engine (nxn) — Practical God's Algorithm
 
 ```text
-Centers → Edges → [Parity if even] → 3x3 → BatchSolver::optimize
+Centers → Edges (buffer + never-touch) → [Parity if even] → 3x3 → BatchSolver::optimize
 ```
 
 ## Demaine connection
@@ -16,13 +16,15 @@ See [docs/DEMAINE_BATCHING.md](../../docs/DEMAINE_BATCHING.md).
 
 | File | Role |
 |------|------|
-| CenterSolver | Multi-axis center commutators |
-| EdgePairing | Freeslice pairing + skip |
-| ParityHandler | Even-n OLL/PLL parity |
+| CenterSolver | Multi-axis center commutators + orbit-BFS (n≤5) |
+| EdgePairing | Freeslice + **Yau-style buffer / solid-set protect** |
+| ParityHandler | Even-n OLL/PLL + **full multi-depth wing parity** |
 | BatchSolver | Shared-move collapse (n² → n²/log n spirit) |
+| BoundHarness | U(n) + dual SSTM/OBTM |
 | ReductionSolver | Orchestrator |
 
 ## Notes
 
 - Works for 4×4 … up to device memory
 - Exact g(n) still open; asymptotic Θ(n²/log n)
+- Constructive algorithm complete for **any n > 3**

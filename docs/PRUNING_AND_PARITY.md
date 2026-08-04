@@ -29,12 +29,12 @@ Only for **even n** (4×4, 6×6, …).
 
 ### OLL parity
 - **Meaning:** One dedge appears flipped relative to 3×3.
-- **Detect:** Odd count of misoriented outer U-edges (U/D color not on U/D).
+- **Detect:** Odd count of misoriented wings across **all depths 1..n-2** on the four U-edges (full wing orientation parity).
 - **Alg:** `2R2 B2 U2 2L U2 2R' U2 2R U2 F2 2R F2 2L' B2 2R2`
 
 ### PLL parity
 - **Meaning:** Odd permutation of dedges (two edges swapped).
-- **Detect:** Exactly 1 or 3 of the four U-edge side colors already match their centers.
+- **Detect:** Side-color match residual over **all depths 1..n-2**; odd residual in band (classic 1/3 for n=4).
 - **Alg:** `2R2 F2 U2 2R2 R2 U2 F2 2R2`
 
 Order: fix OLL parity first, then PLL parity, then run 3×3 stage.
@@ -44,21 +44,21 @@ Order: fix OLL parity first, then PLL parity, then run 3×3 stage.
 ## 3. Tighter center / edge heuristics
 
 ### Centers (`CenterSolver.cpp`)
-- `centerScore(face)` = % of inner facelets already correct.
-- For each attempt, **simulate** commutators at every inner depth, pick the depth with best score gain, then commit.
-- Stop when score ≥ 95 or attempts exhausted.
+- Global never-break multi-face score + protect 100% faces.
+- Full center-orbit BFS for n≤5; residual short-search for n=6.
 - Order: U, D, F, B, L, R.
 
-### Edges (`EdgePairing.cpp`)
-- `pairedWings(edge)` estimates whether that dedge is already matched.
-- **Skip** fully paired edges (no wasted cycles).
-- Multi-depth freeslice cycles only while the edge still needs work.
-- Two global passes over all 12 edges.
+### Edges (`EdgePairing.cpp`) — **Yau-style buffer tracking**
+- Explicit buffer edge = UF (index 0).
+- `pairedWings(edge)` real facelet count; solid set (`bitset<12>`) never touched once solid.
+- Priority order: non-buffer edges first, buffer last; cross edges preferred.
+- Four progressive passes; solid set refreshed and protected mid-pass.
+- Skip fully paired edges (no wasted cycles, never-break guarantee).
 
 ---
 
 ## Pipeline (n ≥ 4)
 
 ```text
-CenterSolver → EdgePairing → [ParityHandler if even n] → Kociemba/CFOP
+CenterSolver → EdgePairing (buffer + solid protect) → [ParityHandler if even n] → Kociemba/CFOP → BatchSolver
 ```
