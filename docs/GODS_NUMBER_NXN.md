@@ -66,9 +66,9 @@ These are far from optimal but are explicit, implementable algorithms that **alw
 1. **Centers** – gather all center facelets of each colour into solid (n-2)×(n-2) blocks  
    (ClusterScheduler → BatchGroups shared-slice commutators + score-driven cleanup with **never-break** global multi-face score + **full center-orbit BFS for n≤5** / residual short-search for n=6)
 2. **Edge pairing** – match the (n-2) wings belonging to each of the 12 edges  
-   (freeslice / multi-pass + **real wing-count** skip so solid edges stay solid)
+   (**Yau-style buffer tracking**: explicit UF buffer, solid-set never-touch, priority order, 4-pass freeslice + real wing-count)
 3. **Parity** (even n only) – fix OLL parity ("flipped" dedge) then PLL parity (odd edge permutation)  
-   (**multi-depth** sampling for n>4)
+   (**full multi-depth wing** orientation + permutation over all depths 1..n-2)
 4. **3×3 stage** – treat the reduced cube as a normal 3×3 and run multi-probe Kociemba (or CFOP fallback)
 5. **BatchSolver::optimize** – windowed collapse of identical (face,depth,turns) moves (log-factor spirit)
 6. **BoundHarness** – report stage lengths vs U(n) and vs ~n²/log n (scale ≈ 3.8) **+ dual OBTM/SSTM counts**
@@ -81,8 +81,8 @@ It realises a true algorithm that solves every position and approaches the asymp
 | Component | File(s) | Status |
 |-----------|---------|--------|
 | Center commutators + batch groups | `CenterSolver.*` + `BatchGroups.*` + `ClusterScheduler.*` | Working + never-break global score + **orbit-BFS n≤5** + residual n=6 |
-| Edge freeslice | `EdgePairing.*` | Working multi-pass + wing-count |
-| Even-n parity | `ParityHandler.*` | OLL + PLL algs + multi-depth detectors |
+| Edge freeslice + buffer | `EdgePairing.*` | Working multi-pass + wing-count + **Yau buffer + solid-set protect** |
+| Even-n parity | `ParityHandler.*` | OLL + PLL algs + **full multi-depth wing detectors** |
 | Orchestrator | `ReductionSolver.*` | Full pipeline |
 | 3×3 engine | `Kociemba` + `GodsAlgorithm` + `CFOPSolver` | Phase-1 + IDA* path + CFOP fallback |
 | Bound instrumentation | `BoundHarness.*` | U(n) table + stage report + asymptotic **+ OBTM/SSTM** |
@@ -110,18 +110,24 @@ It realises a true algorithm that solves every position and approaches the asymp
 - Highest-leverage step for tightening constructive lengths on 4×4/5×5 toward community OBTM ceilings (~54 for 4×4).
 - Exact g(n) for n≥4 still open. Constructive algorithm remains complete and universal for **any n > 3**.
 
-## Next steps (automation roadmap — current work 2026-08-04)
+## Progress note (automation session 2026-08-05)
 
-1. **Edge buffer tracking** – explicit buffer wing + never-touch already-paired orbits (Yau-style cross for large n). Highest leverage after center-orbit BFS.
-2. **Full wing parity** – orientation + permutation parity from the complete set of (n-2) wings (drop residual proxy).
-3. **4×4 / 5×5 reduced-coordinate search** – once centers+edges solid, add reduced-coordinate IDA* / bidirectional search to push constructive U(n) down toward community estimates (~40–54 OBTM for 4×4).
-4. **3×3 dense DBs** – full-index BFS pruning so phase-1 routinely ≤12 and totals hit the 20 ceiling.
-5. **Production signed APK** – signed release, Material You polish, on-device size selector to 20×20; wire CI release when keystore secret present.
-6. **Asymptotic fit** – re-calibrate BoundHarness scale if new community 4×4/5×5 numbers appear; keep U(n) as hard constructive guarantee.
-7. **OBTM stage breakdown** – optional per-stage OBTM so we can see which phase is furthest from the 54-move 4×4 ceiling.
-8. **Gradle wrapper binary** – commit full `gradlew` + jar so CI and local builds are identical without system gradle.
-9. **APK artifact verification loop** – after each push, confirm CI uploaded debug APK, size/check native .so presence, iterate until production-ready signed path exists.
-10. **Center BFS node-budget tuning** – raise maxNodes / maxDepth on desktop builds; keep mobile-safe defaults; optionally expose as JNI param.
+- **Edge buffer tracking (Yau-style) shipped**: explicit buffer edge = UF, solid-set (`bitset<12>`) never-touch once `pairedWings == n-2`, priority order (non-buffer first, buffer last), 4 progressive passes with mid-pass solid refresh.
+- **Full wing parity shipped**: OLL orientation + PLL side-match now sample **all depths 1..n-2** (complete (n-2) wings) instead of residual proxy samples. Classic 4×4 residual 1/3 still special-cased.
+- Both items were the top two items on the previous roadmap. Constructive algorithm for **any n > 3** is tighter and more robust; exact g(n) remains open.
+
+## Next steps (automation roadmap — current work 2026-08-05)
+
+1. **4×4 / 5×5 reduced-coordinate search** – reduced-coordinate IDA* / bidirectional search on post-reduction state to push constructive U(n) toward community OBTM ceilings (~40–54 for 4×4).
+2. **3×3 dense DBs** – full-index BFS pruning so phase-1 routinely ≤12 and totals hit the 20 ceiling.
+3. **OBTM stage breakdown** – optional per-stage OBTM so we can see which phase is furthest from the 54-move 4×4 ceiling.
+4. **Production signed APK** – signed release, Material You polish, on-device size selector to 20×20; wire CI release when keystore secret present.
+5. **Asymptotic fit** – re-calibrate BoundHarness scale if new community numbers appear; keep U(n) as hard constructive guarantee.
+6. **Gradle wrapper binary** – commit full `gradlew` + jar.
+7. **Center BFS node-budget tuning** – raise maxNodes / maxDepth on desktop; mobile-safe defaults; optional JNI param.
+8. **Edge pairing quality metrics** – log pairedWings / solid count into BoundHarness.
+9. **Parity alg variants** – alternate OLL/PLL sequences, pick shortest that clears full-depth detectors.
+10. **APK artifact verification loop** – confirm CI APK + native .so after each push.
 
 ## References
 
@@ -131,4 +137,4 @@ It realises a true algorithm that solves every position and approaches the asymp
 - Community upper-bound derivations (92n² series)
 
 ---
-*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Next commit: edge buffer tracking + tighter constructive for 4×4/5×5.*
+*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Next commit: reduced-coordinate IDA* scaffolding for 4×4/5×5.*

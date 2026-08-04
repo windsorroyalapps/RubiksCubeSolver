@@ -29,8 +29,8 @@ MoveTables · BFS pruning · coord-space IDA* · `GodsAlgorithm`
 
 ```text
 ClusterScheduler → BatchGroups → Centers (never-break + orbit-BFS n≤5 / residual n=6)
-  → Edges (wing-count) → Parity (multi-depth, even n) → 3×3 → BatchSolver::optimize
-  → BoundHarness report (SSTM + OBTM dual metrics)
+  → Edges (Yau buffer + solid-set never-touch) → Parity (full multi-depth wing, even n)
+  → 3×3 → BatchSolver::optimize → BoundHarness report (SSTM + OBTM dual metrics)
 ```
 
 Demaine insight: batch shared slice moves toward **O(n² / log n)** spirit.  
@@ -95,6 +95,7 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 | [CLUSTER_SCHEDULING.md](docs/CLUSTER_SCHEDULING.md) | Shared-move schedule |
 | [BOUND_HARNESS.md](docs/BOUND_HARNESS.md) | U(n) instrumentation + OBTM/SSTM |
 | [JNI_WRAPPER.md](docs/JNI_WRAPPER.md) | Kotlin ↔ C++ |
+| [PRUNING_AND_PARITY.md](docs/PRUNING_AND_PARITY.md) | Pruning tables + full wing parity + edge buffer |
 
 ---
 
@@ -108,31 +109,30 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 - [x] JNI: solve + boundReport + constructiveUpper
 - [x] Documented constructive algorithm + Θ(n²/log n) + best-known 4×4 OBTM ≤54
 - [x] **Centers never-break** (global multi-face score + protect 100% faces)
-- [x] **Edge wing-count** (real facelet pairedWings, 3-pass freeslice)
-- [x] **Parity multi-depth** (even-n OLL/PLL proxy samples 1, mid, n-2)
+- [x] **Edge wing-count** (real facelet pairedWings)
+- [x] **Edge buffer tracking** (Yau-style explicit UF buffer + solid-set never-touch, 4-pass, priority order)
+- [x] **Full wing parity** (OLL orientation + PLL side-match over all depths 1..n-2)
 - [x] **CI APK production** (GitHub Actions builds + uploads debug APK artifact on every push)
 - [x] **Center residual short-search** (n=6 light cleanup)
 - [x] **Full center-orbit BFS** (n≤5 exact residual placement under never-break)
 - [ ] Perfect offline 3×3 pruning DBs
-- [ ] Edge buffer tracking (Yau-style never-touch paired orbits)
-- [ ] Full wing parity (orientation + permutation from complete (n-2) wings)
 - [ ] Reduced-state IDA* scaffolding for 4×4 / 5×5 constructive tighten
 - [ ] Production signed APK (release keystore + Material You polish)
 
 ---
 
-## Next steps / approaches to try next time (current automation work — 2026-08-04)
+## Next steps / approaches to try next time (current automation work — 2026-08-05)
 
-1. **Edge buffer tracking** – explicit buffer wing + never-touch already-paired orbits (Yau-style cross for large n). Highest leverage after center-orbit BFS.
-2. **Full wing parity** – orientation + permutation parity from the complete set of (n-2) wings (drop residual proxy).
-3. **4×4 / 5×5 reduced-coordinate search** – once centers+edges solid, add reduced-coordinate IDA* / bidirectional search to push constructive U(n) down toward community estimates (~40–54 OBTM for 4×4).
-4. **3×3 dense DBs** – full-index BFS pruning so phase-1 routinely ≤12 and totals hit the 20 ceiling.
-5. **Production signed APK** – signed release, Material You polish, on-device size selector to 20×20 (higher offline); wire CI to produce release APK when keystore secret present.
-6. **Asymptotic fit** – re-calibrate BoundHarness scale if new community 4×4/5×5 numbers appear; keep U(n) as hard constructive guarantee.
-7. **OBTM stage breakdown** – optional per-stage OBTM so we can see which phase is furthest from the 54-move 4×4 ceiling.
-8. **Gradle wrapper binary** – commit full `gradlew` + jar so CI and local builds are identical without system gradle.
-9. **APK artifact verification loop** – after each push, confirm CI uploaded debug APK, size/check native .so presence, iterate until production-ready signed path exists.
-10. **Center BFS node-budget tuning** – raise maxNodes / maxDepth on desktop builds; keep mobile-safe defaults; optionally expose as JNI param.
+1. **4×4 / 5×5 reduced-coordinate search** – highest leverage now that centers + edges + parity are solid. Add reduced-coordinate IDA* / bidirectional search on the post-reduction state to push constructive lengths toward community OBTM ceilings (~40–54 for 4×4).
+2. **3×3 dense DBs** – full-index BFS pruning tables so phase-1 routinely ≤12 and totals hit the proven 20 ceiling more often.
+3. **OBTM stage breakdown** – per-stage OBTM in BoundHarness so we can see which phase (centers vs edges vs parity vs 3×3) is furthest from the 54-move 4×4 ceiling.
+4. **Production signed APK** – release keystore secret in CI, Material You polish, on-device size selector to 20×20; verify APK artifact contains native .so.
+5. **Asymptotic fit** – re-calibrate BoundHarness scale if new community 4×4/5×5 numbers appear; keep U(n) as hard constructive guarantee.
+6. **Gradle wrapper binary** – commit full `gradlew` + jar so CI and local builds are identical without system gradle.
+7. **Center BFS node-budget tuning** – raise maxNodes / maxDepth on desktop builds; keep mobile-safe defaults; optionally expose as JNI param.
+8. **Edge pairing quality metrics** – log pairedWings progress + solid count into BoundHarness for diagnostics.
+9. **Parity alg variants** – try alternate OLL/PLL parity sequences and pick shortest that clears the full-depth detectors.
+10. **APK artifact verification loop** – after each push, confirm CI uploaded debug APK, size/check native .so presence, iterate until production-ready signed path exists.
 
 ---
 
