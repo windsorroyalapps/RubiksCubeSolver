@@ -69,9 +69,10 @@ These are far from optimal but are explicit, implementable algorithms that **alw
    (**Yau-style buffer tracking**: explicit UF buffer, solid-set never-touch, priority order, 4-pass freeslice + real wing-count)
 3. **Parity** (even n only) – fix OLL parity ("flipped" dedge) then PLL parity (odd edge permutation)  
    (**full multi-depth wing** orientation + permutation over all depths 1..n-2)
-4. **3×3 stage** – treat the reduced cube as a normal 3×3 and run multi-probe Kociemba (or CFOP fallback)
-5. **BatchSolver::optimize** – windowed collapse of identical (face,depth,turns) moves (log-factor spirit)
-6. **BoundHarness** – report stage lengths vs U(n) and vs ~n²/log n (scale ≈ 3.8) **+ dual OBTM/SSTM counts**
+4. **ReducedSearch** (4×4/5×5) – depth-limited IDA* on residual centers+wings before classic 3×3
+5. **3×3 stage** – treat the reduced cube as a normal 3×3 and run multi-probe Kociemba (or CFOP fallback)
+6. **BatchSolver::optimize** – windowed collapse of identical (face,depth,turns) moves (log-factor spirit)
+7. **BoundHarness** – report stage lengths vs U(n) and vs ~n²/log n (scale ≈ 3.8) **+ dual OBTM/SSTM counts**
 
 This pipeline is complete for every n ≥ 4 (software limit ~ memory for the facelet array).  
 It realises a true algorithm that solves every position and approaches the asymptotic order via batching.
@@ -83,6 +84,7 @@ It realises a true algorithm that solves every position and approaches the asymp
 | Center commutators + batch groups | `CenterSolver.*` + `BatchGroups.*` + `ClusterScheduler.*` | Working + never-break global score + **orbit-BFS n≤5** + residual n=6 |
 | Edge freeslice + buffer | `EdgePairing.*` | Working multi-pass + wing-count + **Yau buffer + solid-set protect** |
 | Even-n parity | `ParityHandler.*` | OLL + PLL algs + **full multi-depth wing detectors** |
+| Reduced residual search | `ReducedSearch.*` | **Packed 4×4 center bitmask + stronger wing residual + IDA*** |
 | Orchestrator | `ReductionSolver.*` | Full pipeline |
 | 3×3 engine | `Kociemba` + `GodsAlgorithm` + `CFOPSolver` | Phase-1 + IDA* path + CFOP fallback |
 | Bound instrumentation | `BoundHarness.*` | U(n) table + stage report + asymptotic **+ OBTM/SSTM** |
@@ -116,9 +118,15 @@ It realises a true algorithm that solves every position and approaches the asymp
 - **Full wing parity shipped**: OLL orientation + PLL side-match now sample **all depths 1..n-2** (complete (n-2) wings) instead of residual proxy samples. Classic 4×4 residual 1/3 still special-cased.
 - Both items were the top two items on the previous roadmap. Constructive algorithm for **any n > 3** is tighter and more robust; exact g(n) remains open.
 
-## Next steps (automation roadmap — current work 2026-08-05)
+## Progress note (automation session 2026-08-06)
 
-1. **4×4 / 5×5 reduced-coordinate search** – reduced-coordinate IDA* / bidirectional search on post-reduction state to push constructive U(n) toward community OBTM ceilings (~40–54 for 4×4).
+- **ReducedSearch packing shipped**: 4×4 center residual now packed as `uint16_t` bitmask (16 inner cells, popcount heuristic). Stronger multi-wing residual (12 mid-edge samples + extra depth samples for n≥5). Default maxDepth raised; 5×5 still capped for mobile safety.
+- This is the next step on the reduced-coordinate path. Full residual coordinate tables + bidirectional IDA* remain the highest-leverage items to collapse constructive lengths toward community OBTM ≤54.
+- Exact g(n) for n≥4 still open. Universal constructive algorithm for **any n > 3** continues to improve.
+
+## Next steps (automation roadmap — current work 2026-08-06)
+
+1. **Full residual coordinates + bidirectional IDA*** – pack complete edge/center residual state into compact integers; add bidirectional search so 4×4 constructive lengths collapse toward community OBTM ≤54. **Highest leverage remaining.**
 2. **3×3 dense DBs** – full-index BFS pruning so phase-1 routinely ≤12 and totals hit the 20 ceiling.
 3. **OBTM stage breakdown** – optional per-stage OBTM so we can see which phase is furthest from the 54-move 4×4 ceiling.
 4. **Production signed APK** – signed release, Material You polish, on-device size selector to 20×20; wire CI release when keystore secret present.
@@ -137,4 +145,4 @@ It realises a true algorithm that solves every position and approaches the asymp
 - Community upper-bound derivations (92n² series)
 
 ---
-*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Next commit: reduced-coordinate IDA* scaffolding for 4×4/5×5.*
+*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Next commit: bidirectional residual coords for 4×4/5×5.*
