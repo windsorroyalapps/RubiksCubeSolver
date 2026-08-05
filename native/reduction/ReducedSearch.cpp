@@ -3,51 +3,104 @@
 #include <algorithm>
 #include <climits>
 
-// Lightweight residual score: count incorrect center cells + unpaired wings.
-// Admissible enough for scaffold; full packing later.
+// Pack the 16 inner center facelets of a 4x4 into a 16-bit correctness mask.
+// Bit set = incorrect relative to target face colour. Admissible residual.
+uint16_t ReducedSearch::pack4x4Centers(const Cube& c) {
+    if (c.size() != 4) return 0;
+    uint16_t mask = 0;
+    int bit = 0;
+    for (int f = 0; f < 6; ++f) {
+        Color target = static_cast<Color>(f);
+        // Inner 2x2: rows/cols 1..2
+        for (int r = 1; r <= 2; ++r) {
+            for (int col = 1; col <= 2; ++col) {
+                if (c.get(f, r, col) != target) {
+                    mask |= static_cast<uint16_t>(1u << bit);
+                }
+                ++bit;
+            }
+        }
+    }
+    return mask;
+}
+
+int ReducedSearch::wingResidual(const Cube& c) {
+    int n = c.size();
+    if (n < 4) return 0;
+    int bad = 0;
+    int mid = n / 2;
+
+    // For each of the 12 edges, sample the (n-2) wing depths and score mismatches.
+    // Lightweight: check mid-layer wing + one extra depth when n>4.
+    auto wingOk = [&](int f1, int r1, int c1, int f2, int r2, int c2, Color a, Color b) {
+        Color x = c.get(f1, r1, c1);
+        Color y = c.get(f2, r2, c2);
+        return (x == a && y == b) || (x == b && y == a);
+    };
+
+    // UF UR UB UL DF DR DB DL FR FL BR BL
+    struct EdgeSample {
+        int f1, r1, c1, f2, r2, c2;
+        Color a, b;
+    };
+    EdgeSample edges[] = {
+        {U, n-1, mid, F, 0, mid, Color::U, Color::F},
+        {U, mid, n-1, R, 0, mid, Color::U, Color::R},
+        {U, 0, mid, B, 0, mid, Color::U, Color::B},
+        {U, mid, 0, L, 0, mid, Color::U, Color::L},
+        {D, 0, mid, F, n-1, mid, Color::D, Color::F},
+        {D, mid, n-1, R, n-1, mid, Color::D, Color::R},
+        {D, n-1, mid, B, n-1, mid, Color::D, Color::B},
+        {D, mid, 0, L, n-1, mid, Color::D, Color::L},
+        {F, mid, n-1, R, mid, 0, Color::F, Color::R},
+        {F, mid, 0, L, mid, n-1, Color::F, Color::L},
+        {B, mid, 0, R, mid, n-1, Color::B, Color::R},
+        {B, mid, n-1, L, mid, 0, Color::B, Color::L},
+    };
+    for (const auto& e : edges) {
+        if (!wingOk(e.f1, e.r1, e.c1, e.f2, e.r2, e.c2, e.a, e.b)) ++bad;
+    }
+
+    // Extra depth sample for n>=5 (deeper wings)
+    if (n >= 5) {
+        int d = 1;  // first wing depth
+        // Sample a few deeper wings on UF/UR style positions (cheap proxy)
+        if (c.get(U, n-1, d) != Color::U && c.get(U, n-1, d) != Color::F) ++bad;
+        if (c.get(U, d, n-1) != Color::U && c.get(U, d, n-1) != Color::R) ++bad;
+        if (c.get(F, d, mid) != Color::F && c.get(F, d, mid) != Color::U) ++bad;
+    }
+    return bad;
+}
+
 int ReducedSearch::heuristic(const Cube& c) {
     int n = c.size();
     if (n < 4) return 0;
 
     int bad = 0;
-    // Centers: sample inner (n-2)x(n-2) of each face
-    for (int f = 0; f < 6; ++f) {
-        Color target = static_cast<Color>(f);
-        for (int r = 1; r < n - 1; ++r) {
-            for (int col = 1; col < n - 1; ++col) {
-                if (c.get(f, r, col) != target) ++bad;
+    if (n == 4) {
+        // Exact packed center residual (popcount of incorrect mask)
+        uint16_t mask = pack4x4Centers(c);
+        bad += __builtin_popcount(mask);
+    } else {
+        // Centers: sample inner (n-2)x(n-2)
+        for (int f = 0; f < 6; ++f) {
+            Color target = static_cast<Color>(f);
+            for (int r = 1; r < n - 1; ++r) {
+                for (int col = 1; col < n - 1; ++col) {
+                    if (c.get(f, r, col) != target) ++bad;
+                }
             }
         }
     }
-    // Rough wing residual: edges not fully solid cost ~1 each
-    // (full pairedWings would need EdgePairing; keep scaffold light)
-    // Use mid-edge color match as proxy
-    int mid = n / 2;
-    auto midMatch = [&](int f1, int r1, int c1, int f2, int r2, int c2, Color a, Color b) {
-        Color x = c.get(f1, r1, c1);
-        Color y = c.get(f2, r2, c2);
-        return (x == a && y == b) || (x == b && y == a);
-    };
-    // UF UR UB UL DF DR DB DL FR FL BR BL mid checks
-    if (!midMatch(U, n-1, mid, F, 0, mid, Color::U, Color::F)) ++bad;
-    if (!midMatch(U, mid, n-1, R, 0, mid, Color::U, Color::R)) ++bad;
-    if (!midMatch(U, 0, mid, B, 0, mid, Color::U, Color::B)) ++bad;
-    if (!midMatch(U, mid, 0, L, 0, mid, Color::U, Color::L)) ++bad;
-    if (!midMatch(D, 0, mid, F, n-1, mid, Color::D, Color::F)) ++bad;
-    if (!midMatch(D, mid, n-1, R, n-1, mid, Color::D, Color::R)) ++bad;
-    if (!midMatch(D, n-1, mid, B, n-1, mid, Color::D, Color::B)) ++bad;
-    if (!midMatch(D, mid, 0, L, n-1, mid, Color::D, Color::L)) ++bad;
-    if (!midMatch(F, mid, n-1, R, mid, 0, Color::F, Color::R)) ++bad;
-    if (!midMatch(F, mid, 0, L, mid, n-1, Color::F, Color::L)) ++bad;
-    if (!midMatch(B, mid, 0, R, mid, n-1, Color::B, Color::R)) ++bad;
-    if (!midMatch(B, mid, n-1, L, mid, 0, Color::B, Color::L)) ++bad;
 
-    // Scale down so heuristic stays small relative to depth
-    return std::min(bad / 4, 20);
+    bad += wingResidual(c);
+
+    // Scale so heuristic stays useful relative to depth (admissible-ish)
+    return std::min(bad / 3, 24);
 }
 
 bool ReducedSearch::isNearlyReduced(const Cube& c) {
-    // Scaffold: always true for n=4,5; real check would require solid centers+edges
+    // Scaffold: always allow for n=4,5; real check would require solid centers+edges
     return c.size() == 4 || c.size() == 5;
 }
 
@@ -101,8 +154,8 @@ std::vector<Move> ReducedSearch::improve(Cube& work, int maxDepth) {
     if (n != 4 && n != 5) return result;
     if (!isNearlyReduced(work)) return result;
 
-    // Bound search cost for mobile: tighter on 5x5
-    int depthCap = (n == 4) ? maxDepth : std::min(maxDepth, 8);
+    // Bound search cost for mobile: tighter on 5x5, slightly higher on 4x4
+    int depthCap = (n == 4) ? maxDepth : std::min(maxDepth, 10);
 
     for (int thresh = 0; thresh <= depthCap; ++thresh) {
         std::vector<Move> path;

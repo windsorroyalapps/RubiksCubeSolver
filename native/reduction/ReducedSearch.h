@@ -2,6 +2,7 @@
 
 #include "Cube.h"
 #include <vector>
+#include <cstdint>
 
 /**
  * Reduced-coordinate search for small nxn (4x4 / 5x5).
@@ -12,19 +13,21 @@
  * classic 3x3 stage, pushing constructive lengths toward community OBTM
  * ceilings (~40–54 for 4×4).
  *
- * Scaffolding (2026-08-05): generators + depth limit + never-break guard
- * placeholder. Full reduced coordinates (edge/center residual packing) and
- * bidirectional search come next.
+ * 2026-08-06: packed 4x4 center residual (uint16_t bitmask of 16 inner cells)
+ * + stronger multi-wing residual heuristic. Full bidirectional + complete
+ * residual coordinate packing still next (highest leverage).
  */
 class ReducedSearch {
 public:
     // Attempt to improve the current work cube for n=4 or n=5.
     // Returns additional moves applied (empty if no improvement found / n other).
-    static std::vector<Move> improve(Cube& work, int maxDepth = 12);
+    static std::vector<Move> improve(Cube& work, int maxDepth = 14);
 
 private:
     static bool isNearlyReduced(const Cube& c);
     static int heuristic(const Cube& c);
+    static uint16_t pack4x4Centers(const Cube& c);  // 16-bit mask of incorrect centers
+    static int wingResidual(const Cube& c);
     static std::vector<Move> generateMoves(int n);
     static bool ida(Cube& work, int depth, int threshold,
                     int lastFace, std::vector<Move>& path);
