@@ -76,6 +76,7 @@ std::string BoundReport::toString() const {
         << " centers=" << stages.centers
         << " edges=" << stages.edges
         << " parity=" << stages.parity
+        << " reduced=" << stages.reduced
         << " 3x3=" << stages.reduce3x3
         << " raw=" << stages.totalRaw()
         << " final=" << stages.totalFinal()

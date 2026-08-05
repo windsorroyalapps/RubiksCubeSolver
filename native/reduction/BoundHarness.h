@@ -27,6 +27,7 @@ struct StageLengths {
     int centers = 0;
     int edges = 0;
     int parity = 0;
+    int reduced = 0;   // ReducedSearch residual IDA* (4×4/5×5)
     int reduce3x3 = 0;
     int afterBatch = 0;  // final length after BatchSolver (SSTM-style)
 
@@ -34,7 +35,7 @@ struct StageLengths {
     int finalObtm = 0;
     int finalSstm = 0;
 
-    int totalRaw() const { return centers + edges + parity + reduce3x3; }
+    int totalRaw() const { return centers + edges + parity + reduced + reduce3x3; }
     int totalFinal() const { return afterBatch > 0 ? afterBatch : totalRaw(); }
 };
 
