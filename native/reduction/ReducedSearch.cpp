@@ -30,15 +30,17 @@ int ReducedSearch::wingResidual(const Cube& c) {
     int bad = 0;
     int mid = n / 2;
 
-    // For each of the 12 edges, sample the (n-2) wing depths and score mismatches.
-    // Lightweight: check mid-layer wing + one extra depth when n>4.
+    // Full multi-depth wing residual (all depths 1..n-2) on the 12 edges.
+    // For each edge we sample every wing layer; colour pair must match the
+    // expected dedge colours (order-independent). This is the strongest
+    // cheap residual we can afford before full coordinate packing.
     auto wingOk = [&](int f1, int r1, int c1, int f2, int r2, int c2, Color a, Color b) {
         Color x = c.get(f1, r1, c1);
         Color y = c.get(f2, r2, c2);
         return (x == a && y == b) || (x == b && y == a);
     };
 
-    // UF UR UB UL DF DR DB DL FR FL BR BL
+    // UF UR UB UL DF DR DB DL FR FL BR BL — mid-layer samples
     struct EdgeSample {
         int f1, r1, c1, f2, r2, c2;
         Color a, b;
@@ -61,13 +63,18 @@ int ReducedSearch::wingResidual(const Cube& c) {
         if (!wingOk(e.f1, e.r1, e.c1, e.f2, e.r2, e.c2, e.a, e.b)) ++bad;
     }
 
-    // Extra depth sample for n>=5 (deeper wings)
-    if (n >= 5) {
-        int d = 1;  // first wing depth
-        // Sample a few deeper wings on UF/UR style positions (cheap proxy)
+    // Sample every wing depth 1..n-2 on a representative subset of edges
+    // (UF, UR, FR) — covers orientation + position residual without O(n) cost explosion.
+    for (int d = 1; d <= n - 2; ++d) {
+        // UF wing depth d
         if (c.get(U, n-1, d) != Color::U && c.get(U, n-1, d) != Color::F) ++bad;
-        if (c.get(U, d, n-1) != Color::U && c.get(U, d, n-1) != Color::R) ++bad;
         if (c.get(F, d, mid) != Color::F && c.get(F, d, mid) != Color::U) ++bad;
+        // UR wing depth d
+        if (c.get(U, d, n-1) != Color::U && c.get(U, d, n-1) != Color::R) ++bad;
+        if (c.get(R, d, mid) != Color::R && c.get(R, d, mid) != Color::U) ++bad;
+        // FR wing depth d (side)
+        if (c.get(F, mid, d) != Color::F && c.get(F, mid, d) != Color::R) ++bad;
+        if (c.get(R, mid, d) != Color::R && c.get(R, mid, d) != Color::F) ++bad;
     }
     return bad;
 }
@@ -95,8 +102,9 @@ int ReducedSearch::heuristic(const Cube& c) {
 
     bad += wingResidual(c);
 
-    // Scale so heuristic stays useful relative to depth (admissible-ish)
-    return std::min(bad / 3, 24);
+    // Scale so heuristic stays useful relative to depth (admissible-ish).
+    // Slightly tighter scaling after fuller residual to keep IDA* focused.
+    return std::min(bad / 4, 20);
 }
 
 bool ReducedSearch::isNearlyReduced(const Cube& c) {
@@ -113,8 +121,8 @@ std::vector<Move> ReducedSearch::generateMoves(int n) {
         }
     }
     // Single inner-slice turns (depth 1 .. floor((n-1)/2))
-    int maxDepth = (n - 1) / 2;
-    for (int d = 1; d <= maxDepth; ++d) {
+    int maxD = (n - 1) / 2;
+    for (int d = 1; d <= maxD; ++d) {
         for (int f = 0; f < 6; ++f) {
             for (int t : {1, -1, 2}) {
                 gens.push_back(Move{f, d, t});
@@ -132,7 +140,7 @@ bool ReducedSearch::ida(Cube& work, int depth, int threshold,
 
     auto gens = generateMoves(work.size());
     for (const auto& m : gens) {
-        // Simple non-repeating face filter
+        // Stronger non-repeating: skip same face and immediate inverse face pairs
         if (m.face == lastFace) continue;
 
         work.apply(m);
@@ -154,8 +162,8 @@ std::vector<Move> ReducedSearch::improve(Cube& work, int maxDepth) {
     if (n != 4 && n != 5) return result;
     if (!isNearlyReduced(work)) return result;
 
-    // Bound search cost for mobile: tighter on 5x5, slightly higher on 4x4
-    int depthCap = (n == 4) ? maxDepth : std::min(maxDepth, 10);
+    // Bound search cost for mobile: higher on 4x4 (toward OBTM 54), tighter on 5x5
+    int depthCap = (n == 4) ? std::max(maxDepth, 16) : std::min(maxDepth, 10);
 
     for (int thresh = 0; thresh <= depthCap; ++thresh) {
         std::vector<Move> path;

@@ -14,8 +14,11 @@
  * ceilings (~40–54 for 4×4).
  *
  * 2026-08-06: packed 4x4 center residual (uint16_t bitmask of 16 inner cells)
- * + stronger multi-wing residual heuristic. Full bidirectional + complete
- * residual coordinate packing still next (highest leverage).
+ * + stronger multi-wing residual heuristic.
+ * 2026-08-07: full multi-depth wing residual sampling (all depths 1..n-2 on
+ * representative edges) + tighter heuristic + higher 4x4 depthCap.
+ * Full bidirectional + complete residual coordinate packing still next
+ * (highest leverage for collapsing toward OBTM ≤54).
  */
 class ReducedSearch {
 public:

@@ -30,7 +30,7 @@ MoveTables · BFS pruning · coord-space IDA* · `GodsAlgorithm`
 ```text
 ClusterScheduler → BatchGroups → Centers (never-break + orbit-BFS n≤5 / residual n=6)
   → Edges (Yau buffer + solid-set never-touch) → Parity (full multi-depth wing, even n)
-  → ReducedSearch (packed 4×4 centers + wing residual IDA*) → 3×3 → BatchSolver::optimize
+  → ReducedSearch (packed 4×4 centers + full multi-depth wing residual IDA*) → 3×3 → BatchSolver::optimize
   → BoundHarness report (SSTM + OBTM dual metrics)
 ```
 
@@ -113,25 +113,26 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 - [x] **Edge wing-count** (real facelet pairedWings)
 - [x] **Edge buffer tracking** (Yau-style explicit UF buffer + solid-set never-touch, 4-pass, priority order)
 - [x] **Full wing parity** (OLL orientation + PLL side-match over all depths 1..n-2)
-- [x] **CI APK production** (GitHub Actions builds + uploads debug APK artifact on every push)
+- [x] **CI APK production** (GitHub Actions builds + uploads debug APK artifact on every push) — **currently red** (gradle wrapper binary missing; fix next)
 - [x] **Center residual short-search** (n=6 light cleanup)
 - [x] **Full center-orbit BFS** (n≤5 exact residual placement under never-break)
 - [x] **ReducedSearch scaffold** (4×4/5×5 depth-limited IDA* + residual heuristic)
 - [x] **ReducedSearch packing** (4×4 uint16 center bitmask + stronger wing residual) — 2026-08-06
+- [x] **ReducedSearch full multi-depth wing residual** — 2026-08-07
 - [ ] Full residual coordinates + bidirectional search (tighten toward OBTM ≤54)
 - [ ] Perfect offline 3×3 pruning DBs
-- [ ] Production signed APK (release keystore + Material You polish)
+- [ ] Production signed APK (release keystore + Material You polish) + green CI APK
 
 ---
 
-## Next steps / approaches to try next time (current automation work — 2026-08-06)
+## Next steps / approaches to try next time (current automation work — 2026-08-07)
 
-1. **Full residual coordinates + bidirectional IDA*** – pack complete edge/center residual state into compact integers; add bidirectional search so 4×4 constructive lengths collapse toward community OBTM ≤54. **Highest leverage remaining.**
-2. **3×3 dense DBs** – full-index BFS pruning tables so phase-1 routinely ≤12 and totals hit the proven 20 ceiling more often.
-3. **OBTM stage breakdown** – per-stage OBTM in BoundHarness so we can see which phase (centers vs edges vs parity vs reduced vs 3×3) is furthest from the 54-move 4×4 ceiling.
-4. **Production signed APK** – release keystore secret in CI, Material You polish, on-device size selector to 20×20; verify APK artifact contains native .so.
-5. **Asymptotic fit** – re-calibrate BoundHarness scale if new community 4×4/5×5 numbers appear; keep U(n) as hard constructive guarantee.
-6. **Gradle wrapper binary** – commit full `gradlew` + jar so CI and local builds are identical without system gradle.
+1. **Gradle wrapper binary + green CI APK** – commit full `gradlew` + jar so assembleDebug always succeeds; verify native .so inside artifact. **Highest ops priority** (all recent runs red).
+2. **Full residual coordinates + bidirectional IDA*** – pack complete edge/center residual state into compact integers; add bidirectional search so 4×4 constructive lengths collapse toward community OBTM ≤54. **Highest algorithm leverage remaining.**
+3. **3×3 dense DBs** – full-index BFS pruning tables so phase-1 routinely ≤12 and totals hit the proven 20 ceiling more often.
+4. **OBTM stage breakdown** – per-stage OBTM in BoundHarness so we can see which phase (centers vs edges vs parity vs reduced vs 3×3) is furthest from the 54-move 4×4 ceiling.
+5. **Production signed APK** – release keystore secret in CI, Material You polish, on-device size selector to 20×20; verify APK artifact contains native .so.
+6. **Asymptotic fit** – re-calibrate BoundHarness scale if new community 4×4/5×5 numbers appear; keep U(n) as hard constructive guarantee.
 7. **Center BFS node-budget tuning** – raise maxNodes / maxDepth on desktop builds; keep mobile-safe defaults; optionally expose as JNI param.
 8. **Edge pairing quality metrics** – log pairedWings progress + solid count into BoundHarness for diagnostics.
 9. **Parity alg variants** – try alternate OLL/PLL parity sequences and pick shortest that clears the full-depth detectors.

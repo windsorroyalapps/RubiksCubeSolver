@@ -69,7 +69,8 @@ These are far from optimal but are explicit, implementable algorithms that **alw
    (**Yau-style buffer tracking**: explicit UF buffer, solid-set never-touch, priority order, 4-pass freeslice + real wing-count)
 3. **Parity** (even n only) – fix OLL parity ("flipped" dedge) then PLL parity (odd edge permutation)  
    (**full multi-depth wing** orientation + permutation over all depths 1..n-2)
-4. **ReducedSearch** (4×4/5×5) – depth-limited IDA* on residual centers+wings before classic 3×3
+4. **ReducedSearch** (4×4/5×5) – depth-limited IDA* on residual centers+wings before classic 3×3  
+   (**packed 4×4 center bitmask + full multi-depth wing residual**)
 5. **3×3 stage** – treat the reduced cube as a normal 3×3 and run multi-probe Kociemba (or CFOP fallback)
 6. **BatchSolver::optimize** – windowed collapse of identical (face,depth,turns) moves (log-factor spirit)
 7. **BoundHarness** – report stage lengths vs U(n) and vs ~n²/log n (scale ≈ 3.8) **+ dual OBTM/SSTM counts**
@@ -84,7 +85,7 @@ It realises a true algorithm that solves every position and approaches the asymp
 | Center commutators + batch groups | `CenterSolver.*` + `BatchGroups.*` + `ClusterScheduler.*` | Working + never-break global score + **orbit-BFS n≤5** + residual n=6 |
 | Edge freeslice + buffer | `EdgePairing.*` | Working multi-pass + wing-count + **Yau buffer + solid-set protect** |
 | Even-n parity | `ParityHandler.*` | OLL + PLL algs + **full multi-depth wing detectors** |
-| Reduced residual search | `ReducedSearch.*` | **Packed 4×4 center bitmask + stronger wing residual + IDA*** |
+| Reduced residual search | `ReducedSearch.*` | **Packed 4×4 center bitmask + full multi-depth wing residual + IDA*** |
 | Orchestrator | `ReductionSolver.*` | Full pipeline |
 | 3×3 engine | `Kociemba` + `GodsAlgorithm` + `CFOPSolver` | Phase-1 + IDA* path + CFOP fallback |
 | Bound instrumentation | `BoundHarness.*` | U(n) table + stage report + asymptotic **+ OBTM/SSTM** |
@@ -124,14 +125,20 @@ It realises a true algorithm that solves every position and approaches the asymp
 - This is the next step on the reduced-coordinate path. Full residual coordinate tables + bidirectional IDA* remain the highest-leverage items to collapse constructive lengths toward community OBTM ≤54.
 - Exact g(n) for n≥4 still open. Universal constructive algorithm for **any n > 3** continues to improve.
 
-## Next steps (automation roadmap — current work 2026-08-06)
+## Progress note (automation session 2026-08-07)
 
-1. **Full residual coordinates + bidirectional IDA*** – pack complete edge/center residual state into compact integers; add bidirectional search so 4×4 constructive lengths collapse toward community OBTM ≤54. **Highest leverage remaining.**
-2. **3×3 dense DBs** – full-index BFS pruning so phase-1 routinely ≤12 and totals hit the 20 ceiling.
-3. **OBTM stage breakdown** – optional per-stage OBTM so we can see which phase is furthest from the 54-move 4×4 ceiling.
-4. **Production signed APK** – signed release, Material You polish, on-device size selector to 20×20; wire CI release when keystore secret present.
-5. **Asymptotic fit** – re-calibrate BoundHarness scale if new community numbers appear; keep U(n) as hard constructive guarantee.
-6. **Gradle wrapper binary** – commit full `gradlew` + jar.
+- **ReducedSearch full multi-depth wing residual shipped**: wingResidual now samples every depth 1..n-2 on representative edges (UF/UR/FR) in addition to the 12 mid-edge samples. Heuristic scaling tightened; 4×4 depthCap raised. Moves us closer to a usable residual coordinate model before full packing + bidirectional search.
+- **CI APK status**: all recent workflow runs red (gradle wrapper binary missing). Next ops priority is commit full `gradlew` + jar and green the assembleDebug artifact path so production APK verification loop can run.
+- Exact g(n) for n≥4 still open. Constructive algorithm for **any n > 3** remains complete and is being tightened toward community OBTM ceilings and the Demaine asymptotic.
+
+## Next steps (automation roadmap — current work 2026-08-07)
+
+1. **Gradle wrapper binary + green CI APK** – commit full `gradlew` + jar; verify native .so inside artifact. Highest ops priority.
+2. **Full residual coordinates + bidirectional IDA*** – pack complete edge/center residual state into compact integers; add bidirectional search so 4×4 constructive lengths collapse toward community OBTM ≤54. **Highest algorithm leverage remaining.**
+3. **3×3 dense DBs** – full-index BFS pruning so phase-1 routinely ≤12 and totals hit the 20 ceiling.
+4. **OBTM stage breakdown** – optional per-stage OBTM so we can see which phase is furthest from the 54-move 4×4 ceiling.
+5. **Production signed APK** – signed release, Material You polish, on-device size selector to 20×20; wire CI release when keystore secret present.
+6. **Asymptotic fit** – re-calibrate BoundHarness scale if new community numbers appear; keep U(n) as hard constructive guarantee.
 7. **Center BFS node-budget tuning** – raise maxNodes / maxDepth on desktop; mobile-safe defaults; optional JNI param.
 8. **Edge pairing quality metrics** – log pairedWings / solid count into BoundHarness.
 9. **Parity alg variants** – alternate OLL/PLL sequences, pick shortest that clears full-depth detectors.
@@ -145,4 +152,4 @@ It realises a true algorithm that solves every position and approaches the asymp
 - Community upper-bound derivations (92n² series)
 
 ---
-*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Next commit: bidirectional residual coords for 4×4/5×5.*
+*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Next commit: gradle wrapper + green APK, then bidirectional residual coords for 4×4/5×5.*
