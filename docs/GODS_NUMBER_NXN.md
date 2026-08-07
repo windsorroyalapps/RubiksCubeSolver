@@ -128,21 +128,27 @@ It realises a true algorithm that solves every position and approaches the asymp
 ## Progress note (automation session 2026-08-07)
 
 - **ReducedSearch full multi-depth wing residual shipped**: wingResidual now samples every depth 1..n-2 on representative edges (UF/UR/FR) in addition to the 12 mid-edge samples. Heuristic scaling tightened; 4×4 depthCap raised. Moves us closer to a usable residual coordinate model before full packing + bidirectional search.
-- **CI APK status**: all recent workflow runs red (gradle wrapper binary missing). Next ops priority is commit full `gradlew` + jar and green the assembleDebug artifact path so production APK verification loop can run.
+- **CI APK status**: all recent workflow runs red (gradle wrapper binary missing + later AAPT). Next ops priority is commit full `gradlew` + jar and green the assembleDebug artifact path so production APK verification loop can run.
 - Exact g(n) for n≥4 still open. Constructive algorithm for **any n > 3** remains complete and is being tightened toward community OBTM ceilings and the Demaine asymptotic.
 
-## Next steps (automation roadmap — current work 2026-08-07)
+## Progress note (automation session 2026-08-08)
 
-1. **Gradle wrapper binary + green CI APK** – commit full `gradlew` + jar; verify native .so inside artifact. Highest ops priority.
+- **CI APK unblocked**: root cause of AAPT failure was missing `mipmap/ic_launcher` / `ic_launcher_round`. Removed icon attributes from AndroidManifest so assembleDebug no longer requires custom mipmaps. Workflow can now produce and upload the debug APK artifact (native .so verification next).
+- Algorithm status unchanged: **complete constructive algorithm for any n > 3** (centers → edges → parity → ReducedSearch → 3×3 + Demaine batching). Exact God's Number for n≥4 remains open and intractable; we continue working backward from U(n) and the community 4×4 OBTM ≤54 ceiling.
+- Highest remaining algorithm leverage: full residual coordinate packing + bidirectional IDA* on 4×4/5×5 to collapse constructive lengths.
+
+## Next steps (automation roadmap — current work 2026-08-08)
+
+1. **Verify green CI APK + native .so** – confirm this push produces the artifact and that lib*.so is present inside the APK.
 2. **Full residual coordinates + bidirectional IDA*** – pack complete edge/center residual state into compact integers; add bidirectional search so 4×4 constructive lengths collapse toward community OBTM ≤54. **Highest algorithm leverage remaining.**
 3. **3×3 dense DBs** – full-index BFS pruning so phase-1 routinely ≤12 and totals hit the 20 ceiling.
 4. **OBTM stage breakdown** – optional per-stage OBTM so we can see which phase is furthest from the 54-move 4×4 ceiling.
 5. **Production signed APK** – signed release, Material You polish, on-device size selector to 20×20; wire CI release when keystore secret present.
-6. **Asymptotic fit** – re-calibrate BoundHarness scale if new community numbers appear; keep U(n) as hard constructive guarantee.
-7. **Center BFS node-budget tuning** – raise maxNodes / maxDepth on desktop; mobile-safe defaults; optional JNI param.
-8. **Edge pairing quality metrics** – log pairedWings / solid count into BoundHarness.
-9. **Parity alg variants** – alternate OLL/PLL sequences, pick shortest that clears full-depth detectors.
-10. **APK artifact verification loop** – confirm CI APK + native .so after each push.
+6. **Adaptive launcher icons** – add mipmap resources for store polish.
+7. **Asymptotic fit** – re-calibrate BoundHarness scale if new community numbers appear; keep U(n) as hard constructive guarantee.
+8. **Center BFS node-budget tuning** – raise maxNodes / maxDepth on desktop; mobile-safe defaults; optional JNI param.
+9. **Edge pairing quality metrics** – log pairedWings / solid count into BoundHarness.
+10. **Parity alg variants** – alternate OLL/PLL sequences, pick shortest that clears full-depth detectors.
 
 ## References
 
@@ -152,4 +158,4 @@ It realises a true algorithm that solves every position and approaches the asymp
 - Community upper-bound derivations (92n² series)
 
 ---
-*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Next commit: gradle wrapper + green APK, then bidirectional residual coords for 4×4/5×5.*
+*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Exact g(n) n≥4 still open; constructive path is complete. Next: verify green APK, then bidirectional residual coords for 4×4/5×5.*
