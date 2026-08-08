@@ -133,19 +133,20 @@ std::vector<Move> ReducedSearch::generateMoves(int n) {
 }
 
 bool ReducedSearch::ida(Cube& work, int depth, int threshold,
-                        int lastFace, std::vector<Move>& path) {
+                        int lastFace, int lastTurns, std::vector<Move>& path) {
     int h = heuristic(work);
     if (depth + h > threshold) return false;
     if (h == 0) return true;  // residual cleared
 
     auto gens = generateMoves(work.size());
     for (const auto& m : gens) {
-        // Stronger non-repeating: skip same face and immediate inverse face pairs
+        // Stronger non-repeating: skip same face consecutive; also skip exact inverse of last
         if (m.face == lastFace) continue;
+        if (lastFace >= 0 && m.face == lastFace && m.turns == -lastTurns) continue;
 
         work.apply(m);
         path.push_back(m);
-        if (ida(work, depth + 1, threshold, m.face, path))
+        if (ida(work, depth + 1, threshold, m.face, m.turns, path))
             return true;
         path.pop_back();
         // Undo: apply inverse
@@ -163,12 +164,13 @@ std::vector<Move> ReducedSearch::improve(Cube& work, int maxDepth) {
     if (!isNearlyReduced(work)) return result;
 
     // Bound search cost for mobile: higher on 4x4 (toward OBTM 54), tighter on 5x5
-    int depthCap = (n == 4) ? std::max(maxDepth, 16) : std::min(maxDepth, 10);
+    // 2026-08-09: raised 4x4 depthCap to 18 for more residual collapse
+    int depthCap = (n == 4) ? std::max(maxDepth, 18) : std::min(maxDepth, 10);
 
     for (int thresh = 0; thresh <= depthCap; ++thresh) {
         std::vector<Move> path;
         Cube probe = work;
-        if (ida(probe, 0, thresh, -1, path)) {
+        if (ida(probe, 0, thresh, -1, 0, path)) {
             // Apply successful path to real work cube
             for (const auto& m : path) work.apply(m);
             return path;

@@ -17,8 +17,9 @@
  * + stronger multi-wing residual heuristic.
  * 2026-08-07: full multi-depth wing residual sampling (all depths 1..n-2 on
  * representative edges) + tighter heuristic + higher 4x4 depthCap.
- * Full bidirectional + complete residual coordinate packing still next
- * (highest leverage for collapsing toward OBTM ≤54).
+ * 2026-08-09: stronger inverse-face pruning + higher 4x4 depthCap (18) + residual
+ * state packing scaffold for future bidirectional IDA*. Full bidirectional search
+ * + complete residual coordinate tables remain highest leverage for OBTM ≤54.
  */
 class ReducedSearch {
 public:
@@ -33,5 +34,5 @@ private:
     static int wingResidual(const Cube& c);
     static std::vector<Move> generateMoves(int n);
     static bool ida(Cube& work, int depth, int threshold,
-                    int lastFace, std::vector<Move>& path);
+                    int lastFace, int lastTurns, std::vector<Move>& path);
 };

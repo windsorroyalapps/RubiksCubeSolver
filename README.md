@@ -119,6 +119,8 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 - [x] **ReducedSearch scaffold** (4×4/5×5 depth-limited IDA* + residual heuristic)
 - [x] **ReducedSearch packing** (4×4 uint16 center bitmask + stronger wing residual) — 2026-08-06
 - [x] **ReducedSearch full multi-depth wing residual** — 2026-08-07
+- [x] **ReducedSearch stronger inverse pruning + depthCap 18 (4x4)** — 2026-08-09
+- [x] **Full gradle wrapper (gradlew + jar)** for reliable CI APK production — 2026-08-09
 - [ ] Full residual coordinates + bidirectional search (tighten toward OBTM ≤54)
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK (release keystore + Material You polish) + verified native .so in artifact
@@ -126,10 +128,10 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 
 ---
 
-## Next steps / approaches to try next time (current automation work — 2026-08-08)
+## Next steps / approaches to try next time (current automation work — 2026-08-09)
 
-1. **Verify green CI APK + native .so** – after this push, confirm workflow produces debug APK artifact containing lib*.so; iterate if NDK/CMake still fails.
-2. **Full residual coordinates + bidirectional IDA*** – pack complete edge/center residual state into compact integers; add bidirectional search so 4×4 constructive lengths collapse toward community OBTM ≤54. **Highest algorithm leverage remaining.**
+1. **Verify green CI APK + native .so** – after this push (full gradlew + jar now committed), confirm workflow produces debug APK artifact containing lib*.so; iterate NDK/CMake if needed.
+2. **Full residual coordinates + bidirectional IDA*** – pack complete edge/center residual state into compact integers (extend pack4x4Centers + wingResidual into a full residual coord); add bidirectional search so 4×4 constructive lengths collapse toward community OBTM ≤54. **Highest algorithm leverage remaining.**
 3. **3×3 dense DBs** – full-index BFS pruning tables so phase-1 routinely ≤12 and totals hit the proven 20 ceiling more often.
 4. **OBTM stage breakdown** – per-stage OBTM in BoundHarness so we can see which phase (centers vs edges vs parity vs reduced vs 3×3) is furthest from the 54-move 4×4 ceiling.
 5. **Production signed APK** – release keystore secret in CI, Material You polish, on-device size selector to 20×20; verify APK artifact contains native .so.

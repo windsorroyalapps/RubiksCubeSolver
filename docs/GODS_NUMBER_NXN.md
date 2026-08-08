@@ -137,9 +137,15 @@ It realises a true algorithm that solves every position and approaches the asymp
 - Algorithm status unchanged: **complete constructive algorithm for any n > 3** (centers → edges → parity → ReducedSearch → 3×3 + Demaine batching). Exact God's Number for n≥4 remains open and intractable; we continue working backward from U(n) and the community 4×4 OBTM ≤54 ceiling.
 - Highest remaining algorithm leverage: full residual coordinate packing + bidirectional IDA* on 4×4/5×5 to collapse constructive lengths.
 
-## Next steps (automation roadmap — current work 2026-08-08)
+## Progress note (automation session 2026-08-09)
 
-1. **Verify green CI APK + native .so** – confirm this push produces the artifact and that lib*.so is present inside the APK.
+- **Full gradle wrapper shipped**: committed `gradlew` + `gradle/wrapper/gradle-wrapper.jar` (8.9) so CI no longer relies on generating wrapper at runtime; more reliable debug APK + native .so production.
+- **ReducedSearch tightened**: stronger inverse-face pruning in IDA*, 4×4 depthCap raised to 18, residual packing scaffold comments for upcoming bidirectional + full residual coords.
+- Algorithm remains the **complete constructive God's-algorithm path for any n > 3**. Exact diameter g(n) for n≥4 still open/intractable. We continue collapsing constructive lengths toward community OBTM ≤54 (4×4) and the Demaine Θ(n²/log n).
+
+## Next steps (automation roadmap — current work 2026-08-09)
+
+1. **Verify green CI APK + native .so** – confirm this push (full wrapper) produces the artifact and that lib*.so is present inside the APK.
 2. **Full residual coordinates + bidirectional IDA*** – pack complete edge/center residual state into compact integers; add bidirectional search so 4×4 constructive lengths collapse toward community OBTM ≤54. **Highest algorithm leverage remaining.**
 3. **3×3 dense DBs** – full-index BFS pruning so phase-1 routinely ≤12 and totals hit the 20 ceiling.
 4. **OBTM stage breakdown** – optional per-stage OBTM so we can see which phase is furthest from the 54-move 4×4 ceiling.
