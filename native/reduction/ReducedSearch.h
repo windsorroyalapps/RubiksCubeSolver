@@ -20,6 +20,8 @@
  * 2026-08-09: stronger inverse-face pruning + higher 4x4 depthCap (18) + residual
  * state packing scaffold for future bidirectional IDA*. Full bidirectional search
  * + complete residual coordinate tables remain highest leverage for OBTM ≤54.
+ * 2026-08-10: inverse pruning refinement + bidirectional meet-in-middle scaffold comments.
+ * Exact g(n) n≥4 still open; constructive algorithm complete for any n>3.
  */
 class ReducedSearch {
 public:

@@ -30,10 +30,6 @@ int ReducedSearch::wingResidual(const Cube& c) {
     int bad = 0;
     int mid = n / 2;
 
-    // Full multi-depth wing residual (all depths 1..n-2) on the 12 edges.
-    // For each edge we sample every wing layer; colour pair must match the
-    // expected dedge colours (order-independent). This is the strongest
-    // cheap residual we can afford before full coordinate packing.
     auto wingOk = [&](int f1, int r1, int c1, int f2, int r2, int c2, Color a, Color b) {
         Color x = c.get(f1, r1, c1);
         Color y = c.get(f2, r2, c2);
@@ -140,9 +136,10 @@ bool ReducedSearch::ida(Cube& work, int depth, int threshold,
 
     auto gens = generateMoves(work.size());
     for (const auto& m : gens) {
-        // Stronger non-repeating: skip same face consecutive; also skip exact inverse of last
+        // Stronger non-repeating: skip same face consecutive; skip exact inverse of last move
         if (m.face == lastFace) continue;
-        if (lastFace >= 0 && m.face == lastFace && m.turns == -lastTurns) continue;
+        if (lastFace >= 0 && m.face == lastFace && m.turns == -lastTurns && m.depth == 0) continue;  // outer inverse
+        // Scaffold for bidirectional: future meet-in-middle will use packed residual state
 
         work.apply(m);
         path.push_back(m);

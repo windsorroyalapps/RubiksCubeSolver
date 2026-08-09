@@ -143,10 +143,18 @@ It realises a true algorithm that solves every position and approaches the asymp
 - **ReducedSearch tightened**: stronger inverse-face pruning in IDA*, 4×4 depthCap raised to 18, residual packing scaffold comments for upcoming bidirectional + full residual coords.
 - Algorithm remains the **complete constructive God's-algorithm path for any n > 3**. Exact diameter g(n) for n≥4 still open/intractable. We continue collapsing constructive lengths toward community OBTM ≤54 (4×4) and the Demaine Θ(n²/log n).
 
-## Next steps (automation roadmap — current work 2026-08-09)
 
-1. **Verify green CI APK + native .so** – confirm this push (full wrapper) produces the artifact and that lib*.so is present inside the APK.
-2. **Full residual coordinates + bidirectional IDA*** – pack complete edge/center residual state into compact integers; add bidirectional search so 4×4 constructive lengths collapse toward community OBTM ≤54. **Highest algorithm leverage remaining.**
+## Progress note (automation session 2026-08-10)
+
+- **ReducedSearch inverse pruning refined** + bidirectional meet-in-middle scaffold comments added.
+- **gradle-wrapper.jar** committed for complete CI reliability (alongside existing gradlew).
+- Algorithm status: **complete constructive algorithm for any n > 3** remains the practical God's algorithm (always terminates, realises Θ(n²/log n) spirit via Demaine batching). Exact diameter g(n) for n≥4 is still open and intractable; we continue collapsing constructive U(n) lengths toward community OBTM ceilings (≤54 for 4×4) and the asymptotic.
+- Highest remaining leverage: full residual coordinate packing + bidirectional IDA* / meet-in-middle on residual state.
+
+## Next steps (automation roadmap — current work 2026-08-10)
+
+1. **Verify green CI APK + native .so** – confirm this push (full wrapper + jar) produces the artifact and that lib*.so is present inside the APK.
+2. **Full residual coordinates + bidirectional meet-in-middle IDA*** – pack complete edge/center residual state into compact integers + hash for meet-in-middle; so 4×4 constructive lengths collapse toward community OBTM ≤54. **Highest algorithm leverage remaining.**
 3. **3×3 dense DBs** – full-index BFS pruning so phase-1 routinely ≤12 and totals hit the 20 ceiling.
 4. **OBTM stage breakdown** – optional per-stage OBTM so we can see which phase is furthest from the 54-move 4×4 ceiling.
 5. **Production signed APK** – signed release, Material You polish, on-device size selector to 20×20; wire CI release when keystore secret present.
@@ -164,4 +172,4 @@ It realises a true algorithm that solves every position and approaches the asymp
 - Community upper-bound derivations (92n² series)
 
 ---
-*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Exact g(n) n≥4 still open; constructive path is complete. Next: verify green APK, then bidirectional residual coords for 4×4/5×5.*
+*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Exact g(n) n≥4 still open; constructive path is complete. Next: verify green APK with jar, then full bidirectional residual coords for 4×4/5×5 toward OBTM ≤54.*

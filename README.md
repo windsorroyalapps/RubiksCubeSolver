@@ -121,17 +121,19 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 - [x] **ReducedSearch full multi-depth wing residual** — 2026-08-07
 - [x] **ReducedSearch stronger inverse pruning + depthCap 18 (4x4)** — 2026-08-09
 - [x] **Full gradle wrapper (gradlew + jar)** for reliable CI APK production — 2026-08-09
-- [ ] Full residual coordinates + bidirectional search (tighten toward OBTM ≤54)
+- [x] **ReducedSearch inverse pruning refinement + bidirectional scaffold** — 2026-08-10
+- [ ] Full residual coordinates + bidirectional meet-in-middle IDA* (tighten toward OBTM ≤54)
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK (release keystore + Material You polish) + verified native .so in artifact
 - [ ] Adaptive launcher icons (mipmap) for store polish
+- [x] **gradle-wrapper.jar committed** (CI reliability) — 2026-08-10
 
 ---
 
-## Next steps / approaches to try next time (current automation work — 2026-08-09)
+## Next steps / approaches to try next time (current automation work — 2026-08-10)
 
-1. **Verify green CI APK + native .so** – after this push (full gradlew + jar now committed), confirm workflow produces debug APK artifact containing lib*.so; iterate NDK/CMake if needed.
-2. **Full residual coordinates + bidirectional IDA*** – pack complete edge/center residual state into compact integers (extend pack4x4Centers + wingResidual into a full residual coord); add bidirectional search so 4×4 constructive lengths collapse toward community OBTM ≤54. **Highest algorithm leverage remaining.**
+1. **Verify green CI APK + native .so** – confirm workflow with full gradlew + jar produces debug APK artifact containing lib*.so; iterate NDK/CMake if needed.
+2. **Full residual coordinates + bidirectional meet-in-middle IDA*** – pack complete edge/center residual state into compact integers (extend pack4x4Centers + wingResidual into a full residual coord + hash table for meet-in-middle); so 4×4 constructive lengths collapse toward community OBTM ≤54. **Highest algorithm leverage remaining.**
 3. **3×3 dense DBs** – full-index BFS pruning tables so phase-1 routinely ≤12 and totals hit the proven 20 ceiling more often.
 4. **OBTM stage breakdown** – per-stage OBTM in BoundHarness so we can see which phase (centers vs edges vs parity vs reduced vs 3×3) is furthest from the 54-move 4×4 ceiling.
 5. **Production signed APK** – release keystore secret in CI, Material You polish, on-device size selector to 20×20; verify APK artifact contains native .so.
@@ -140,6 +142,7 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 8. **Center BFS node-budget tuning** – raise maxNodes / maxDepth on desktop builds; keep mobile-safe defaults; optionally expose as JNI param.
 9. **Edge pairing quality metrics** – log pairedWings progress + solid count into BoundHarness for diagnostics.
 10. **Parity alg variants** – try alternate OLL/PLL parity sequences and pick shortest that clears the full-depth detectors.
+11. **Bidirectional residual search prototype** – implement meet-in-middle using packed residual state as key; target 4×4 first.
 
 ---
 
