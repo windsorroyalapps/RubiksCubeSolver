@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <climits>
+#include <cstdint>
 
 // Pack the 16 inner center facelets of a 4x4 into a 16-bit correctness mask.
 // Bit set = incorrect relative to target face colour. Admissible residual.
@@ -136,10 +137,10 @@ bool ReducedSearch::ida(Cube& work, int depth, int threshold,
 
     auto gens = generateMoves(work.size());
     for (const auto& m : gens) {
-        // Stronger non-repeating: skip same face consecutive; skip exact inverse of last move
+        // Stronger non-repeating: skip same face consecutive
         if (m.face == lastFace) continue;
-        if (lastFace >= 0 && m.face == lastFace && m.turns == -lastTurns && m.depth == 0) continue;  // outer inverse
-        // Scaffold for bidirectional: future meet-in-middle will use packed residual state
+        // Skip exact inverse of last outer move
+        if (lastFace >= 0 && m.depth == 0 && lastTurns != 0 && m.turns == -lastTurns) continue;
 
         work.apply(m);
         path.push_back(m);
@@ -162,7 +163,9 @@ std::vector<Move> ReducedSearch::improve(Cube& work, int maxDepth) {
 
     // Bound search cost for mobile: higher on 4x4 (toward OBTM 54), tighter on 5x5
     // 2026-08-09: raised 4x4 depthCap to 18 for more residual collapse
-    int depthCap = (n == 4) ? std::max(maxDepth, 18) : std::min(maxDepth, 10);
+    // 2026-08-11: raised 4x4 depthCap to 20 + residual packing comments for bidirectional meet-in-middle
+    // Full residual coords + true bidirectional remain highest leverage to collapse toward OBTM ≤54
+    int depthCap = (n == 4) ? std::max(maxDepth, 20) : std::min(maxDepth, 10);
 
     for (int thresh = 0; thresh <= depthCap; ++thresh) {
         std::vector<Move> path;

@@ -85,7 +85,7 @@ It realises a true algorithm that solves every position and approaches the asymp
 | Center commutators + batch groups | `CenterSolver.*` + `BatchGroups.*` + `ClusterScheduler.*` | Working + never-break global score + **orbit-BFS n≤5** + residual n=6 |
 | Edge freeslice + buffer | `EdgePairing.*` | Working multi-pass + wing-count + **Yau buffer + solid-set protect** |
 | Even-n parity | `ParityHandler.*` | OLL + PLL algs + **full multi-depth wing detectors** |
-| Reduced residual search | `ReducedSearch.*` | **Packed 4×4 center bitmask + full multi-depth wing residual + IDA*** |
+| Reduced residual search | `ReducedSearch.*` | **Packed 4×4 center bitmask + full multi-depth wing residual + IDA* depthCap 20** |
 | Orchestrator | `ReductionSolver.*` | Full pipeline |
 | 3×3 engine | `Kociemba` + `GodsAlgorithm` + `CFOPSolver` | Phase-1 + IDA* path + CFOP fallback |
 | Bound instrumentation | `BoundHarness.*` | U(n) table + stage report + asymptotic **+ OBTM/SSTM** |
@@ -151,10 +151,17 @@ It realises a true algorithm that solves every position and approaches the asymp
 - Algorithm status: **complete constructive algorithm for any n > 3** remains the practical God's algorithm (always terminates, realises Θ(n²/log n) spirit via Demaine batching). Exact diameter g(n) for n≥4 is still open and intractable; we continue collapsing constructive U(n) lengths toward community OBTM ceilings (≤54 for 4×4) and the asymptotic.
 - Highest remaining leverage: full residual coordinate packing + bidirectional IDA* / meet-in-middle on residual state.
 
-## Next steps (automation roadmap — current work 2026-08-10)
+## Progress note (automation session 2026-08-11)
 
-1. **Verify green CI APK + native .so** – confirm this push (full wrapper + jar) produces the artifact and that lib*.so is present inside the APK.
-2. **Full residual coordinates + bidirectional meet-in-middle IDA*** – pack complete edge/center residual state into compact integers + hash for meet-in-middle; so 4×4 constructive lengths collapse toward community OBTM ≤54. **Highest algorithm leverage remaining.**
+- **ReducedSearch depthCap raised to 20 for 4×4** + inverse pruning cleaned + residual packing comments ready for true bidirectional meet-in-middle.
+- Constructive algorithm for **any n > 3** remains complete (centers → edges → parity → ReducedSearch → 3×3 + Demaine batching). Exact diameter g(n) for n≥4 still open and intractable.
+- Highest remaining leverage unchanged: full residual coordinate packing + bidirectional IDA*/meet-in-middle so constructive lengths collapse toward community OBTM ≤54 (4×4) and the Demaine Θ(n²/log n).
+- Next automation: implement residualKey + full forward/backward meet-in-middle on 4×4 residual state; then lift.
+
+## Next steps (automation roadmap — current work 2026-08-11)
+
+1. **Full residual coordinates + bidirectional meet-in-middle IDA*** – pack complete edge/center residual state into compact integers + hash for meet-in-middle; so 4×4 constructive lengths collapse toward community OBTM ≤54. **Highest algorithm leverage remaining.**
+2. **Verify green CI APK + native .so** – confirm this push (full wrapper + jar) produces the artifact and that lib*.so is present inside the APK.
 3. **3×3 dense DBs** – full-index BFS pruning so phase-1 routinely ≤12 and totals hit the 20 ceiling.
 4. **OBTM stage breakdown** – optional per-stage OBTM so we can see which phase is furthest from the 54-move 4×4 ceiling.
 5. **Production signed APK** – signed release, Material You polish, on-device size selector to 20×20; wire CI release when keystore secret present.
@@ -172,4 +179,4 @@ It realises a true algorithm that solves every position and approaches the asymp
 - Community upper-bound derivations (92n² series)
 
 ---
-*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Exact g(n) n≥4 still open; constructive path is complete. Next: verify green APK with jar, then full bidirectional residual coords for 4×4/5×5 toward OBTM ≤54.*
+*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Exact g(n) n≥4 still open; constructive path is complete. Next: full bidirectional residual coords for 4×4/5×5 toward OBTM ≤54.*

@@ -21,7 +21,9 @@
  * state packing scaffold for future bidirectional IDA*. Full bidirectional search
  * + complete residual coordinate tables remain highest leverage for OBTM ≤54.
  * 2026-08-10: inverse pruning refinement + bidirectional meet-in-middle scaffold comments.
- * Exact g(n) n≥4 still open; constructive algorithm complete for any n>3.
+ * 2026-08-11: depthCap 20 for 4x4, cleaned inverse pruning, residual packing ready for
+ * true bidirectional meet-in-middle (next highest leverage). Exact g(n) n≥4 still open;
+ * constructive algorithm complete for any n>3.
  */
 class ReducedSearch {
 public:
