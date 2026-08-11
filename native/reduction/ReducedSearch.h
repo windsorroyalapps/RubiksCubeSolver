@@ -3,6 +3,7 @@
 #include "Cube.h"
 #include <vector>
 #include <cstdint>
+#include <unordered_map>
 
 /**
  * Reduced-coordinate search for small nxn (4x4 / 5x5).
@@ -24,6 +25,10 @@
  * 2026-08-11: depthCap 20 for 4x4, cleaned inverse pruning, residual packing ready for
  * true bidirectional meet-in-middle (next highest leverage). Exact g(n) n≥4 still open;
  * constructive algorithm complete for any n>3.
+ * 2026-08-12: residualKey (uint64_t centers+wings pack) + true bidirectional
+ * meet-in-middle prototype for 4x4 residual (forward/backward BFS meet on key);
+ * IDA* still primary for mobile; MITM used when residual small. Highest leverage
+ * remaining for collapsing constructive lengths toward community OBTM ≤54.
  */
 class ReducedSearch {
 public:
@@ -36,7 +41,13 @@ private:
     static int heuristic(const Cube& c);
     static uint16_t pack4x4Centers(const Cube& c);  // 16-bit mask of incorrect centers
     static int wingResidual(const Cube& c);
+    // Compact residual fingerprint for meet-in-middle / hashing (4x4 focused).
+    // High 16 bits: pack4x4Centers; low bits: wing residual samples packed.
+    static uint64_t residualKey(const Cube& c);
     static std::vector<Move> generateMoves(int n);
     static bool ida(Cube& work, int depth, int threshold,
                     int lastFace, int lastTurns, std::vector<Move>& path);
+    // Bidirectional meet-in-middle on residualKey (4x4). Returns path if found
+    // within depthCap/2 each side; empty otherwise. Mobile-safe node budget.
+    static std::vector<Move> meetInMiddle(Cube& work, int depthCap);
 };

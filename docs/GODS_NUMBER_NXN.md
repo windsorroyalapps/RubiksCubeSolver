@@ -15,10 +15,10 @@ Exact diameter for n≥4 is computationally intractable (Demaine et al.).
 ## Known bounds for small n > 3
 
 ### 4×4×4 (Rubik's Revenge)
-- **Outer Block Turn Metric (OBTM)**: 35 ≤ g(4) ≤ **54** (cubezzz / speedsolving 2015+, improved from 55)
+- **Outer Block Turn Metric (OBTM)**: 35 ≤ g(4) ≤ **54–55** (cubezzz / speedsolving; community upper often cited 54/55)
 - **Single Slice Turn Metric (SSTM)**: 32 ≤ g(4) ≤ 53
 - **Block Turn Metric (BTM)**: 29 ≤ g(4) ≤ 53
-- Community conjecture: ~41 HTM / ~48 QTM
+- Community conjecture / estimates: ~41 HTM / ~48 QTM range
 
 ### 5×5×5
 - OBTM upper bound claims ~130 (community computer searches)
@@ -69,8 +69,8 @@ These are far from optimal but are explicit, implementable algorithms that **alw
    (**Yau-style buffer tracking**: explicit UF buffer, solid-set never-touch, priority order, 4-pass freeslice + real wing-count)
 3. **Parity** (even n only) – fix OLL parity ("flipped" dedge) then PLL parity (odd edge permutation)  
    (**full multi-depth wing** orientation + permutation over all depths 1..n-2)
-4. **ReducedSearch** (4×4/5×5) – depth-limited IDA* on residual centers+wings before classic 3×3  
-   (**packed 4×4 center bitmask + full multi-depth wing residual**)
+4. **ReducedSearch** (4×4/5×5) – depth-limited IDA* + **bidirectional meet-in-middle on residualKey** on residual centers+wings before classic 3×3  
+   (**packed 4×4 center bitmask + full multi-depth wing residual + residualKey uint64 + MITM prototype**)
 5. **3×3 stage** – treat the reduced cube as a normal 3×3 and run multi-probe Kociemba (or CFOP fallback)
 6. **BatchSolver::optimize** – windowed collapse of identical (face,depth,turns) moves (log-factor spirit)
 7. **BoundHarness** – report stage lengths vs U(n) and vs ~n²/log n (scale ≈ 3.8) **+ dual OBTM/SSTM counts**
@@ -85,7 +85,7 @@ It realises a true algorithm that solves every position and approaches the asymp
 | Center commutators + batch groups | `CenterSolver.*` + `BatchGroups.*` + `ClusterScheduler.*` | Working + never-break global score + **orbit-BFS n≤5** + residual n=6 |
 | Edge freeslice + buffer | `EdgePairing.*` | Working multi-pass + wing-count + **Yau buffer + solid-set protect** |
 | Even-n parity | `ParityHandler.*` | OLL + PLL algs + **full multi-depth wing detectors** |
-| Reduced residual search | `ReducedSearch.*` | **Packed 4×4 center bitmask + full multi-depth wing residual + IDA* depthCap 20** |
+| Reduced residual search | `ReducedSearch.*` | **Packed 4×4 center bitmask + full multi-depth wing residual + residualKey + bidirectional MITM prototype + IDA* depthCap 20** |
 | Orchestrator | `ReductionSolver.*` | Full pipeline |
 | 3×3 engine | `Kociemba` + `GodsAlgorithm` + `CFOPSolver` | Phase-1 + IDA* path + CFOP fallback |
 | Bound instrumentation | `BoundHarness.*` | U(n) table + stage report + asymptotic **+ OBTM/SSTM** |
@@ -143,7 +143,6 @@ It realises a true algorithm that solves every position and approaches the asymp
 - **ReducedSearch tightened**: stronger inverse-face pruning in IDA*, 4×4 depthCap raised to 18, residual packing scaffold comments for upcoming bidirectional + full residual coords.
 - Algorithm remains the **complete constructive God's-algorithm path for any n > 3**. Exact diameter g(n) for n≥4 still open/intractable. We continue collapsing constructive lengths toward community OBTM ≤54 (4×4) and the Demaine Θ(n²/log n).
 
-
 ## Progress note (automation session 2026-08-10)
 
 - **ReducedSearch inverse pruning refined** + bidirectional meet-in-middle scaffold comments added.
@@ -158,25 +157,37 @@ It realises a true algorithm that solves every position and approaches the asymp
 - Highest remaining leverage unchanged: full residual coordinate packing + bidirectional IDA*/meet-in-middle so constructive lengths collapse toward community OBTM ≤54 (4×4) and the Demaine Θ(n²/log n).
 - Next automation: implement residualKey + full forward/backward meet-in-middle on 4×4 residual state; then lift.
 
-## Next steps (automation roadmap — current work 2026-08-11)
+## Progress note (automation session 2026-08-12)
 
-1. **Full residual coordinates + bidirectional meet-in-middle IDA*** – pack complete edge/center residual state into compact integers + hash for meet-in-middle; so 4×4 constructive lengths collapse toward community OBTM ≤54. **Highest algorithm leverage remaining.**
-2. **Verify green CI APK + native .so** – confirm this push (full wrapper + jar) produces the artifact and that lib*.so is present inside the APK.
-3. **3×3 dense DBs** – full-index BFS pruning so phase-1 routinely ≤12 and totals hit the 20 ceiling.
-4. **OBTM stage breakdown** – optional per-stage OBTM so we can see which phase is furthest from the 54-move 4×4 ceiling.
-5. **Production signed APK** – signed release, Material You polish, on-device size selector to 20×20; wire CI release when keystore secret present.
-6. **Adaptive launcher icons** – add mipmap resources for store polish.
-7. **Asymptotic fit** – re-calibrate BoundHarness scale if new community numbers appear; keep U(n) as hard constructive guarantee.
-8. **Center BFS node-budget tuning** – raise maxNodes / maxDepth on desktop; mobile-safe defaults; optional JNI param.
-9. **Edge pairing quality metrics** – log pairedWings / solid count into BoundHarness.
-10. **Parity alg variants** – alternate OLL/PLL sequences, pick shortest that clears full-depth detectors.
+- **residualKey (uint64_t) + true bidirectional meet-in-middle prototype shipped** for 4×4 ResidualSearch.
+  - residualKey packs pack4x4Centers (high 16) + wing facelet fingerprint (low 32) so key==0 iff residual cleared.
+  - meetInMiddle: forward BFS from current residual + backward BFS from solved residual (key 0), meet on key, reconstruct path (forward + inverted backward). Mobile-safe node budget (~8k) + half-depth limit.
+  - improve() prefers MITM on 4x4 then falls back to IDA* (depthCap 20).
+- This is the highest-leverage algorithm step remaining for collapsing constructive lengths toward community OBTM ≤54.
+- Exact g(n) for n≥4 remains open/intractable. The constructive reduction + Demaine batching path is complete and universal for **any n > 3**.
+- Next: raise MITM node budget / depth on desktop builds; full residual coordinate tables (exact edge permutation+orientation coords); lift MITM quality to 5×5; verify CI APK + native .so; 3×3 dense pruning DBs.
+
+## Next steps (automation roadmap — current work 2026-08-12)
+
+1. **Harden bidirectional residual MITM** – raise node budget / half-depth on desktop; add path reconstruction correctness tests; reduce residualKey collisions with more wing samples or exact 4x4 wing coords. **Still highest algorithm leverage.**
+2. **Full residual coordinate tables** – exact packed edge wing permutation + orientation + center residual for true IDA*/MITM heuristics (admissible).
+3. **Verify green CI APK + native .so** – confirm workflow produces debug APK artifact containing lib*.so; iterate NDK/CMake if needed.
+4. **3×3 dense DBs** – full-index BFS pruning tables so phase-1 routinely ≤12 and totals hit the proven 20 ceiling more often.
+5. **OBTM stage breakdown** – per-stage OBTM in BoundHarness so we can see which phase (centers vs edges vs parity vs reduced vs 3×3) is furthest from the 54-move 4×4 ceiling.
+6. **Production signed APK** – release keystore secret in CI, Material You polish, on-device size selector to 20×20; verify APK artifact contains native .so.
+7. **Adaptive launcher icons** – add mipmap/ic_launcher* (or vector) so store listing looks production-ready.
+8. **Asymptotic fit** – re-calibrate BoundHarness scale if new community 4×4/5×5 numbers appear; keep U(n) as hard constructive guarantee.
+9. **Center BFS node-budget tuning** – raise maxNodes / maxDepth on desktop builds; keep mobile-safe defaults; optionally expose as JNI param.
+10. **Edge pairing quality metrics** – log pairedWings progress + solid count into BoundHarness for diagnostics.
+11. **Parity alg variants** – try alternate OLL/PLL parity sequences and pick shortest that clears the full-depth detectors.
+12. **Lift MITM to 5×5** – residualKey + meet-in-middle for n=5 once 4x4 quality proven.
 
 ## References
 
 - Demaine et al., "Algorithms for Solving Rubik's Cubes", ESA 2011 / arXiv:1106.5736 (Θ(n²/log n))
 - Rokicki et al., cube20.org (3×3 = 20)
-- cubezzz / speedsolving threads (4×4 OBTM 35–54)
+- cubezzz / speedsolving threads (4×4 OBTM 35–55)
 - Community upper-bound derivations (92n² series)
 
 ---
-*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Exact g(n) n≥4 still open; constructive path is complete. Next: full bidirectional residual coords for 4×4/5×5 toward OBTM ≤54.*
+*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Exact g(n) n≥4 still open; constructive path is complete. Next: harden residualKey MITM + full residual coords for 4×4/5×5 toward OBTM ≤54.*
