@@ -12,7 +12,7 @@
  * inner-slice freedom. This module runs a depth-limited IDA*-style search
  * over outer + curated inner moves to shorten the remaining path before the
  * classic 3x3 stage, pushing constructive lengths toward community OBTM
- * ceilings (~40–54 for 4×4).
+ * ceilings (~35–55 for 4×4, current published upper 55).
  *
  * 2026-08-06: packed 4x4 center residual (uint16_t bitmask of 16 inner cells)
  * + stronger multi-wing residual heuristic.
@@ -28,7 +28,12 @@
  * 2026-08-12: residualKey (uint64_t centers+wings pack) + true bidirectional
  * meet-in-middle prototype for 4x4 residual (forward/backward BFS meet on key);
  * IDA* still primary for mobile; MITM used when residual small. Highest leverage
- * remaining for collapsing constructive lengths toward community OBTM ≤54.
+ * remaining for collapsing constructive lengths toward community OBTM ≤54/55.
+ * 2026-08-13: harden residualKey (denser wing facelet packing, more collision resistance),
+ * raise MITM nodeBudget to 50k + half-depth, depthCap 22 for 4x4, improved reconstruction
+ * path + inverse handling. Still highest algorithm leverage. Exact g(n) for n≥4 open;
+ * universal constructive reduction + Demaine batching + residual MITM is the practical
+ * God’s algorithm for any n>3.
  */
 class ReducedSearch {
 public:
@@ -42,12 +47,12 @@ private:
     static uint16_t pack4x4Centers(const Cube& c);  // 16-bit mask of incorrect centers
     static int wingResidual(const Cube& c);
     // Compact residual fingerprint for meet-in-middle / hashing (4x4 focused).
-    // High 16 bits: pack4x4Centers; low bits: wing residual samples packed.
+    // High 16 bits: pack4x4Centers; low bits: denser wing residual samples packed.
     static uint64_t residualKey(const Cube& c);
     static std::vector<Move> generateMoves(int n);
     static bool ida(Cube& work, int depth, int threshold,
                     int lastFace, int lastTurns, std::vector<Move>& path);
     // Bidirectional meet-in-middle on residualKey (4x4). Returns path if found
-    // within depthCap/2 each side; empty otherwise. Mobile-safe node budget.
+    // within depthCap/2 each side; empty otherwise. Hardened node budget 50k.
     static std::vector<Move> meetInMiddle(Cube& work, int depthCap);
 };

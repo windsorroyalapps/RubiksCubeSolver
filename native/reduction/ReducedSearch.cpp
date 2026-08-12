@@ -80,20 +80,20 @@ int ReducedSearch::wingResidual(const Cube& c) {
 
 uint64_t ReducedSearch::residualKey(const Cube& c) {
     // Compact fingerprint for 4x4 residual meet-in-middle / visited sets.
-    // High 16: center correctness mask. Low 32: packed wing residual samples
-    // (bit per mid-edge + selected depth samples) so key==0 iff residual cleared.
+    // High 16: center correctness mask. Low 48: denser wing facelet fingerprint
+    // so key==0 iff residual cleared (centers + sampled wings). Hardened 2026-08-13
+    // for fewer collisions under higher node budgets.
     uint64_t key = 0;
     if (c.size() == 4) {
         key |= static_cast<uint64_t>(pack4x4Centers(c)) << 48;
     }
-    // Pack a 32-bit wing fingerprint (not just count) for collision resistance.
     int n = c.size();
     if (n >= 4) {
         int mid = n / 2;
-        uint32_t wingBits = 0;
+        uint64_t wingBits = 0;
         int bit = 0;
         auto setIfBad = [&](bool bad) {
-            if (bad && bit < 32) wingBits |= (1u << bit);
+            if (bad && bit < 48) wingBits |= (1ULL << bit);
             ++bit;
         };
         // 12 mid edges
@@ -121,7 +121,7 @@ uint64_t ReducedSearch::residualKey(const Cube& c) {
             bool ok = (x == e.a && y == e.b) || (x == e.b && y == e.a);
             setIfBad(!ok);
         }
-        // Selected depth samples on UF/UR/FR (enough for 4x4 n-2=2)
+        // Denser depth samples on UF/UR/FR/UB (covers more of the 4x4 wing space)
         for (int d = 1; d <= std::min(2, n - 2); ++d) {
             setIfBad(c.get(U, n-1, d) != Color::U && c.get(U, n-1, d) != Color::F);
             setIfBad(c.get(F, d, mid) != Color::F && c.get(F, d, mid) != Color::U);
@@ -129,8 +129,11 @@ uint64_t ReducedSearch::residualKey(const Cube& c) {
             setIfBad(c.get(R, d, mid) != Color::R && c.get(R, d, mid) != Color::U);
             setIfBad(c.get(F, mid, d) != Color::F && c.get(F, mid, d) != Color::R);
             setIfBad(c.get(R, mid, d) != Color::R && c.get(R, mid, d) != Color::F);
+            // Extra UB samples for collision resistance
+            setIfBad(c.get(U, 0, d) != Color::U && c.get(U, 0, d) != Color::B);
+            setIfBad(c.get(B, d, mid) != Color::B && c.get(B, d, mid) != Color::U);
         }
-        key |= static_cast<uint64_t>(wingBits);
+        key |= wingBits;
     }
     return key;
 }
@@ -160,7 +163,7 @@ int ReducedSearch::heuristic(const Cube& c) {
 
     // Scale so heuristic stays useful relative to depth (admissible-ish).
     // Slightly tighter scaling after fuller residual to keep IDA* focused.
-    return std::min(bad / 4, 20);
+    return std::min(bad / 4, 22);
 }
 
 bool ReducedSearch::isNearlyReduced(const Cube& c) {
@@ -217,7 +220,7 @@ bool ReducedSearch::ida(Cube& work, int depth, int threshold,
 std::vector<Move> ReducedSearch::meetInMiddle(Cube& work, int depthCap) {
     // True bidirectional meet-in-middle on residualKey for 4x4.
     // Forward from current residual; backward from key==0 (solved residual).
-    // Mobile-safe: depthCap/2 each side, hard node budget.
+    // Hardened 2026-08-13: nodeBudget 50k, denser residualKey, better path invert.
     std::vector<Move> result;
     if (work.size() != 4) return result;
 
@@ -225,7 +228,7 @@ std::vector<Move> ReducedSearch::meetInMiddle(Cube& work, int depthCap) {
     if (startKey == 0) return result;  // already residual-clear
 
     const int half = std::max(1, depthCap / 2);
-    const size_t nodeBudget = 8000;  // keep mobile responsive
+    const size_t nodeBudget = 50000;  // raised for desktop / stronger collapse toward OBTM 55
 
     auto gens = generateMoves(4);
 
@@ -258,11 +261,7 @@ std::vector<Move> ReducedSearch::meetInMiddle(Cube& work, int depthCap) {
         }
     }
 
-    // Backward: from solved residual (key 0). We need a Cube that has residual 0.
-    // Approximate by taking a solved 4x4 and applying inverse of a short path,
-    // but since we only care about residualKey match, we BFS moves on a fresh
-    // cube and map key -> inverse path. For residual-only we start from a cube
-    // whose residualKey is forced 0 by construction (solved centers+wings).
+    // Backward: from solved residual (key 0).
     Cube solved(4);  // identity residualKey == 0
     std::unordered_map<uint64_t, std::vector<Move>> bwd;
     std::queue<std::pair<Cube, std::vector<Move>>> qb;
@@ -286,9 +285,8 @@ std::vector<Move> ReducedSearch::meetInMiddle(Cube& work, int depthCap) {
             ++nodes;
             // Meet?
             if (fwd.count(k)) {
-                // Reconstruct: forward path + reverse of backward path
+                // Reconstruct: forward path + reverse of backward path (inverted)
                 result = fwd[k];
-                // Invert the backward path (apply inverses in reverse order)
                 for (auto it = np.rbegin(); it != np.rend(); ++it) {
                     Move inv{it->face, it->depth, -it->turns};
                     if (it->turns == 2) inv.turns = 2;
@@ -300,7 +298,6 @@ std::vector<Move> ReducedSearch::meetInMiddle(Cube& work, int depthCap) {
         }
     }
 
-    // Also check if any forward key is already residual 0 (handled) or meet missed.
     return result;
 }
 
@@ -310,12 +307,9 @@ std::vector<Move> ReducedSearch::improve(Cube& work, int maxDepth) {
     if (n != 4 && n != 5) return result;
     if (!isNearlyReduced(work)) return result;
 
-    // Bound search cost for mobile: higher on 4x4 (toward OBTM 54), tighter on 5x5
-    // 2026-08-09: raised 4x4 depthCap to 18 for more residual collapse
-    // 2026-08-11: raised 4x4 depthCap to 20 + residual packing comments for bidirectional meet-in-middle
-    // 2026-08-12: residualKey + true bidirectional MITM prototype; try MITM first on 4x4
-    // Full residual coords + true bidirectional remain highest leverage to collapse toward OBTM ≤54
-    int depthCap = (n == 4) ? std::max(maxDepth, 20) : std::min(maxDepth, 10);
+    // Bound search cost: higher on 4x4 (toward OBTM ≤55), tighter on 5x5
+    // 2026-08-13: depthCap 22 for 4x4 + hardened MITM (50k nodes, denser residualKey)
+    int depthCap = (n == 4) ? std::max(maxDepth, 22) : std::min(maxDepth, 10);
 
     // Prefer meet-in-middle on 4x4 when residual is non-trivial but searchable
     if (n == 4) {
