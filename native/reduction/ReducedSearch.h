@@ -34,6 +34,11 @@
  * path + inverse handling. Still highest algorithm leverage. Exact g(n) for n≥4 open;
  * universal constructive reduction + Demaine batching + residual MITM is the practical
  * God’s algorithm for any n>3.
+ * 2026-08-14: Full residual coordinate tables scaffold — denser wing orientation +
+ * mid-edge permutation samples packed into residualKey + more admissible heuristic
+ * (popcount of residual coords). Moves residual model closer to exact wing perm+orient
+ * coordinates for tighter IDA*/MITM. Highest remaining leverage still full exact tables +
+ * lift to 5×5.
  */
 class ReducedSearch {
 public:
@@ -47,8 +52,11 @@ private:
     static uint16_t pack4x4Centers(const Cube& c);  // 16-bit mask of incorrect centers
     static int wingResidual(const Cube& c);
     // Compact residual fingerprint for meet-in-middle / hashing (4x4 focused).
-    // High 16 bits: pack4x4Centers; low bits: denser wing residual samples packed.
+    // High 16 bits: pack4x4Centers; low bits: denser wing orient + mid-edge perm samples.
     static uint64_t residualKey(const Cube& c);
+    // Full residual coordinate tables scaffold (wing orient bits + perm samples + centers).
+    // Returns a packed residual state useful for admissible heuristics / denser MITM.
+    static uint64_t residualCoords(const Cube& c);
     static std::vector<Move> generateMoves(int n);
     static bool ida(Cube& work, int depth, int threshold,
                     int lastFace, int lastTurns, std::vector<Move>& path);

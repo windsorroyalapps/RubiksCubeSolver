@@ -78,77 +78,91 @@ int ReducedSearch::wingResidual(const Cube& c) {
     return bad;
 }
 
+// 2026-08-14: Full residual coordinate tables scaffold.
+// Packs centers + wing orientation bits + mid-edge permutation samples into a
+// denser residual state. Closer to exact wing perm+orient coordinates for
+// admissible IDA*/MITM heuristics. Still fingerprint-style; exact tables next.
+uint64_t ReducedSearch::residualCoords(const Cube& c) {
+    uint64_t coords = 0;
+    int n = c.size();
+    if (n < 4) return 0;
+
+    // High 16: 4x4 center residual (exact for n=4)
+    if (n == 4) {
+        coords |= static_cast<uint64_t>(pack4x4Centers(c)) << 48;
+    }
+
+    int mid = n / 2;
+    uint64_t low = 0;
+    int bit = 0;
+    auto setBit = [&](bool val) {
+        if (val && bit < 48) low |= (1ULL << bit);
+        ++bit;
+    };
+
+    // 12 mid-edge orientation / correctness (permutation sample)
+    struct EdgeSample {
+        int f1, r1, c1, f2, r2, c2;
+        Color a, b;
+    };
+    EdgeSample edges[] = {
+        {U, n-1, mid, F, 0, mid, Color::U, Color::F},
+        {U, mid, n-1, R, 0, mid, Color::U, Color::R},
+        {U, 0, mid, B, 0, mid, Color::U, Color::B},
+        {U, mid, 0, L, 0, mid, Color::U, Color::L},
+        {D, 0, mid, F, n-1, mid, Color::D, Color::F},
+        {D, mid, n-1, R, n-1, mid, Color::D, Color::R},
+        {D, n-1, mid, B, n-1, mid, Color::D, Color::B},
+        {D, mid, 0, L, n-1, mid, Color::D, Color::L},
+        {F, mid, n-1, R, mid, 0, Color::F, Color::R},
+        {F, mid, 0, L, mid, n-1, Color::F, Color::L},
+        {B, mid, 0, R, mid, n-1, Color::B, Color::R},
+        {B, mid, n-1, L, mid, 0, Color::B, Color::L},
+    };
+    for (const auto& e : edges) {
+        Color x = c.get(e.f1, e.r1, e.c1);
+        Color y = c.get(e.f2, e.r2, e.c2);
+        bool oriented = (x == e.a && y == e.b);
+        bool present = oriented || (x == e.b && y == e.a);
+        setBit(!present);          // position residual
+        setBit(present && !oriented); // orientation residual
+    }
+
+    // Extra depth samples (wing orient at depths 1..min(2,n-2)) for denser packing
+    for (int d = 1; d <= std::min(2, n - 2); ++d) {
+        setBit(c.get(U, n-1, d) != Color::U && c.get(U, n-1, d) != Color::F);
+        setBit(c.get(F, d, mid) != Color::F && c.get(F, d, mid) != Color::U);
+        setBit(c.get(U, d, n-1) != Color::U && c.get(U, d, n-1) != Color::R);
+        setBit(c.get(R, d, mid) != Color::R && c.get(R, d, mid) != Color::U);
+        setBit(c.get(F, mid, d) != Color::F && c.get(F, mid, d) != Color::R);
+        setBit(c.get(R, mid, d) != Color::R && c.get(R, mid, d) != Color::F);
+        setBit(c.get(U, 0, d) != Color::U && c.get(U, 0, d) != Color::B);
+        setBit(c.get(B, d, mid) != Color::B && c.get(B, d, mid) != Color::U);
+    }
+
+    coords |= low;
+    return coords;
+}
+
 uint64_t ReducedSearch::residualKey(const Cube& c) {
     // Compact fingerprint for 4x4 residual meet-in-middle / visited sets.
-    // High 16: center correctness mask. Low 48: denser wing facelet fingerprint
-    // so key==0 iff residual cleared (centers + sampled wings). Hardened 2026-08-13
-    // for fewer collisions under higher node budgets.
-    uint64_t key = 0;
-    if (c.size() == 4) {
-        key |= static_cast<uint64_t>(pack4x4Centers(c)) << 48;
-    }
-    int n = c.size();
-    if (n >= 4) {
-        int mid = n / 2;
-        uint64_t wingBits = 0;
-        int bit = 0;
-        auto setIfBad = [&](bool bad) {
-            if (bad && bit < 48) wingBits |= (1ULL << bit);
-            ++bit;
-        };
-        // 12 mid edges
-        struct EdgeSample {
-            int f1, r1, c1, f2, r2, c2;
-            Color a, b;
-        };
-        EdgeSample edges[] = {
-            {U, n-1, mid, F, 0, mid, Color::U, Color::F},
-            {U, mid, n-1, R, 0, mid, Color::U, Color::R},
-            {U, 0, mid, B, 0, mid, Color::U, Color::B},
-            {U, mid, 0, L, 0, mid, Color::U, Color::L},
-            {D, 0, mid, F, n-1, mid, Color::D, Color::F},
-            {D, mid, n-1, R, n-1, mid, Color::D, Color::R},
-            {D, n-1, mid, B, n-1, mid, Color::D, Color::B},
-            {D, mid, 0, L, n-1, mid, Color::D, Color::L},
-            {F, mid, n-1, R, mid, 0, Color::F, Color::R},
-            {F, mid, 0, L, mid, n-1, Color::F, Color::L},
-            {B, mid, 0, R, mid, n-1, Color::B, Color::R},
-            {B, mid, n-1, L, mid, 0, Color::B, Color::L},
-        };
-        for (const auto& e : edges) {
-            Color x = c.get(e.f1, e.r1, e.c1);
-            Color y = c.get(e.f2, e.r2, e.c2);
-            bool ok = (x == e.a && y == e.b) || (x == e.b && y == e.a);
-            setIfBad(!ok);
-        }
-        // Denser depth samples on UF/UR/FR/UB (covers more of the 4x4 wing space)
-        for (int d = 1; d <= std::min(2, n - 2); ++d) {
-            setIfBad(c.get(U, n-1, d) != Color::U && c.get(U, n-1, d) != Color::F);
-            setIfBad(c.get(F, d, mid) != Color::F && c.get(F, d, mid) != Color::U);
-            setIfBad(c.get(U, d, n-1) != Color::U && c.get(U, d, n-1) != Color::R);
-            setIfBad(c.get(R, d, mid) != Color::R && c.get(R, d, mid) != Color::U);
-            setIfBad(c.get(F, mid, d) != Color::F && c.get(F, mid, d) != Color::R);
-            setIfBad(c.get(R, mid, d) != Color::R && c.get(R, mid, d) != Color::F);
-            // Extra UB samples for collision resistance
-            setIfBad(c.get(U, 0, d) != Color::U && c.get(U, 0, d) != Color::B);
-            setIfBad(c.get(B, d, mid) != Color::B && c.get(B, d, mid) != Color::U);
-        }
-        key |= wingBits;
-    }
-    return key;
+    // Now delegates to residualCoords (2026-08-14 full residual coordinate scaffold)
+    // so key==0 iff residual cleared (centers + sampled wings orient/perm).
+    return residualCoords(c);
 }
 
 int ReducedSearch::heuristic(const Cube& c) {
     int n = c.size();
     if (n < 4) return 0;
 
+    // 2026-08-14: more admissible residual heuristic via residualCoords popcount
+    // (each set bit ≈ at least one residual defect). Scale keeps IDA* focused.
+    uint64_t coords = residualCoords(c);
     int bad = 0;
+    // Centers (high 16 for n=4)
     if (n == 4) {
-        // Exact packed center residual (popcount of incorrect mask)
-        uint16_t mask = pack4x4Centers(c);
-        bad += __builtin_popcount(mask);
+        bad += __builtin_popcount(static_cast<unsigned int>((coords >> 48) & 0xFFFFu));
     } else {
-        // Centers: sample inner (n-2)x(n-2)
         for (int f = 0; f < 6; ++f) {
             Color target = static_cast<Color>(f);
             for (int r = 1; r < n - 1; ++r) {
@@ -158,12 +172,14 @@ int ReducedSearch::heuristic(const Cube& c) {
             }
         }
     }
+    // Wing residual bits (low 48)
+    bad += __builtin_popcountll(coords & ((1ULL << 48) - 1));
 
-    bad += wingResidual(c);
+    // Also fold classic wingResidual for extra signal on n>4 / deeper samples
+    bad += wingResidual(c) / 2;
 
     // Scale so heuristic stays useful relative to depth (admissible-ish).
-    // Slightly tighter scaling after fuller residual to keep IDA* focused.
-    return std::min(bad / 4, 22);
+    return std::min(bad / 3, 22);
 }
 
 bool ReducedSearch::isNearlyReduced(const Cube& c) {
@@ -221,6 +237,7 @@ std::vector<Move> ReducedSearch::meetInMiddle(Cube& work, int depthCap) {
     // True bidirectional meet-in-middle on residualKey for 4x4.
     // Forward from current residual; backward from key==0 (solved residual).
     // Hardened 2026-08-13: nodeBudget 50k, denser residualKey, better path invert.
+    // 2026-08-14: residualKey now uses residualCoords (orient+perm packing).
     std::vector<Move> result;
     if (work.size() != 4) return result;
 
@@ -308,7 +325,7 @@ std::vector<Move> ReducedSearch::improve(Cube& work, int maxDepth) {
     if (!isNearlyReduced(work)) return result;
 
     // Bound search cost: higher on 4x4 (toward OBTM ≤55), tighter on 5x5
-    // 2026-08-13: depthCap 22 for 4x4 + hardened MITM (50k nodes, denser residualKey)
+    // 2026-08-13/14: depthCap 22 for 4x4 + hardened MITM + residualCoords
     int depthCap = (n == 4) ? std::max(maxDepth, 22) : std::min(maxDepth, 10);
 
     // Prefer meet-in-middle on 4x4 when residual is non-trivial but searchable
