@@ -30,7 +30,7 @@ MoveTables · BFS pruning · coord-space IDA* · `GodsAlgorithm`
 ```text
 ClusterScheduler → BatchGroups → Centers (never-break + orbit-BFS n≤5 / residual n=6)
   → Edges (Yau buffer + solid-set never-touch) → Parity (full multi-depth wing, even n)
-  → ReducedSearch (packed 4×4 centers + residualKey + bidirectional MITM + multi-depth wing residual IDA*) → 3×3 → BatchSolver::optimize
+  → ReducedSearch (packed 4×4 centers + residualCoords + residualKey + bidirectional MITM + multi-depth wing residual IDA*) → 3×3 → BatchSolver::optimize
   → BoundHarness report (SSTM + OBTM dual metrics)
 ```
 
@@ -125,7 +125,8 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 - [x] **ReducedSearch depthCap 20 (4x4) + residual packing ready for bidirectional** — 2026-08-11
 - [x] **residualKey + true bidirectional meet-in-middle prototype (4x4)** — 2026-08-12
 - [x] **Harden residualKey + MITM (nodeBudget 50k, denser wing packing, depthCap 22)** — 2026-08-13
-- [ ] Full residual coordinate tables (exact wing perm+orient + admissible heuristics)
+- [x] **residualCoords scaffold (wing orient + mid-edge perm packing + admissible heuristic)** — 2026-08-14
+- [ ] Exact residual coordinate tables (full wing perm+orient integers + denser admissible heuristics)
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK (release keystore + Material You polish) + verified native .so in artifact
 - [ ] Adaptive launcher icons (mipmap) for store polish
@@ -133,10 +134,10 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 
 ---
 
-## Next steps / approaches to try next time (current automation work — 2026-08-13)
+## Next steps / approaches to try next time (current automation work — 2026-08-14)
 
-1. **Full residual coordinate tables** – exact edge wing permutation + orientation + center residual integers for admissible heuristics and denser MITM. Highest remaining algorithm leverage after today’s harden.
-2. **Lift MITM quality to 5×5** – residualKey + meet-in-middle once 4x4 residual coords are solid.
+1. **Exact residual coordinate tables** – full integer wing permutation + orientation coordinates (not just bit fingerprints) for true admissible IDA*/MITM heuristics. Highest remaining algorithm leverage after today’s residualCoords scaffold.
+2. **Lift MITM quality to 5×5** – residualKey/residualCoords + meet-in-middle once 4x4 residual coords are solid.
 3. **Verify green CI APK + native .so** – confirm workflow with full gradlew + jar produces debug APK artifact containing lib*.so; iterate NDK/CMake if needed.
 4. **3×3 dense DBs** – full-index BFS pruning tables so phase-1 routinely ≤12 and totals hit the proven 20 ceiling more often.
 5. **OBTM stage breakdown** – per-stage OBTM in BoundHarness so we can see which phase (centers vs edges vs parity vs reduced vs 3×3) is furthest from the 55-move 4×4 ceiling.
@@ -150,4 +151,4 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 
 ---
 
-*Android/BMW hacking genius mode. Ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search until constructive U(n) collapses toward true God's Number. Exact g(n) for n≥4 remains open (intractable); the constructive reduction + Demaine batching path is complete and universal. residualKey + bidirectional MITM hardened 2026-08-13 (50k nodes, denser packing, depthCap 22). Keep iterating. Ship or die.*
+*Android/BMW hacking genius mode. Ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search until constructive U(n) collapses toward true God's Number. Exact g(n) for n≥4 remains open (intractable); the constructive reduction + Demaine batching path is complete and universal. residualCoords scaffold + denser wing orient/perm packing + admissible heuristic shipped 2026-08-14. Keep iterating. Ship or die.*

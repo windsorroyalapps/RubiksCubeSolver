@@ -18,12 +18,12 @@ Exact diameter for n≥4 is computationally intractable (Demaine et al.).
 - **Outer Block Turn Metric (OBTM)**: 35 ≤ g(4) ≤ **55** (Shuang Chen 2015 / community; cubezzz / speedsolving)
 - **Single Slice Turn Metric (SSTM)**: 32 ≤ g(4) ≤ 53
 - **Block Turn Metric (BTM)**: 29 ≤ g(4) ≤ 53
-- Community conjecture / estimates: ~41 HTM / ~48 QTM range
+- Community conjecture / estimates: ~41 HTM / ~48 QTM range (probabilistic estimates ~48 QTM / ~41 HTM)
 
 ### 5×5×5
 - OBTM upper bound claims ~130 (community computer searches)
 - Large gap remains between lower and upper bounds
-- Informal HTM-scale estimates ~55–70
+- Informal HTM-scale estimates ~55–70; probabilistic ~68 QTM / ~58 HTM
 
 ### Higher n
 No tight constants; only asymptotic and constructive upper bounds.
@@ -69,8 +69,8 @@ These are far from optimal but are explicit, implementable algorithms that **alw
    (**Yau-style buffer tracking**: explicit UF buffer, solid-set never-touch, priority order, 4-pass freeslice + real wing-count)
 3. **Parity** (even n only) – fix OLL parity ("flipped" dedge) then PLL parity (odd edge permutation)  
    (**full multi-depth wing** orientation + permutation over all depths 1..n-2)
-4. **ReducedSearch** (4×4/5×5) – depth-limited IDA* + **bidirectional meet-in-middle on residualKey** on residual centers+wings before classic 3×3  
-   (**packed 4×4 center bitmask + full multi-depth wing residual + residualKey uint64 + hardened MITM**)
+4. **ReducedSearch** (4×4/5×5) – depth-limited IDA* + **bidirectional meet-in-middle on residualKey/residualCoords** on residual centers+wings before classic 3×3  
+   (**packed 4×4 center bitmask + full multi-depth wing residual + residualCoords (orient+perm packing) + hardened MITM**)
 5. **3×3 stage** – treat the reduced cube as a normal 3×3 and run multi-probe Kociemba (or CFOP fallback)
 6. **BatchSolver::optimize** – windowed collapse of identical (face,depth,turns) moves (log-factor spirit)
 7. **BoundHarness** – report stage lengths vs U(n) and vs ~n²/log n (scale ≈ 3.8) **+ dual OBTM/SSTM counts**
@@ -85,7 +85,7 @@ It realises a true algorithm that solves every position and approaches the asymp
 | Center commutators + batch groups | `CenterSolver.*` + `BatchGroups.*` + `ClusterScheduler.*` | Working + never-break global score + **orbit-BFS n≤5** + residual n=6 |
 | Edge freeslice + buffer | `EdgePairing.*` | Working multi-pass + wing-count + **Yau buffer + solid-set protect** |
 | Even-n parity | `ParityHandler.*` | OLL + PLL algs + **full multi-depth wing detectors** |
-| Reduced residual search | `ReducedSearch.*` | **Packed 4×4 center bitmask + full multi-depth wing residual + residualKey + hardened bidirectional MITM (50k nodes, denser pack, depthCap 22) + IDA*** |
+| Reduced residual search | `ReducedSearch.*` | **Packed 4×4 center bitmask + full multi-depth wing residual + residualCoords (wing orient+perm packing) + residualKey + hardened bidirectional MITM (50k nodes, denser pack, depthCap 22) + IDA*** |
 | Orchestrator | `ReductionSolver.*` | Full pipeline |
 | 3×3 engine | `Kociemba` + `GodsAlgorithm` + `CFOPSolver` | Phase-1 + IDA* path + CFOP fallback |
 | Bound instrumentation | `BoundHarness.*` | U(n) table + stage report + asymptotic **+ OBTM/SSTM** |
@@ -177,10 +177,20 @@ It realises a true algorithm that solves every position and approaches the asymp
 - Exact g(n) for n≥4 remains open and intractable. The constructive reduction + Demaine batching + residual MITM path is **complete and universal for any n > 3**.
 - Next: full residual coordinate tables (exact wing perm + orient), lift MITM to 5×5, desktop-only higher budgets via JNI/compile flag, CI APK + .so verification, 3×3 dense DBs, OBTM stage breakdown in BoundHarness.
 
-## Next steps (automation roadmap — current work 2026-08-13)
+## Progress note (automation session 2026-08-14)
 
-1. **Full residual coordinate tables** – exact packed edge wing permutation + orientation + center residual for true IDA*/MITM heuristics (admissible). **Highest remaining leverage.**
-2. **Lift MITM to 5×5** – residualKey + meet-in-middle for n=5 once 4x4 quality proven with full coords.
+- **residualCoords scaffold shipped** (full residual coordinate tables path):
+  - `residualCoords()` packs 4×4 centers (high 16) + denser wing orientation bits + mid-edge permutation samples (low 48).
+  - `residualKey` now delegates to residualCoords for collision-resistant fingerprint under 50k-node MITM.
+  - Heuristic refined to popcount residual coords (more admissible) + classic wingResidual signal.
+  - Moves residual model closer to exact wing perm+orient coordinates for tighter IDA*/MITM.
+- Exact g(n) for n≥4 remains open and intractable. The constructive reduction + Demaine batching + residual MITM path is **complete and universal for any n > 3**.
+- Highest remaining leverage: exact integer residual coordinate tables + lift MITM to 5×5 + OBTM stage breakdown.
+
+## Next steps (automation roadmap — current work 2026-08-14)
+
+1. **Exact residual coordinate tables** – full integer wing permutation + orientation coordinates (not just bit fingerprints) for true admissible IDA*/MITM heuristics. **Highest remaining leverage.**
+2. **Lift MITM to 5×5** – residualKey/residualCoords + meet-in-middle for n=5 once 4x4 quality proven with full coords.
 3. **Verify green CI APK + native .so** – confirm workflow produces debug APK artifact containing lib*.so; iterate NDK/CMake if needed.
 4. **3×3 dense DBs** – full-index BFS pruning tables so phase-1 routinely ≤12 and totals hit the proven 20 ceiling more often.
 5. **OBTM stage breakdown** – per-stage OBTM in BoundHarness so we can see which phase (centers vs edges vs parity vs reduced vs 3×3) is furthest from the 55-move 4×4 ceiling.
@@ -199,6 +209,7 @@ It realises a true algorithm that solves every position and approaches the asymp
 - cubezzz / speedsolving threads (4×4 OBTM 35–55)
 - Community upper-bound derivations (92n² series)
 - Shuang Chen 2015 (4×4 OBTM upper 55)
+- Probabilistic diameter estimates (arXiv:2404.07337) ~48 QTM / ~41 HTM for 4×4
 
 ---
-*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Exact g(n) n≥4 still open; constructive path is complete. Next: full residual coords + lift MITM to 5×5 toward OBTM ≤55.*
+*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Exact g(n) n≥4 still open; constructive path is complete. residualCoords scaffold shipped 2026-08-14. Next: exact residual coords + lift MITM to 5×5 toward OBTM ≤55.*
