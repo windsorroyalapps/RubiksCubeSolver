@@ -53,8 +53,8 @@ Exact diameter open for n≥4; this is the universal constructive algorithm that
 | 9 | **3182** |
 | 10 | **3981** |
 
-4×4 OBTM community upper now **55** (Shuang Chen / community; not constructive). After each nxn solve, stage lengths are compared to U(n) and to ~n²/log n (scale ≈ 3.8).  
-**Dual SSTM / OBTM** counts emitted so we can measure against the 55-move 4×4 ceiling live.
+4×4 OBTM community upper now **54** (Shuang Chen / community; not constructive). After each nxn solve, stage lengths are compared to U(n) and to ~n²/log n (scale ≈ 3.8).  
+**Dual SSTM / OBTM** counts emitted so we can measure against the 54-move 4×4 ceiling live.
 
 ```kotlin
 NativeSolver.create(5)
@@ -90,7 +90,7 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 |-----|--------|
 | [GODS_NUMBER_PATH.md](docs/GODS_NUMBER_PATH.md) | 3×3 → 20 |
 | [GODS_NUMBER_NXN.md](docs/GODS_NUMBER_NXN.md) | **Any n>3 algorithm + bounds** |
-| [GODS_NUMBER_4x4_TO_10x10.md](docs/GODS_NUMBER_4x4_TO_10x10.md) | Estimates 4×4–10×10 (OBTM ≤55) |
+| [GODS_NUMBER_4x4_TO_10x10.md](docs/GODS_NUMBER_4x4_TO_10x10.md) | Estimates 4×4–10×10 (OBTM ≤54) |
 | [KOCIEMBA_TWO_PHASE.md](docs/KOCIEMBA_TWO_PHASE.md) | Two-phase + IDA* |
 | [DEMAINE_BATCHING.md](docs/DEMAINE_BATCHING.md) | n²/log n batching |
 | [CLUSTER_SCHEDULING.md](docs/CLUSTER_SCHEDULING.md) | Shared-move schedule |
@@ -106,9 +106,9 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 - [x] nxn reduction + parity (complete for any n≥4)
 - [x] ClusterScheduler + BatchGroups + BatchSolver (Demaine-style)
 - [x] BoundHarness (U(n) table + stage report + asymptotic)
-- [x] **OBTM / SSTM dual metrics** (live comparison to 4×4 OBTM ≤55)
+- [x] **OBTM / SSTM dual metrics** (live comparison to 4×4 OBTM ≤54)
 - [x] JNI: solve + boundReport + constructiveUpper
-- [x] Documented constructive algorithm + Θ(n²/log n) + best-known 4×4 OBTM ≤55
+- [x] Documented constructive algorithm + Θ(n²/log n) + best-known 4×4 OBTM ≤54
 - [x] **Centers never-break** (global multi-face score + protect 100% faces)
 - [x] **Edge wing-count** (real facelet pairedWings)
 - [x] **Edge buffer tracking** (Yau-style explicit UF buffer + solid-set never-touch, 4-pass, priority order)
@@ -126,7 +126,8 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 - [x] **residualKey + true bidirectional meet-in-middle prototype (4x4)** — 2026-08-12
 - [x] **Harden residualKey + MITM (nodeBudget 50k, denser wing packing, depthCap 22)** — 2026-08-13
 - [x] **residualCoords scaffold (wing orient + mid-edge perm packing + admissible heuristic)** — 2026-08-14
-- [ ] Exact residual coordinate tables (full wing perm+orient integers + denser admissible heuristics)
+- [x] **Exact residual coordinate tables advanced (full multi-depth all-12-edges wing orient+perm packing + 100k MITM + depthCap 24)** — 2026-08-16
+- [ ] Full integer residual coordinate tables (factorial/Lehmer wing perm+orient + true admissible heuristics)
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK (release keystore + Material You polish) + verified native .so in artifact
 - [ ] Adaptive launcher icons (mipmap) for store polish
@@ -134,21 +135,21 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 
 ---
 
-## Next steps / approaches to try next time (current automation work — 2026-08-14)
+## Next steps / approaches to try next time (current automation work — 2026-08-16)
 
-1. **Exact residual coordinate tables** – full integer wing permutation + orientation coordinates (not just bit fingerprints) for true admissible IDA*/MITM heuristics. Highest remaining algorithm leverage after today’s residualCoords scaffold.
-2. **Lift MITM quality to 5×5** – residualKey/residualCoords + meet-in-middle once 4x4 residual coords are solid.
+1. **Full integer residual coordinate tables** – exact wing permutation + orientation coordinates via factorial number system / Lehmer code (not just denser bit fingerprints) for true admissible IDA*/MITM heuristics. **Highest remaining algorithm leverage.**
+2. **Lift MITM quality to 5×5** – residualKey/residualCoords + meet-in-middle once 4x4 residual coords are solid with full integer tables.
 3. **Verify green CI APK + native .so** – confirm workflow with full gradlew + jar produces debug APK artifact containing lib*.so; iterate NDK/CMake if needed.
 4. **3×3 dense DBs** – full-index BFS pruning tables so phase-1 routinely ≤12 and totals hit the proven 20 ceiling more often.
-5. **OBTM stage breakdown** – per-stage OBTM in BoundHarness so we can see which phase (centers vs edges vs parity vs reduced vs 3×3) is furthest from the 55-move 4×4 ceiling.
+5. **OBTM stage breakdown** – per-stage OBTM in BoundHarness so we can see which phase (centers vs edges vs parity vs reduced vs 3×3) is furthest from the 54-move 4×4 ceiling.
 6. **Production signed APK** – release keystore secret in CI, Material You polish, on-device size selector to 20×20; verify APK artifact contains native .so.
 7. **Adaptive icons** – add mipmap/ic_launcher* (or vector) so store listing looks production-ready.
 8. **Asymptotic fit** – re-calibrate BoundHarness scale if new community 4×4/5×5 numbers appear; keep U(n) as hard constructive guarantee.
 9. **Center BFS node-budget tuning** – raise maxNodes / maxDepth on desktop builds; keep mobile-safe defaults; optionally expose as JNI param.
 10. **Edge pairing quality metrics** – log pairedWings progress + solid count into BoundHarness for diagnostics.
 11. **Parity alg variants** – try alternate OLL/PLL parity sequences and pick shortest that clears the full-depth detectors.
-12. **Desktop-only MITM budget** – expose higher nodeBudget / half-depth via JNI or compile flag so mobile stays responsive while desktop collapses harder toward OBTM ≤55.
+12. **Desktop-only MITM budget** – expose higher nodeBudget / half-depth via JNI or compile flag so mobile stays responsive while desktop collapses harder toward OBTM ≤54.
 
 ---
 
-*Android/BMW hacking genius mode. Ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search until constructive U(n) collapses toward true God's Number. Exact g(n) for n≥4 remains open (intractable); the constructive reduction + Demaine batching path is complete and universal. residualCoords scaffold + denser wing orient/perm packing + admissible heuristic shipped 2026-08-14. Keep iterating. Ship or die.*
+*Android/BMW hacking genius mode. Ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search until constructive U(n) collapses toward true God's Number. Exact g(n) for n≥4 remains open (intractable); the constructive reduction + Demaine batching path is complete and universal. residualCoords full multi-depth all-12-edges packing + 100k MITM + depthCap 24 shipped 2026-08-16. Keep iterating. Ship or die.*
