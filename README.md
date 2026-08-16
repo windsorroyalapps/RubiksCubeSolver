@@ -30,7 +30,7 @@ MoveTables · BFS pruning · coord-space IDA* · `GodsAlgorithm`
 ```text
 ClusterScheduler → BatchGroups → Centers (never-break + orbit-BFS n≤5 / residual n=6)
   → Edges (Yau buffer + solid-set never-touch) → Parity (full multi-depth wing, even n)
-  → ReducedSearch (packed 4×4 centers + residualCoords + residualKey + bidirectional MITM + multi-depth wing residual IDA*) → 3×3 → BatchSolver::optimize
+  → ReducedSearch (full integer Lehmer residualCoords + residualKey + bidirectional MITM + IDA*) → 3×3 → BatchSolver::optimize
   → BoundHarness report (SSTM + OBTM dual metrics)
 ```
 
@@ -127,7 +127,7 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 - [x] **Harden residualKey + MITM (nodeBudget 50k, denser wing packing, depthCap 22)** — 2026-08-13
 - [x] **residualCoords scaffold (wing orient + mid-edge perm packing + admissible heuristic)** — 2026-08-14
 - [x] **Exact residual coordinate tables advanced (full multi-depth all-12-edges wing orient+perm packing + 100k MITM + depthCap 24)** — 2026-08-16
-- [ ] Full integer residual coordinate tables (factorial/Lehmer wing perm+orient + true admissible heuristics)
+- [x] **Full integer residual coordinate tables (Lehmer / factorial ranking of 12 mid-edge perm + orient bits + true admissible heuristic)** — 2026-08-17
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK (release keystore + Material You polish) + verified native .so in artifact
 - [ ] Adaptive launcher icons (mipmap) for store polish
@@ -135,21 +135,21 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 
 ---
 
-## Next steps / approaches to try next time (current automation work — 2026-08-16)
+## Next steps / approaches to try next time (current automation work — 2026-08-17)
 
-1. **Full integer residual coordinate tables** – exact wing permutation + orientation coordinates via factorial number system / Lehmer code (not just denser bit fingerprints) for true admissible IDA*/MITM heuristics. **Highest remaining algorithm leverage.**
-2. **Lift MITM quality to 5×5** – residualKey/residualCoords + meet-in-middle once 4x4 residual coords are solid with full integer tables.
+1. **Lift MITM quality to 5×5** – residualKey/residualCoords (now full integer Lehmer tables) + meet-in-middle for n=5; raise nodeBudget / half-depth carefully. **Highest remaining algorithm leverage.**
+2. **OBTM stage breakdown** – per-stage OBTM in BoundHarness so we can see which phase (centers vs edges vs parity vs reduced vs 3×3) is furthest from the 54-move 4×4 ceiling.
 3. **Verify green CI APK + native .so** – confirm workflow with full gradlew + jar produces debug APK artifact containing lib*.so; iterate NDK/CMake if needed.
 4. **3×3 dense DBs** – full-index BFS pruning tables so phase-1 routinely ≤12 and totals hit the proven 20 ceiling more often.
-5. **OBTM stage breakdown** – per-stage OBTM in BoundHarness so we can see which phase (centers vs edges vs parity vs reduced vs 3×3) is furthest from the 54-move 4×4 ceiling.
-6. **Production signed APK** – release keystore secret in CI, Material You polish, on-device size selector to 20×20; verify APK artifact contains native .so.
-7. **Adaptive icons** – add mipmap/ic_launcher* (or vector) so store listing looks production-ready.
-8. **Asymptotic fit** – re-calibrate BoundHarness scale if new community 4×4/5×5 numbers appear; keep U(n) as hard constructive guarantee.
-9. **Center BFS node-budget tuning** – raise maxNodes / maxDepth on desktop builds; keep mobile-safe defaults; optionally expose as JNI param.
-10. **Edge pairing quality metrics** – log pairedWings progress + solid count into BoundHarness for diagnostics.
-11. **Parity alg variants** – try alternate OLL/PLL parity sequences and pick shortest that clears the full-depth detectors.
-12. **Desktop-only MITM budget** – expose higher nodeBudget / half-depth via JNI or compile flag so mobile stays responsive while desktop collapses harder toward OBTM ≤54.
+5. **Production signed APK** – release keystore secret in CI, Material You polish, on-device size selector to 20×20; verify APK artifact contains native .so.
+6. **Adaptive icons** – add mipmap/ic_launcher* (or vector) so store listing looks production-ready.
+7. **Asymptotic fit** – re-calibrate BoundHarness scale if new community 4×4/5×5 numbers appear; keep U(n) as hard constructive guarantee.
+8. **Center BFS node-budget tuning** – raise maxNodes / maxDepth on desktop builds; keep mobile-safe defaults; optionally expose as JNI param.
+9. **Edge pairing quality metrics** – log pairedWings progress + solid count into BoundHarness for diagnostics.
+10. **Parity alg variants** – try alternate OLL/PLL parity sequences and pick shortest that clears the full-depth detectors.
+11. **Desktop-only MITM budget** – expose higher nodeBudget / half-depth via JNI or compile flag so mobile stays responsive while desktop collapses harder toward OBTM ≤54.
+12. **Full 24-wing Lehmer (optional)** – if residual after pairing still leaves deep wing defects, extend integer tables to both depths on all 12 edges (requires multi-word state or stronger packing).
 
 ---
 
-*Android/BMW hacking genius mode. Ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search until constructive U(n) collapses toward true God's Number. Exact g(n) for n≥4 remains open (intractable); the constructive reduction + Demaine batching path is complete and universal. residualCoords full multi-depth all-12-edges packing + 100k MITM + depthCap 24 shipped 2026-08-16. Keep iterating. Ship or die.*
+*Android/BMW hacking genius mode. Ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search until constructive U(n) collapses toward true God's Number. Exact g(n) for n≥4 remains open (intractable); the constructive reduction + Demaine batching path is complete and universal. Full integer residual coordinate tables (Lehmer 12-edge perm + orient) shipped 2026-08-17. Keep iterating. Ship or die.*
