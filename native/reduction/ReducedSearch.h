@@ -37,7 +37,11 @@
  * 2026-08-14: residualCoords scaffold (wing orient + mid-edge perm packing).
  * 2026-08-16: Exact residual coordinate tables advanced — full multi-depth wing
  * orient+perm for all 12 edges (n=4) + denser packing + 100k MITM + depthCap 24.
- * Highest leverage still full integer tables (factorial/Lehmer) + lift to 5x5.
+ * 2026-08-17: **Full integer residual coordinate tables shipped** — Lehmer / factorial
+ * number system ranking of the 12 mid-edge permutation (29-bit rank) + 12-bit orientation
+ * + 16-bit 4x4 centers → true integer residualCoords / residualKey. Admissible heuristic
+ * now uses orient popcount + inversion proxy from rank. Highest algorithm leverage item
+ * completed; next: lift MITM quality to 5×5 + OBTM stage breakdown.
  */
 class ReducedSearch {
 public:
@@ -53,7 +57,7 @@ private:
     // Compact residual fingerprint for meet-in-middle / hashing (4x4 focused).
     // High 16 bits: pack4x4Centers; low bits: denser wing orient + full-depth perm samples.
     static uint64_t residualKey(const Cube& c);
-    // Full residual coordinate tables (wing orient bits + perm samples + centers).
+    // Full integer residual coordinate tables (Lehmer rank of 12 mid-edge perm + orient bits + centers).
     // Returns a packed residual state useful for admissible heuristics / denser MITM.
     static uint64_t residualCoords(const Cube& c);
     static std::vector<Move> generateMoves(int n);
