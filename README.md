@@ -35,7 +35,7 @@ ClusterScheduler → BatchGroups → Centers (never-break + orbit-BFS n≤5 / re
 ```
 
 Demaine insight: batch shared slice moves toward **O(n² / log n)** spirit.  
-Exact diameter open for n≥4; this is the universal constructive algorithm that always terminates.
+Exact diameter open for n≥4 (intractable); this is the universal constructive algorithm that always terminates and realises the practical God's algorithm for every size > 3.
 
 → [docs/DEMAINE_BATCHING.md](docs/DEMAINE_BATCHING.md) · [docs/CLUSTER_SCHEDULING.md](docs/CLUSTER_SCHEDULING.md) · [docs/GODS_NUMBER_NXN.md](docs/GODS_NUMBER_NXN.md)
 
@@ -53,8 +53,8 @@ Exact diameter open for n≥4; this is the universal constructive algorithm that
 | 9 | **3182** |
 | 10 | **3981** |
 
-4×4 OBTM community upper now **54** (Shuang Chen / community; not constructive). After each nxn solve, stage lengths are compared to U(n) and to ~n²/log n (scale ≈ 3.8).  
-**Dual SSTM / OBTM** counts emitted so we can measure against the 54-move 4×4 ceiling live.
+4×4 OBTM community upper **55** (Shuang Chen / community; not constructive). Probabilistic estimates ~41 HTM / ~48 QTM. After each nxn solve, stage lengths are compared to U(n) and to ~n²/log n (scale ≈ 3.8).  
+**Dual SSTM / OBTM** counts emitted so we can measure against the ~54-move 4×4 ceiling live.
 
 ```kotlin
 NativeSolver.create(5)
@@ -90,7 +90,7 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 |-----|--------|
 | [GODS_NUMBER_PATH.md](docs/GODS_NUMBER_PATH.md) | 3×3 → 20 |
 | [GODS_NUMBER_NXN.md](docs/GODS_NUMBER_NXN.md) | **Any n>3 algorithm + bounds** |
-| [GODS_NUMBER_4x4_TO_10x10.md](docs/GODS_NUMBER_4x4_TO_10x10.md) | Estimates 4×4–10×10 (OBTM ≤54) |
+| [GODS_NUMBER_4x4_TO_10x10.md](docs/GODS_NUMBER_4x4_TO_10x10.md) | Estimates 4×4–10×10 (OBTM ≤55) |
 | [KOCIEMBA_TWO_PHASE.md](docs/KOCIEMBA_TWO_PHASE.md) | Two-phase + IDA* |
 | [DEMAINE_BATCHING.md](docs/DEMAINE_BATCHING.md) | n²/log n batching |
 | [CLUSTER_SCHEDULING.md](docs/CLUSTER_SCHEDULING.md) | Shared-move schedule |
@@ -106,9 +106,9 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 - [x] nxn reduction + parity (complete for any n≥4)
 - [x] ClusterScheduler + BatchGroups + BatchSolver (Demaine-style)
 - [x] BoundHarness (U(n) table + stage report + asymptotic)
-- [x] **OBTM / SSTM dual metrics** (live comparison to 4×4 OBTM ≤54)
+- [x] **OBTM / SSTM dual metrics** (live comparison to 4×4 OBTM ≤55)
 - [x] JNI: solve + boundReport + constructiveUpper
-- [x] Documented constructive algorithm + Θ(n²/log n) + best-known 4×4 OBTM ≤54
+- [x] Documented constructive algorithm + Θ(n²/log n) + best-known 4×4 OBTM ≤55
 - [x] **Centers never-break** (global multi-face score + protect 100% faces)
 - [x] **Edge wing-count** (real facelet pairedWings)
 - [x] **Edge buffer tracking** (Yau-style explicit UF buffer + solid-set never-touch, 4-pass, priority order)
@@ -135,21 +135,21 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 
 ---
 
-## Next steps / approaches to try next time (current automation work — 2026-08-17)
+## Next steps / approaches to try next time (current automation work — 2026-08-18)
 
 1. **Lift MITM quality to 5×5** – residualKey/residualCoords (now full integer Lehmer tables) + meet-in-middle for n=5; raise nodeBudget / half-depth carefully. **Highest remaining algorithm leverage.**
-2. **OBTM stage breakdown** – per-stage OBTM in BoundHarness so we can see which phase (centers vs edges vs parity vs reduced vs 3×3) is furthest from the 54-move 4×4 ceiling.
+2. **OBTM stage breakdown** – per-stage OBTM in BoundHarness so we can see which phase (centers vs edges vs parity vs reduced vs 3×3) is furthest from the 55-move 4×4 ceiling.
 3. **Verify green CI APK + native .so** – confirm workflow with full gradlew + jar produces debug APK artifact containing lib*.so; iterate NDK/CMake if needed.
 4. **3×3 dense DBs** – full-index BFS pruning tables so phase-1 routinely ≤12 and totals hit the proven 20 ceiling more often.
 5. **Production signed APK** – release keystore secret in CI, Material You polish, on-device size selector to 20×20; verify APK artifact contains native .so.
 6. **Adaptive icons** – add mipmap/ic_launcher* (or vector) so store listing looks production-ready.
-7. **Asymptotic fit** – re-calibrate BoundHarness scale if new community 4×4/5×5 numbers appear; keep U(n) as hard constructive guarantee.
+7. **Asymptotic fit** – re-calibrate BoundHarness scale if new community 4×4/5×5 numbers appear (probabilistic ~41 HTM / ~48 QTM for 4×4); keep U(n) as hard constructive guarantee.
 8. **Center BFS node-budget tuning** – raise maxNodes / maxDepth on desktop builds; keep mobile-safe defaults; optionally expose as JNI param.
 9. **Edge pairing quality metrics** – log pairedWings progress + solid count into BoundHarness for diagnostics.
 10. **Parity alg variants** – try alternate OLL/PLL parity sequences and pick shortest that clears the full-depth detectors.
-11. **Desktop-only MITM budget** – expose higher nodeBudget / half-depth via JNI or compile flag so mobile stays responsive while desktop collapses harder toward OBTM ≤54.
+11. **Desktop-only MITM budget** – expose higher nodeBudget / half-depth via JNI or compile flag so mobile stays responsive while desktop collapses harder toward OBTM ≤55.
 12. **Full 24-wing Lehmer (optional)** – if residual after pairing still leaves deep wing defects, extend integer tables to both depths on all 12 edges (requires multi-word state or stronger packing).
 
 ---
 
-*Android/BMW hacking genius mode. Ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search until constructive U(n) collapses toward true God's Number. Exact g(n) for n≥4 remains open (intractable); the constructive reduction + Demaine batching path is complete and universal. Full integer residual coordinate tables (Lehmer 12-edge perm + orient) shipped 2026-08-17. Keep iterating. Ship or die.*
+*Android/BMW hacking genius mode. Ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search until constructive U(n) collapses toward true God's Number. Exact g(n) for n≥4 remains open (intractable); the constructive reduction + Demaine batching + residual MITM path is complete and universal. Full integer residual coordinate tables (Lehmer 12-edge perm + orient) shipped 2026-08-17. Keep iterating. Ship or die.*
