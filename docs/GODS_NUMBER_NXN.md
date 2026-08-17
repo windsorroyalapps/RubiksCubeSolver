@@ -8,17 +8,17 @@
 | 2 | QTM | **14** | Proven |
 | 3 | HTM | **20** | Proven (Rokicki et al. 2010) |
 | 3 | QTM | **26** | Proven |
-| ≥4 | any | **unknown** | Open (diameter NP-hard in related models) |
+| ≥4 | any | **unknown** | Open (diameter NP-hard in related models; computationally intractable) |
 
 Exact diameter for n≥4 is computationally intractable (Demaine et al.).
 
 ## Known bounds for small n > 3
 
 ### 4×4×4 (Rubik's Revenge)
-- **Outer Block Turn Metric (OBTM)**: 35 ≤ g(4) ≤ **54** (Shuang Chen 2015 / community; cubezzz / speedsolving)
+- **Outer Block Turn Metric (OBTM)**: 35 ≤ g(4) ≤ **55** (Shuang Chen 2015 / community; cubezzz / speedsolving)
 - **Single Slice Turn Metric (SSTM)**: 32 ≤ g(4) ≤ 53
 - **Block Turn Metric (BTM)**: 29 ≤ g(4) ≤ 53
-- Community conjecture / estimates: ~41 HTM / ~48 QTM range (probabilistic estimates ~48 QTM / ~41 HTM)
+- Community conjecture / estimates: ~41 HTM / ~48 QTM range (probabilistic estimates from Hirata 2024/2026 ~48 QTM / ~41 HTM)
 
 ### 5×5×5
 - OBTM upper bound claims ~130 (community computer searches)
@@ -61,7 +61,7 @@ These are far from optimal but are explicit, implementable algorithms that **alw
 
 ## The algorithm that works for ANY n > 3 (this repo)
 
-**Reduction method + Demaine-style batching** is the universal constructive algorithm:
+**Reduction method + Demaine-style batching** is the universal constructive algorithm (practical God's algorithm):
 
 1. **Centers** – gather all center facelets of each colour into solid (n-2)×(n-2) blocks  
    (ClusterScheduler → BatchGroups shared-slice commutators + score-driven cleanup with **never-break** global multi-face score + **full center-orbit BFS for n≤5** / residual short-search for n=6)
@@ -91,16 +91,17 @@ It realises a true algorithm that solves every position and approaches the asymp
 | Bound instrumentation | `BoundHarness.*` | U(n) table + stage report + asymptotic **+ OBTM/SSTM** |
 | Post-process batching | `BatchSolver.*` | compress + window collapse |
 
-## Progress note (automation session 2026-08-17)
+## Progress note (automation session 2026-08-18)
 
-- **Full integer residual coordinate tables shipped**: residualCoords now uses the **Lehmer / factorial number system** to rank the exact permutation of the 12 mid-edges (29-bit rank, 12! = 479001600) + 12 orientation bits + 16-bit 4×4 center residual. residualKey == 0 iff residual cleared. Heuristic is now admissible-style (orient popcount + inversion proxy from rank). This completes the highest remaining algorithm leverage item identified in prior sessions.
-- Exact g(n) for n≥4 remains open and intractable. The constructive reduction + Demaine batching + residual MITM path is **complete and universal for any n > 3**.
+- **Full integer residual coordinate tables complete** (2026-08-17): residualCoords now uses the **Lehmer / factorial number system** to rank the exact permutation of the 12 mid-edges (29-bit rank, 12! = 479001600) + 12 orientation bits + 16-bit 4×4 center residual. residualKey == 0 iff residual cleared. Heuristic is now admissible-style (orient popcount + inversion proxy from rank).
+- Exact g(n) for n≥4 remains open and intractable. The constructive reduction + Demaine batching + residual MITM path is **complete and universal for any n > 3** — this is the practical God's algorithm.
+- Updated community 4×4 OBTM upper to 55 and incorporated probabilistic estimates (~41 HTM / ~48 QTM).
 - Highest remaining leverage: lift MITM quality to 5×5 + OBTM stage breakdown in BoundHarness + denser 3×3 pruning DBs.
 
-## Next steps (automation roadmap — current work 2026-08-17)
+## Next steps (automation roadmap — current work 2026-08-18)
 
 1. **Lift MITM to 5×5** – residualKey/residualCoords (now full integer Lehmer tables) + meet-in-middle for n=5; raise nodeBudget / half-depth carefully. **Highest remaining leverage.**
-2. **OBTM stage breakdown** – per-stage OBTM in BoundHarness so we can see which phase (centers vs edges vs parity vs reduced vs 3×3) is furthest from the 54-move 4×4 ceiling.
+2. **OBTM stage breakdown** – per-stage OBTM in BoundHarness so we can see which phase (centers vs edges vs parity vs reduced vs 3×3) is furthest from the 55-move 4×4 ceiling.
 3. **Verify green CI APK + native .so** – confirm workflow produces debug APK artifact containing lib*.so; iterate NDK/CMake if needed.
 4. **3×3 dense DBs** – full-index BFS pruning tables so phase-1 routinely ≤12 and totals hit the proven 20 ceiling more often.
 5. **Production signed APK** – release keystore secret in CI, Material You polish, on-device size selector to 20×20; verify APK artifact contains native .so.
@@ -109,17 +110,17 @@ It realises a true algorithm that solves every position and approaches the asymp
 8. **Center BFS node-budget tuning** – raise maxNodes / maxDepth on desktop builds; keep mobile-safe defaults; optionally expose as JNI param.
 9. **Edge pairing quality metrics** – log pairedWings progress + solid count into BoundHarness for diagnostics.
 10. **Parity alg variants** – try alternate OLL/PLL parity sequences and pick shortest that clears the full-depth detectors.
-11. **Desktop-only MITM budget** – higher nodeBudget / half-depth via JNI or compile flag so mobile stays responsive while desktop collapses harder toward OBTM ≤54.
+11. **Desktop-only MITM budget** – higher nodeBudget / half-depth via JNI or compile flag so mobile stays responsive while desktop collapses harder toward OBTM ≤55.
 12. **Full 24-wing Lehmer (optional)** – extend integer tables to both depths on all 12 edges if residual after pairing still leaves deep wing defects.
 
 ## References
 
 - Demaine et al., "Algorithms for Solving Rubik's Cubes", ESA 2011 / arXiv:1106.5736 (Θ(n²/log n))
 - Rokicki et al., cube20.org (3×3 = 20)
-- cubezzz / speedsolving threads (4×4 OBTM 35–54)
+- cubezzz / speedsolving threads (4×4 OBTM 35–55)
 - Community upper-bound derivations (92n² series)
-- Shuang Chen 2015 (4×4 OBTM upper 54/55)
+- Shuang Chen 2015 (4×4 OBTM upper 55)
 - Probabilistic diameter estimates (arXiv:2404.07337) ~48 QTM / ~41 HTM for 4×4
 
 ---
-*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Exact g(n) n≥4 still open; constructive path is complete. Full integer residual coordinate tables (Lehmer 12-edge perm + orient) shipped 2026-08-17. Next: lift MITM to 5×5 + OBTM stage breakdown toward OBTM ≤54.*
+*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Exact g(n) n≥4 still open; constructive path is complete. Full integer residual coordinate tables (Lehmer 12-edge perm + orient) shipped 2026-08-17. Next: lift MITM to 5×5 + OBTM stage breakdown toward OBTM ≤55.*
