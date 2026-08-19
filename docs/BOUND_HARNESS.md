@@ -29,20 +29,31 @@ Formula (n ≥ 4):
 | **SSTM** | Every `Move` counts as 1 (single-slice / face turn) |
 | **OBTM** | Consecutive `depth==0` turns on the **same face** collapse to 1; every inner slice (`depth>0`) still counts 1 |
 
-For n=4 the report also emits `vs4x4OBTM54=under|over` against the published community outer-block upper of **54**.
+For n=4 the report also emits `vs4x4OBTM55=under|over` against the published community outer-block upper of **55**.
+
+## Per-stage OBTM (2026-08-20)
+
+Highest remaining diagnostic leverage. Each stage now reports both SSTM and OBTM on its own subsequence:
+
+```
+centers=N(obtm=M) edges=... parity=... reduced=... 3x3=... sstm=... obtm=... vs4x4OBTM55=...
+```
+
+This immediately shows which phase (centers / edges / parity / residual / 3×3) is furthest from the community 4×4 OBTM ≤55 ceiling and where optimization effort should go next.
 
 ## Code
 
 | File | Role |
 |------|------|
-| `BoundHarness.h/.cpp` | U(n), asymptotic target, `BoundReport`, `countSstm`, `countObtm` |
-| `ReductionSolver` | Fills `StageLengths` per solve; feeds final sequence for dual metrics; `lastBoundReportString()` |
-| JNI `nativeBoundReport` | Read last report after nxn solve (now includes sstm/obtm) |
+| `BoundHarness.h/.cpp` | U(n), asymptotic target, `BoundReport`, `countSstm`, `countObtm`, per-stage OBTM fields |
+| `ReductionSolver` | Fills `StageLengths` (SSTM + OBTM per stage); feeds final sequence for dual metrics; `lastBoundReportString()` |
+| JNI `nativeBoundReport` | Read last report after nxn solve (includes sstm/obtm + per-stage obtm) |
 | JNI `nativeConstructiveUpper(n)` | Query U(n) |
 
 ### StageLengths
 
-- `centers`, `edges`, `parity`, `reduce3x3`
+- `centers`, `edges`, `parity`, `reduced`, `reduce3x3` (SSTM)
+- `centersObtm`, `edgesObtm`, `parityObtm`, `reducedObtm`, `reduce3x3Obtm`
 - `afterBatch` = final length after `BatchSolver::optimize`
 - `finalSstm` / `finalObtm` (when sequence provided)
 
@@ -52,12 +63,13 @@ For n=4 the report also emits `vs4x4OBTM54=under|over` against the published com
 - `final/U` — how close to constructive upper
 - `final/asym` — vs n²/log n shape
 - `sstm` / `obtm` — dual metric finals
-- `vs4x4OBTM54` — only for n=4
+- `vs4x4OBTM55` — only for n=4
+- full per-stage `(obtm=…)` in the string
 
 ## Use
 
 1. Solve nxn scramble
-2. Read bound report (look at sstm + obtm)
+2. Read bound report (look at sstm + obtm + per-stage obtm)
 3. Optimize the fattest stage (usually centers/edges)
 4. When a *proven* always-≤ U' algorithm exists, lower U(n) — work backward toward g(n)
-5. On 4×4 watch `obtm` against the 54 ceiling while tightening the constructive pipeline
+5. On 4×4 watch `obtm` (and which stage owns the bulk) against the 55 ceiling while tightening the constructive pipeline

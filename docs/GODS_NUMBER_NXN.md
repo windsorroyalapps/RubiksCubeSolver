@@ -73,7 +73,7 @@ These are far from optimal but are explicit, implementable algorithms that **alw
    (**Full integer residualCoords: Lehmer / factorial ranking of 12 mid-edge perm + 12-bit orient + centers (exact 4×4 / sampled 5×5) + hardened MITM 100k nodes (4×4) / 25k (5×5) / depthCap 24/14**)
 5. **3×3 stage** – treat the reduced cube as a normal 3×3 and run multi-probe Kociemba (or CFOP fallback)
 6. **BatchSolver::optimize** – windowed collapse of identical (face,depth,turns) moves (log-factor spirit)
-7. **BoundHarness** – report stage lengths vs U(n) and vs ~n²/log n (scale ≈ 3.8) **+ dual OBTM/SSTM counts**
+7. **BoundHarness** – report stage lengths vs U(n) and vs ~n²/log n (scale ≈ 3.8) **+ dual OBTM/SSTM counts + per-stage OBTM**
 
 This pipeline is complete for every n ≥ 4 (software limit ~ memory for the facelet array).  
 It realises a true algorithm that solves every position and approaches the asymptotic order via batching.
@@ -88,30 +88,31 @@ It realises a true algorithm that solves every position and approaches the asymp
 | Reduced residual search | `ReducedSearch.*` | **Full integer residualCoords (Lehmer / factorial ranking of 12 mid-edge perm + orient + centers) + residualKey + hardened bidirectional MITM (100k/25k nodes, depthCap 24/14 for 4×4/5×5) + admissible IDA* heuristic** |
 | Orchestrator | `ReductionSolver.*` | Full pipeline |
 | 3×3 engine | `Kociemba` + `GodsAlgorithm` + `CFOPSolver` | Phase-1 + IDA* path + CFOP fallback |
-| Bound instrumentation | `BoundHarness.*` | U(n) table + stage report + asymptotic **+ OBTM/SSTM** |
+| Bound instrumentation | `BoundHarness.*` | U(n) table + stage report + asymptotic **+ OBTM/SSTM + per-stage OBTM** |
 | Post-process batching | `BatchSolver.*` | compress + window collapse |
 
-## Progress note (automation session 2026-08-19)
+## Progress note (automation session 2026-08-20)
 
+- **Per-stage OBTM breakdown shipped** (2026-08-20): StageLengths now carries centersObtm / edgesObtm / parityObtm / reducedObtm / reduce3x3Obtm. BoundReport.toString() emits full per-stage OBTM so the fattest phase relative to the 4×4 community ceiling (≤55) is immediately visible. Highest remaining diagnostic leverage completed.
 - **Full integer residual coordinate tables complete** (2026-08-17): residualCoords uses the **Lehmer / factorial number system** to rank the exact permutation of the 12 mid-edges (29-bit rank, 12! = 479001600) + 12 orientation bits + 16-bit 4×4 center residual. residualKey == 0 iff residual cleared. Heuristic is admissible-style (orient popcount + inversion proxy from rank).
-- **Residual MITM lifted to 5×5** (2026-08-19): residualKey/residualCoords now pack light 5×5 center samples + same Lehmer/orient tables; `meetInMiddle` enabled for n=5 with conservative nodeBudget 25k / depthCap 14 (mobile-safe). 4×4 retains 100k / depthCap 24. Highest remaining algorithm leverage from prior roadmap completed for the mobile path.
+- **Residual MITM lifted to 5×5** (2026-08-19): residualKey/residualCoords now pack light 5×5 center samples + same Lehmer/orient tables; `meetInMiddle` enabled for n=5 with conservative nodeBudget 25k / depthCap 14 (mobile-safe). 4×4 retains 100k / depthCap 24.
 - Exact g(n) for n≥4 remains open and intractable. The constructive reduction + Demaine batching + residual MITM path is **complete and universal for any n > 3** — this is the practical God's algorithm.
 - Updated community 4×4 OBTM upper to 55 and incorporated probabilistic estimates (~41 HTM / ~48 QTM).
 
-## Next steps (automation roadmap — current work 2026-08-19)
+## Next steps (automation roadmap — current work 2026-08-20)
 
-1. **OBTM stage breakdown** – per-stage OBTM in BoundHarness so we can see which phase (centers vs edges vs parity vs reduced vs 3×3) is furthest from the 55-move 4×4 ceiling. **Highest remaining diagnostic leverage.**
-2. **Raise 5×5 MITM budget on desktop** – expose higher nodeBudget / half-depth via JNI or compile flag; measure residual collapse.
-3. **Verify green CI APK + native .so** – confirm workflow produces debug APK artifact containing lib*.so; iterate NDK/CMake if needed.
-4. **3×3 dense DBs** – full-index BFS pruning tables so phase-1 routinely ≤12 and totals hit the proven 20 ceiling more often.
-5. **Production signed APK** – release keystore secret in CI, Material You polish, on-device size selector to 20×20; verify APK artifact contains native .so.
-6. **Adaptive launcher icons** – add mipmap/ic_launcher* (or vector) so store listing looks production-ready.
-7. **Asymptotic fit** – re-calibrate BoundHarness scale if new community 4×4/5×5 numbers appear; keep U(n) as hard constructive guarantee.
-8. **Center BFS node-budget tuning** – raise maxNodes / maxDepth on desktop builds; keep mobile-safe defaults; optionally expose as JNI param.
-9. **Edge pairing quality metrics** – log pairedWings progress + solid count into BoundHarness for diagnostics.
-10. **Parity alg variants** – try alternate OLL/PLL parity sequences and pick shortest that clears the full-depth detectors.
-11. **Full 24-wing Lehmer (optional)** – extend integer tables to both depths on all 12 edges if residual after pairing still leaves deep wing defects.
-12. **5×5 center residual denser packing** – richer sample or hash of the 3×3×6 centers to reduce residualKey collisions under higher MITM budgets.
+1. **Raise 5×5 MITM budget on desktop** – expose nodeBudget / half-depth via JNI or compile-time flag (mobile stays at 25k / depthCap 14; desktop can push 50k–100k). Measure residual collapse on random 5×5 positions. **Now highest algorithm leverage.**
+2. **Verify green CI APK + native .so** – confirm workflow with full gradlew + jar produces debug APK artifact containing lib*.so; iterate NDK/CMake if needed.
+3. **3×3 dense DBs** – full-index BFS pruning tables so phase-1 routinely ≤12 and totals hit the proven 20 ceiling more often.
+4. **Production signed APK** – release keystore secret in CI, Material You polish, on-device size selector to 20×20; verify APK artifact contains native .so.
+5. **Adaptive launcher icons** – add mipmap/ic_launcher* (or vector) so store listing looks production-ready.
+6. **Asymptotic fit** – re-calibrate BoundHarness scale if new community 4×4/5×5 numbers appear (probabilistic ~41 HTM / ~48 QTM for 4×4); keep U(n) as hard constructive guarantee.
+7. **Center BFS node-budget tuning** – raise maxNodes / maxDepth on desktop builds; keep mobile-safe defaults; optionally expose as JNI param.
+8. **Edge pairing quality metrics** – log pairedWings progress + solid count into BoundHarness for diagnostics.
+9. **Parity alg variants** – try alternate OLL/PLL parity sequences and pick shortest that clears the full-depth detectors.
+10. **Full 24-wing Lehmer (optional)** – if residual after pairing still leaves deep wing defects on 5×5+, extend integer tables to both depths on all 12 edges (requires multi-word state or stronger packing).
+11. **5×5 center residual denser packing** – replace light 16-bit sample with more of the 3×3×6 facelets (or hash) so residualKey collisions drop further under higher MITM budgets.
+12. **Use per-stage OBTM live** – after a few 4×4 solves, identify which stage owns the bulk of OBTM and target that phase for the next tightening pass.
 
 ## References
 
@@ -123,4 +124,4 @@ It realises a true algorithm that solves every position and approaches the asymp
 - Probabilistic diameter estimates (arXiv:2404.07337) ~48 QTM / ~41 HTM for 4×4
 
 ---
-*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Exact g(n) n≥4 still open; constructive path is complete. Full integer residual coordinate tables (Lehmer 12-edge perm + orient) shipped 2026-08-17; residual MITM lifted to 5×5 (conservative) 2026-08-19. Next: OBTM stage breakdown + desktop 5×5 budget toward community ceilings.*
+*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Exact g(n) n≥4 still open; constructive path is complete. Full integer residual coordinate tables (Lehmer 12-edge perm + orient) shipped 2026-08-17; residual MITM lifted to 5×5 (conservative) 2026-08-19; per-stage OBTM breakdown 2026-08-20. Next: desktop 5×5 MITM budget + live stage diagnostics toward community ceilings.*

@@ -73,11 +73,11 @@ BoundReport BoundHarness::report(int n, const StageLengths& stages,
 std::string BoundReport::toString() const {
     std::ostringstream oss;
     oss << "n=" << n
-        << " centers=" << stages.centers
-        << " edges=" << stages.edges
-        << " parity=" << stages.parity
-        << " reduced=" << stages.reduced
-        << " 3x3=" << stages.reduce3x3
+        << " centers=" << stages.centers << "(obtm=" << stages.centersObtm << ")"
+        << " edges=" << stages.edges << "(obtm=" << stages.edgesObtm << ")"
+        << " parity=" << stages.parity << "(obtm=" << stages.parityObtm << ")"
+        << " reduced=" << stages.reduced << "(obtm=" << stages.reducedObtm << ")"
+        << " 3x3=" << stages.reduce3x3 << "(obtm=" << stages.reduce3x3Obtm << ")"
         << " raw=" << stages.totalRaw()
         << " final=" << stages.totalFinal()
         << " sstm=" << sstm
@@ -88,7 +88,7 @@ std::string BoundReport::toString() const {
         << " final/U=" << ratioToUpper
         << " final/asym=" << ratioToAsymptotic;
     if (n == 4 && obtm > 0) {
-        oss << " vs4x4OBTM54=" << (obtm <= 54 ? "under" : "over");
+        oss << " vs4x4OBTM55=" << (obtm <= 55 ? "under" : "over");
     }
     return oss.str();
 }

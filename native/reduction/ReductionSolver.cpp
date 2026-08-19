@@ -36,27 +36,29 @@ std::vector<Move> ReductionSolver::solve(const Cube& cube) {
     std::vector<Move> solution;
     StageLengths stages;
 
-    auto append = [&](const std::vector<Move>& moves, int* counter) {
+    // Append moves, update SSTM counter and per-stage OBTM (independent subsequence)
+    auto append = [&](const std::vector<Move>& moves, int* sstmCounter, int* obtmCounter) {
         solution.insert(solution.end(), moves.begin(), moves.end());
-        if (counter) *counter += BoundHarness::count(moves);
+        if (sstmCounter) *sstmCounter += BoundHarness::count(moves);
+        if (obtmCounter) *obtmCounter += BoundHarness::countObtm(moves);
     };
 
-    append(solveCenters(work), &stages.centers);
-    append(pairEdges(work), &stages.edges);
+    append(solveCenters(work), &stages.centers, &stages.centersObtm);
+    append(pairEdges(work), &stages.edges, &stages.edgesObtm);
 
     if (work.size() % 2 == 0) {
-        append(ParityHandler::fix(work), &stages.parity);
+        append(ParityHandler::fix(work), &stages.parity, &stages.parityObtm);
     }
 
     // Reduced-coordinate search for 4x4 / 5x5 (packed residual → tighten constructive)
     if (work.size() == 4 || work.size() == 5) {
         auto improved = ReducedSearch::improve(work);
         if (!improved.empty()) {
-            append(improved, &stages.reduced);
+            append(improved, &stages.reduced, &stages.reducedObtm);
         }
     }
 
-    append(solveAs3x3(work), &stages.reduce3x3);
+    append(solveAs3x3(work), &stages.reduce3x3, &stages.reduce3x3Obtm);
 
     solution = BatchSolver::optimize(solution);
     stages.afterBatch = BoundHarness::count(solution);
