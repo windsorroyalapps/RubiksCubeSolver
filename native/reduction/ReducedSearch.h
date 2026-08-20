@@ -47,6 +47,8 @@
  * for n=5 with conservative nodeBudget (25k) / half-depth so mobile stays responsive
  * while desktop can raise via future JNI flag. DepthCap 14 for 5x5. This is the
  * highest remaining algorithm leverage item from the 2026-08-18 roadmap.
+ * 2026-08-21: Raised 5×5 nodeBudget 40k + depthCap 16 + denser center sample packing.
+ * Continues collapse of residual toward community ceilings; exact g(n) still open.
  */
 class ReducedSearch {
 public:
@@ -69,6 +71,6 @@ private:
     static bool ida(Cube& work, int depth, int threshold,
                     int lastFace, int lastTurns, std::vector<Move>& path);
     // Bidirectional meet-in-middle on residualKey (4x4 + 5x5). Returns path if found
-    // within depthCap/2 each side; empty otherwise. Hardened node budget (100k 4x4 / 25k 5x5).
+    // within depthCap/2 each side; empty otherwise. Hardened node budget (100k 4x4 / 40k 5x5).
     static std::vector<Move> meetInMiddle(Cube& work, int depthCap);
 };

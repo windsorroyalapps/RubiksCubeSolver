@@ -28,6 +28,7 @@ uint16_t ReducedSearch::pack4x4Centers(const Cube& c) {
 }
 
 // Light 5x5 center residual sample (central cross + corners of 3x3) → 16-bit-ish fingerprint.
+// 2026-08-21: denser sample (center + 4 orthogonal + 2 diagonals per face, capped at 16 bits).
 // Keeps residualKey compact for MITM while still detecting residual center defects.
 static uint16_t pack5x5CentersSample(const Cube& c) {
     if (c.size() != 5) return 0;
@@ -35,10 +36,9 @@ static uint16_t pack5x5CentersSample(const Cube& c) {
     int bit = 0;
     for (int f = 0; f < 6 && bit < 16; ++f) {
         Color target = static_cast<Color>(f);
-        // Sample center, four orthogonal mid-edge of 3x3, and four corners of 3x3
-        // (9 samples × 6 would overflow; take 2–3 per face)
-        int samples[3][2] = {{2, 2}, {1, 2}, {2, 1}};  // center + two mids
-        for (int s = 0; s < 3 && bit < 16; ++s) {
+        // Denser: center, four orthogonal mid-edge of 3x3, two diagonals
+        int samples[6][2] = {{2, 2}, {1, 2}, {2, 1}, {3, 2}, {2, 3}, {1, 1}};
+        for (int s = 0; s < 6 && bit < 16; ++s) {
             int r = samples[s][0], col = samples[s][1];
             if (c.get(f, r, col) != target) {
                 mask |= static_cast<uint16_t>(1u << bit);
@@ -104,6 +104,7 @@ int ReducedSearch::wingResidual(const Cube& c) {
 // for the 12 mid-edge permutation + orientation bits + 4x4 center residual.
 // 12! = 479001600 fits in 29 bits; +12 orient bits +16 centers = 57 bits → uint64.
 // 2026-08-19: Extended for n=5 — same Lehmer + orient + light 5x5 center sample in high bits.
+// 2026-08-21: denser 5x5 center sample packing.
 // residualKey == 0 iff residual cleared (centers + mid-edges oriented and permuted).
 // Admissible heuristic now uses inversion-count lower bound from Lehmer + orient popcount.
 uint64_t ReducedSearch::residualCoords(const Cube& c) {
@@ -195,7 +196,7 @@ uint64_t ReducedSearch::residualCoords(const Cube& c) {
 
 uint64_t ReducedSearch::residualKey(const Cube& c) {
     // Compact fingerprint for residual meet-in-middle / visited sets.
-    // Delegates to residualCoords (2026-08-17 full integer Lehmer tables + 2026-08-19 5x5).
+    // Delegates to residualCoords (2026-08-17 full integer Lehmer tables + 2026-08-19/21 5x5 denser).
     // key==0 iff residual cleared (centers + mid-edges orient/perm).
     return residualCoords(c);
 }
@@ -204,7 +205,7 @@ int ReducedSearch::heuristic(const Cube& c) {
     int n = c.size();
     if (n < 4) return 0;
 
-    // 2026-08-17/19: admissible residual heuristic from full integer Lehmer coords.
+    // 2026-08-17/19/21: admissible residual heuristic from full integer Lehmer coords.
     // Centers popcount + orient popcount + inversion lower-bound from Lehmer rank
     // (each inversion needs ≥1 move; divide by 2 for pair swaps). Keeps IDA*/MITM focused.
     uint64_t coords = residualCoords(c);
@@ -227,7 +228,7 @@ int ReducedSearch::heuristic(const Cube& c) {
     bad += wingResidual(c) / 3;
 
     // Scale so heuristic stays useful relative to depth (admissible-ish).
-    return std::min(bad / 2, (n == 4 ? 24 : 14));
+    return std::min(bad / 2, (n == 4 ? 24 : 16));
 }
 
 bool ReducedSearch::isNearlyReduced(const Cube& c) {
@@ -290,6 +291,8 @@ std::vector<Move> ReducedSearch::meetInMiddle(Cube& work, int depthCap) {
     // 2026-08-17: residualKey uses full integer Lehmer tables.
     // 2026-08-19: **Enabled for n=5** with conservative nodeBudget 25k / half-depth so mobile
     // stays responsive; 4x4 keeps 100k. Highest remaining algorithm leverage from prior roadmap.
+    // 2026-08-21: Raised 5x5 nodeBudget to 40k + depthCap path to 16 for better residual collapse
+    // on desktop/mobile hybrid; denser center sample. Still mobile-safe relative to prior 25k.
     std::vector<Move> result;
     int n = work.size();
     if (n != 4 && n != 5) return result;
@@ -299,8 +302,8 @@ std::vector<Move> ReducedSearch::meetInMiddle(Cube& work, int depthCap) {
 
     const int half = std::max(1, depthCap / 2);
     // Conservative budgets: 100k for 4x4 (desktop-friendly collapse toward OBTM ≤55),
-    // 25k for 5x5 (mobile-safe; raise later via JNI / compile flag).
-    const size_t nodeBudget = (n == 4) ? 100000 : 25000;
+    // 40k for 5x5 (2026-08-21 raise from 25k; still responsive).
+    const size_t nodeBudget = (n == 4) ? 100000 : 40000;
 
     auto gens = generateMoves(n);
 
@@ -383,7 +386,8 @@ std::vector<Move> ReducedSearch::improve(Cube& work, int maxDepth) {
     // 2026-08-13/14: depthCap 22 for 4x4 + hardened MITM + residualCoords
     // 2026-08-16: depthCap 24 for 4x4
     // 2026-08-19: depthCap 14 for 5x5 + MITM enabled
-    int depthCap = (n == 4) ? std::max(maxDepth, 24) : std::min(std::max(maxDepth, 14), 14);
+    // 2026-08-21: depthCap 16 for 5x5 (raised with nodeBudget 40k)
+    int depthCap = (n == 4) ? std::max(maxDepth, 24) : std::min(std::max(maxDepth, 16), 16);
 
     // Prefer meet-in-middle on 4x4 / 5x5 when residual is non-trivial but searchable
     {
