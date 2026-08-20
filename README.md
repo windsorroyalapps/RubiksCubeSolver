@@ -130,6 +130,7 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 - [x] **Exact residual coordinate tables advanced (full multi-depth all-12-edges wing orient+perm packing + 100k MITM + depthCap 24)** — 2026-08-16
 - [x] **Full integer residual coordinate tables (Lehmer / factorial ranking of 12 mid-edge perm + orient bits + true admissible heuristic)** — 2026-08-17
 - [x] **Residual MITM lifted to 5×5** (conservative 25k nodeBudget / depthCap 14, residualCoords + residualKey for n=5) — 2026-08-19
+- [x] **5×5 MITM budgets raised (40k nodeBudget / depthCap 16) + denser center sample packing** — 2026-08-21
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK (release keystore + Material You polish) + verified native .so in artifact
 - [ ] Adaptive launcher icons (mipmap) for store polish
@@ -137,9 +138,9 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 
 ---
 
-## Next steps / approaches to try next time (current automation work — 2026-08-20)
+## Next steps / approaches to try next time (current automation work — 2026-08-21)
 
-1. **Raise 5×5 MITM budget on desktop** – expose nodeBudget / half-depth via JNI or compile-time flag (mobile stays at 25k / depthCap 14; desktop can push 50k–100k). Measure residual collapse on random 5×5 positions. **Highest remaining algorithm leverage.**
+1. **Expose 5×5/4×4 MITM nodeBudget + depthCap via JNI / compile flag** – mobile keeps current 40k/16 defaults; desktop can push 80k–200k / deeper half-depth. Measure residual collapse rate on random positions. **Highest remaining algorithm leverage.**
 2. **Verify green CI APK + native .so** – confirm workflow with full gradlew + jar produces debug APK artifact containing lib*.so; iterate NDK/CMake if needed.
 3. **3×3 dense DBs** – full-index BFS pruning tables so phase-1 routinely ≤12 and totals hit the proven 20 ceiling more often.
 4. **Production signed APK** – release keystore secret in CI, Material You polish, on-device size selector to 20×20; verify APK artifact contains native .so.
@@ -149,9 +150,10 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 8. **Edge pairing quality metrics** – log pairedWings progress + solid count into BoundHarness for diagnostics.
 9. **Parity alg variants** – try alternate OLL/PLL parity sequences and pick shortest that clears the full-depth detectors.
 10. **Full 24-wing Lehmer (optional)** – if residual after pairing still leaves deep wing defects on 5×5+, extend integer tables to both depths on all 12 edges (requires multi-word state or stronger packing).
-11. **5×5 center residual denser packing** – replace light 16-bit sample with more of the 3×3×6 facelets (or hash) so residualKey collisions drop further under higher MITM budgets.
-12. **Use per-stage OBTM live** – after a few 4×4 solves, identify which stage owns the bulk of OBTM and target that phase for the next tightening pass.
+11. **Even denser 5×5 center residual** – expand sample toward full 3×3×6 facelets (or rolling hash) under higher MITM budgets to cut residualKey collisions further.
+12. **Use per-stage OBTM live** – after a few 4×4 solves, identify which stage owns the bulk of OBTM and target that phase for the next tightening pass (centers vs residual vs 3×3).
+13. **Desktop residual stress tests** – batch random 4×4/5×5 positions, log MITM hit rate + final OBTM vs U(n)/community 55, feed back into heuristic weights.
 
 ---
 
-*Android/BMW hacking genius mode. Ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search until constructive U(n) collapses toward true God's Number. Exact g(n) for n≥4 remains open (intractable); the constructive reduction + Demaine batching + residual MITM path is complete and universal. Full integer residual coordinate tables (Lehmer 12-edge perm + orient) shipped 2026-08-17; residual MITM lifted to 5×5 (conservative budgets) 2026-08-19; per-stage OBTM breakdown 2026-08-20. Keep iterating. Ship or die.*
+*Android/BMW hacking genius mode. Ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search until constructive U(n) collapses toward true God's Number. Exact g(n) for n≥4 remains open (intractable); the constructive reduction + Demaine batching + residual MITM path is complete and universal. Full integer residual coordinate tables (Lehmer 12-edge perm + orient) shipped 2026-08-17; residual MITM lifted to 5×5 (conservative) 2026-08-19; per-stage OBTM 2026-08-20; 5×5 budgets + denser centers raised 2026-08-21. Keep iterating. Ship or die.*
