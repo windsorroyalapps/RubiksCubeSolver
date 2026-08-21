@@ -131,6 +131,7 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 - [x] **Full integer residual coordinate tables (Lehmer / factorial ranking of 12 mid-edge perm + orient bits + true admissible heuristic)** — 2026-08-17
 - [x] **Residual MITM lifted to 5×5** (conservative 25k nodeBudget / depthCap 14, residualCoords + residualKey for n=5) — 2026-08-19
 - [x] **5×5 MITM budgets raised (40k nodeBudget / depthCap 16) + denser center sample packing** — 2026-08-21
+- [x] **5×5 MITM budgets raised again (50k nodeBudget / depthCap 18)** — 2026-08-22
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK (release keystore + Material You polish) + verified native .so in artifact
 - [ ] Adaptive launcher icons (mipmap) for store polish
@@ -138,9 +139,9 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 
 ---
 
-## Next steps / approaches to try next time (current automation work — 2026-08-21)
+## Next steps / approaches to try next time (current automation work — 2026-08-22)
 
-1. **Expose 5×5/4×4 MITM nodeBudget + depthCap via JNI / compile flag** – mobile keeps current 40k/16 defaults; desktop can push 80k–200k / deeper half-depth. Measure residual collapse rate on random positions. **Highest remaining algorithm leverage.**
+1. **Expose 5×5/4×4 MITM nodeBudget + depthCap via JNI / compile flag** – mobile keeps current 50k/18 defaults; desktop can push 80k–200k / deeper half-depth. Measure residual collapse rate on random positions. **Highest remaining algorithm leverage.**
 2. **Verify green CI APK + native .so** – confirm workflow with full gradlew + jar produces debug APK artifact containing lib*.so; iterate NDK/CMake if needed.
 3. **3×3 dense DBs** – full-index BFS pruning tables so phase-1 routinely ≤12 and totals hit the proven 20 ceiling more often.
 4. **Production signed APK** – release keystore secret in CI, Material You polish, on-device size selector to 20×20; verify APK artifact contains native .so.
@@ -156,4 +157,4 @@ Kotlin NativeSolver  ↔  native-lib.cpp  ↔  C++ engine
 
 ---
 
-*Android/BMW hacking genius mode. Ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search until constructive U(n) collapses toward true God's Number. Exact g(n) for n≥4 remains open (intractable); the constructive reduction + Demaine batching + residual MITM path is complete and universal. Full integer residual coordinate tables (Lehmer 12-edge perm + orient) shipped 2026-08-17; residual MITM lifted to 5×5 (conservative) 2026-08-19; per-stage OBTM 2026-08-20; 5×5 budgets + denser centers raised 2026-08-21. Keep iterating. Ship or die.*
+*Android/BMW hacking genius mode. Ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search until constructive U(n) collapses toward true God's Number. Exact g(n) for n≥4 remains open (intractable); the constructive reduction + Demaine batching + residual MITM path is complete and universal. Full integer residual coordinate tables (Lehmer 12-edge perm + orient) shipped 2026-08-17; residual MITM lifted to 5×5 2026-08-19; per-stage OBTM 2026-08-20; 5×5 budgets + denser centers 2026-08-21; 5×5 nodeBudget 50k / depthCap 18 2026-08-22. Keep iterating. Ship or die.*

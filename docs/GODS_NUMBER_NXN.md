@@ -70,7 +70,7 @@ These are far from optimal but are explicit, implementable algorithms that **alw
 3. **Parity** (even n only) – fix OLL parity ("flipped" dedge) then PLL parity (odd edge permutation)  
    (**full multi-depth wing** orientation + permutation over all depths 1..n-2)
 4. **ReducedSearch** (4×4/5×5) – depth-limited IDA* + **bidirectional meet-in-middle on residualKey/residualCoords** on residual centers+wings before classic 3×3  
-   (**Full integer residualCoords: Lehmer / factorial ranking of 12 mid-edge perm + 12-bit orient + centers (exact 4×4 / denser sampled 5×5) + hardened MITM 100k nodes (4×4) / 40k (5×5) / depthCap 24/16**)
+   (**Full integer residualCoords: Lehmer / factorial ranking of 12 mid-edge perm + 12-bit orient + centers (exact 4×4 / denser sampled 5×5) + hardened MITM 100k nodes (4×4) / 50k (5×5) / depthCap 24/18**)
 5. **3×3 stage** – treat the reduced cube as a normal 3×3 and run multi-probe Kociemba (or CFOP fallback)
 6. **BatchSolver::optimize** – windowed collapse of identical (face,depth,turns) moves (log-factor spirit)
 7. **BoundHarness** – report stage lengths vs U(n) and vs ~n²/log n (scale ≈ 3.8) **+ dual OBTM/SSTM counts + per-stage OBTM**
@@ -85,23 +85,23 @@ It realises a true algorithm that solves every position and approaches the asymp
 | Center commutators + batch groups | `CenterSolver.*` + `BatchGroups.*` + `ClusterScheduler.*` | Working + never-break global score + **orbit-BFS n≤5** + residual n=6 |
 | Edge freeslice + buffer | `EdgePairing.*` | Working multi-pass + wing-count + **Yau buffer + solid-set protect** |
 | Even-n parity | `ParityHandler.*` | OLL + PLL algs + **full multi-depth wing detectors** |
-| Reduced residual search | `ReducedSearch.*` | **Full integer residualCoords (Lehmer / factorial ranking of 12 mid-edge perm + orient + centers) + residualKey + hardened bidirectional MITM (100k/40k nodes, depthCap 24/16 for 4×4/5×5) + admissible IDA* heuristic** |
+| Reduced residual search | `ReducedSearch.*` | **Full integer residualCoords (Lehmer / factorial ranking of 12 mid-edge perm + orient + centers) + residualKey + hardened bidirectional MITM (100k/50k nodes, depthCap 24/18 for 4×4/5×5) + admissible IDA* heuristic** |
 | Orchestrator | `ReductionSolver.*` | Full pipeline |
 | 3×3 engine | `Kociemba` + `GodsAlgorithm` + `CFOPSolver` | Phase-1 + IDA* path + CFOP fallback |
 | Bound instrumentation | `BoundHarness.*` | U(n) table + stage report + asymptotic **+ OBTM/SSTM + per-stage OBTM** |
 | Post-process batching | `BatchSolver.*` | compress + window collapse |
 
-## Progress note (automation session 2026-08-21)
+## Progress note (automation session 2026-08-22)
 
-- **5×5 residual MITM budgets raised + denser center sample** (2026-08-21): nodeBudget 25k → 40k, depthCap 14 → 16, pack5x5CentersSample now samples center + 4 orthogonal + 2 diagonals per face (still ≤16 bits). Improves residual collapse rate while remaining mobile-responsive. Highest prior leverage item advanced.
+- **5×5 residual MITM budgets raised again** (2026-08-22): nodeBudget 40k → 50k, depthCap 16 → 18. Improves residual collapse rate while remaining mobile-responsive. Highest prior leverage item advanced further.
 - **Per-stage OBTM breakdown shipped** (2026-08-20): StageLengths now carries centersObtm / edgesObtm / parityObtm / reducedObtm / reduce3x3Obtm. BoundReport.toString() emits full per-stage OBTM so the fattest phase relative to the 4×4 community ceiling (≤55) is immediately visible.
 - **Full integer residual coordinate tables complete** (2026-08-17): residualCoords uses the **Lehmer / factorial number system** to rank the exact permutation of the 12 mid-edges (29-bit rank, 12! = 479001600) + 12 orientation bits + 16-bit 4×4 center residual. residualKey == 0 iff residual cleared. Heuristic is admissible-style (orient popcount + inversion proxy from rank).
 - Exact g(n) for n≥4 remains open and intractable. The constructive reduction + Demaine batching + residual MITM path is **complete and universal for any n > 3** — this is the practical God's algorithm.
 - Updated community 4×4 OBTM upper to 55 and incorporated probabilistic estimates (~41 HTM / ~48 QTM).
 
-## Next steps (automation roadmap — current work 2026-08-21)
+## Next steps (automation roadmap — current work 2026-08-22)
 
-1. **Expose 5×5/4×4 MITM nodeBudget + depthCap via JNI / compile flag** – mobile keeps current 40k/16 defaults; desktop can push 80k–200k / deeper half-depth. Measure residual collapse rate on random positions. **Now highest algorithm leverage.**
+1. **Expose 5×5/4×4 MITM nodeBudget + depthCap via JNI / compile flag** – mobile keeps current 50k/18 defaults; desktop can push 80k–200k / deeper half-depth. Measure residual collapse rate on random positions. **Now highest algorithm leverage.**
 2. **Verify green CI APK + native .so** – confirm workflow with full gradlew + jar produces debug APK artifact containing lib*.so; iterate NDK/CMake if needed.
 3. **3×3 dense DBs** – full-index BFS pruning tables so phase-1 routinely ≤12 and totals hit the proven 20 ceiling more often.
 4. **Production signed APK** – release keystore secret in CI, Material You polish, on-device size selector to 20×20; verify APK artifact contains native .so.
@@ -125,4 +125,4 @@ It realises a true algorithm that solves every position and approaches the asymp
 - Probabilistic diameter estimates (arXiv:2404.07337) ~48 QTM / ~41 HTM for 4×4
 
 ---
-*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Exact g(n) n≥4 still open; constructive path is complete. Full integer residual coordinate tables (Lehmer 12-edge perm + orient) shipped 2026-08-17; residual MITM lifted to 5×5 (conservative) 2026-08-19; per-stage OBTM breakdown 2026-08-20; 5×5 budgets + denser centers 2026-08-21. Next: expose budgets via JNI + live stage diagnostics + desktop stress tests toward community ceilings.*
+*Android/BMW hacking genius mode: ship the algorithm that solves any n>3, document the bound, automate the APK, iterate the search. Exact g(n) n≥4 still open; constructive path is complete. Full integer residual coordinate tables (Lehmer 12-edge perm + orient) shipped 2026-08-17; residual MITM lifted to 5×5 2026-08-19; per-stage OBTM breakdown 2026-08-20; 5×5 budgets + denser centers 2026-08-21; 5×5 nodeBudget 50k / depthCap 18 2026-08-22. Next: expose budgets via JNI + live stage diagnostics + desktop stress tests toward community ceilings.*
