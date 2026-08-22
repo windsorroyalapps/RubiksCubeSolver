@@ -31,6 +31,11 @@ object NativeSolver {
     /** Constructive upper bound U(n) for working backward toward God's Number. */
     external fun nativeConstructiveUpper(n: Int): Int
 
+    /** 2026-08-23: set residual MITM nodeBudget + depthCap for n=4 or n=5. */
+    external fun nativeSetMitmBudget(n: Int, nodeBudget: Long, depthCap: Int)
+    external fun nativeGetMitmNodeBudget(n: Int): Long
+    external fun nativeGetMitmDepthCap(n: Int): Int
+
     // ---- Kotlin convenience API ----
 
     fun create(size: Int = 3) = nativeCreate(size)
@@ -53,4 +58,15 @@ object NativeSolver {
     fun boundReport(): String = nativeBoundReport()
 
     fun constructiveUpper(n: Int): Int = nativeConstructiveUpper(n)
+
+    /**
+     * Raise (or lower) residual MITM budgets for n=4 or n=5.
+     * Mobile defaults: 4x4 → 100k nodes / depth 24; 5x5 → 50k / 18.
+     * Desktop stress tests can push 80k–200k+ and deeper half-depth.
+     */
+    fun setMitmBudget(n: Int, nodeBudget: Long, depthCap: Int) =
+        nativeSetMitmBudget(n, nodeBudget, depthCap)
+
+    fun getMitmNodeBudget(n: Int): Long = nativeGetMitmNodeBudget(n)
+    fun getMitmDepthCap(n: Int): Int = nativeGetMitmDepthCap(n)
 }

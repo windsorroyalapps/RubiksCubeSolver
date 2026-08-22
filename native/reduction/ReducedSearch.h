@@ -51,12 +51,24 @@
  * Continues collapse of residual toward community ceilings; exact g(n) still open.
  * 2026-08-22: Raised 5×5 nodeBudget 50k + depthCap 18. Mobile still safe; desktop can go higher
  * once JNI expose lands. Exact g(n) for n≥4 remains open/intractable; constructive path is complete.
+ * 2026-08-23: **Expose nodeBudget + depthCap via statics + JNI** — mobile keeps current
+ * defaults (100k/24 for 4x4, 50k/18 for 5x5); desktop / callers can raise via
+ * setNodeBudget / setDepthCap (or JNI setMitmBudget). Highest remaining algorithm
+ * leverage item from prior roadmap now landed. Measure residual collapse rate on
+ * random positions under higher budgets.
  */
 class ReducedSearch {
 public:
     // Attempt to improve the current work cube for n=4 or n=5.
     // Returns additional moves applied (empty if no improvement found / n other).
     static std::vector<Move> improve(Cube& work, int maxDepth = 14);
+
+    // Configurable MITM / IDA* budgets (mobile-safe defaults; raise on desktop).
+    // n must be 4 or 5; other values ignored.
+    static void setNodeBudget(int n, size_t budget);
+    static void setDepthCap(int n, int depthCap);
+    static size_t getNodeBudget(int n);
+    static int getDepthCap(int n);
 
 private:
     static bool isNearlyReduced(const Cube& c);
@@ -73,6 +85,12 @@ private:
     static bool ida(Cube& work, int depth, int threshold,
                     int lastFace, int lastTurns, std::vector<Move>& path);
     // Bidirectional meet-in-middle on residualKey (4x4 + 5x5). Returns path if found
-    // within depthCap/2 each side; empty otherwise. Hardened node budget (100k 4x4 / 50k 5x5).
+    // within depthCap/2 each side; empty otherwise. Uses configurable node budgets.
     static std::vector<Move> meetInMiddle(Cube& work, int depthCap);
+
+    // Defaults preserve prior mobile-safe behaviour (2026-08-22 values).
+    static size_t s_nodeBudget4;
+    static size_t s_nodeBudget5;
+    static int s_depthCap4;
+    static int s_depthCap5;
 };

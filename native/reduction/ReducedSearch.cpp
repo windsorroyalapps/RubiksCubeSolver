@@ -6,6 +6,35 @@
 #include <queue>
 #include <unordered_map>
 
+// Configurable budgets (mobile-safe defaults from 2026-08-22).
+// Desktop / JNI can raise them for higher residual collapse rates.
+size_t ReducedSearch::s_nodeBudget4 = 100000;
+size_t ReducedSearch::s_nodeBudget5 = 50000;
+int ReducedSearch::s_depthCap4 = 24;
+int ReducedSearch::s_depthCap5 = 18;
+
+void ReducedSearch::setNodeBudget(int n, size_t budget) {
+    if (n == 4) s_nodeBudget4 = budget;
+    else if (n == 5) s_nodeBudget5 = budget;
+}
+
+void ReducedSearch::setDepthCap(int n, int depthCap) {
+    if (n == 4) s_depthCap4 = std::max(1, depthCap);
+    else if (n == 5) s_depthCap5 = std::max(1, depthCap);
+}
+
+size_t ReducedSearch::getNodeBudget(int n) {
+    if (n == 4) return s_nodeBudget4;
+    if (n == 5) return s_nodeBudget5;
+    return 0;
+}
+
+int ReducedSearch::getDepthCap(int n) {
+    if (n == 4) return s_depthCap4;
+    if (n == 5) return s_depthCap5;
+    return 0;
+}
+
 // Pack the 16 inner center facelets of a 4x4 into a 16-bit correctness mask.
 // Bit set = incorrect relative to target face colour. Admissible residual.
 uint16_t ReducedSearch::pack4x4Centers(const Cube& c) {
@@ -286,15 +315,8 @@ bool ReducedSearch::ida(Cube& work, int depth, int threshold,
 std::vector<Move> ReducedSearch::meetInMiddle(Cube& work, int depthCap) {
     // True bidirectional meet-in-middle on residualKey for 4x4 + 5x5.
     // Forward from current residual; backward from key==0 (solved residual).
-    // Hardened 2026-08-13: nodeBudget 50k → 100k (4x4), denser residualKey, better path invert.
-    // 2026-08-14: residualKey now uses residualCoords (orient+perm packing).
-    // 2026-08-16: residualKey denser full multi-depth all-edges + nodeBudget 100k.
-    // 2026-08-17: residualKey uses full integer Lehmer tables.
-    // 2026-08-19: **Enabled for n=5** with conservative nodeBudget 25k / half-depth so mobile
-    // stays responsive; 4x4 keeps 100k. Highest remaining algorithm leverage from prior roadmap.
-    // 2026-08-21: Raised 5x5 nodeBudget to 40k + depthCap path to 16.
-    // 2026-08-22: Raised 5x5 nodeBudget to 50k + depthCap path to 18 for better residual collapse
-    // while remaining mobile-responsive. Still highest algorithm leverage until JNI expose.
+    // Uses configurable node budgets (defaults: 100k 4x4 / 50k 5x5).
+    // 2026-08-23: budgets now configurable via setNodeBudget / JNI.
     std::vector<Move> result;
     int n = work.size();
     if (n != 4 && n != 5) return result;
@@ -303,9 +325,7 @@ std::vector<Move> ReducedSearch::meetInMiddle(Cube& work, int depthCap) {
     if (startKey == 0) return result;  // already residual-clear
 
     const int half = std::max(1, depthCap / 2);
-    // Conservative budgets: 100k for 4x4 (desktop-friendly collapse toward OBTM ≤55),
-    // 50k for 5x5 (2026-08-22 raise from 40k; still responsive).
-    const size_t nodeBudget = (n == 4) ? 100000 : 50000;
+    const size_t nodeBudget = (n == 4) ? s_nodeBudget4 : s_nodeBudget5;
 
     auto gens = generateMoves(n);
 
@@ -384,13 +404,11 @@ std::vector<Move> ReducedSearch::improve(Cube& work, int maxDepth) {
     if (n != 4 && n != 5) return result;
     if (!isNearlyReduced(work)) return result;
 
-    // Bound search cost: higher on 4x4 (toward OBTM ≤55), tighter on 5x5
-    // 2026-08-13/14: depthCap 22 for 4x4 + hardened MITM + residualCoords
-    // 2026-08-16: depthCap 24 for 4x4
-    // 2026-08-19: depthCap 14 for 5x5 + MITM enabled
-    // 2026-08-21: depthCap 16 for 5x5
-    // 2026-08-22: depthCap 18 for 5x5 (raised with nodeBudget 50k)
-    int depthCap = (n == 4) ? std::max(maxDepth, 24) : std::min(std::max(maxDepth, 18), 18);
+    // Use configurable depth caps (defaults: 24 for 4x4, 18 for 5x5).
+    // maxDepth argument still respected as a floor / ceiling.
+    int depthCap = (n == 4)
+        ? std::max(maxDepth, s_depthCap4)
+        : std::min(std::max(maxDepth, s_depthCap5), s_depthCap5);
 
     // Prefer meet-in-middle on 4x4 / 5x5 when residual is non-trivial but searchable
     {

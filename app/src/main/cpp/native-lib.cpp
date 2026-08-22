@@ -5,6 +5,7 @@
 #include "GodsAlgorithm.h"
 #include "ReductionSolver.h"
 #include "BoundHarness.h"
+#include "ReducedSearch.h"
 
 static std::unique_ptr<Cube> g_cube;
 
@@ -93,6 +94,26 @@ JNIEXPORT jint JNICALL
 Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeConstructiveUpper(
         JNIEnv*, jobject, jint n) {
     return static_cast<jint>(BoundHarness::constructiveUpper(static_cast<int>(n)));
+}
+
+// 2026-08-23: expose MITM budgets so desktop / stress tests can raise nodeBudget + depthCap
+JNIEXPORT void JNICALL
+Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeSetMitmBudget(
+        JNIEnv*, jobject, jint n, jlong nodeBudget, jint depthCap) {
+    ReducedSearch::setNodeBudget(static_cast<int>(n), static_cast<size_t>(nodeBudget));
+    ReducedSearch::setDepthCap(static_cast<int>(n), static_cast<int>(depthCap));
+}
+
+JNIEXPORT jlong JNICALL
+Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeGetMitmNodeBudget(
+        JNIEnv*, jobject, jint n) {
+    return static_cast<jlong>(ReducedSearch::getNodeBudget(static_cast<int>(n)));
+}
+
+JNIEXPORT jint JNICALL
+Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeGetMitmDepthCap(
+        JNIEnv*, jobject, jint n) {
+    return static_cast<jint>(ReducedSearch::getDepthCap(static_cast<int>(n)));
 }
 
 } // extern "C"
