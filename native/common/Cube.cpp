@@ -55,7 +55,7 @@ void Cube::cycleSides(int face, int depth, int turns) {
             int row = n_ - 1 - depth;
             for (int i = 0; i < n_; ++i)
                 cycle4(facelets_[F][row][i], facelets_[L][row][i],
-                       facelets_[B][row][n_-1-i], facelets_[R][row][i]);
+                       facelets_[B][row][n_-1-i], facelets_[R][row][n_-1-i]);
         } else if (face == F) {
             for (int i = 0; i < n_; ++i)
                 cycle4(facelets_[U][n_-1-depth][i], facelets_[R][i][depth],
