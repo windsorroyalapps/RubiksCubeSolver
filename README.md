@@ -47,6 +47,7 @@ Multi-probe Kociemba → if len > 20: optimal IDA* (≤20) → CFOP fallback
 ClusterScheduler → BatchGroups → Centers → Edges → Parity (even n)
   → ReducedSearch (IDA* + residualKey MITM on 4x4/5x5) → 3×3 → BatchSolver
   → BoundHarness (SSTM + OBTM + per-stage OBTM)
+  → Cube::applyNotation SiGN replay (2R / Rw / 3Rw / M E S)
 ```
 
 Exact diameter open for n≥4. Constructive algorithm always terminates.
@@ -85,33 +86,34 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 - [x] ClusterScheduler + BatchGroups + BatchSolver
 - [x] BoundHarness U(n) + OBTM/SSTM + per-stage OBTM
 - [x] JNI MITM budgets + env overrides
-- [x] **ReducedSearch.cpp real IDA* + MITM** (was empty placeholder)
-- [x] **docs/GODS_NUMBER_NXN.md filled**
-- [x] **native/tools/desktop_harness.cpp**
+- [x] ReducedSearch.cpp real IDA* + MITM
+- [x] docs/GODS_NUMBER_NXN.md filled
+- [x] native/tools/desktop_harness.cpp
+- [x] **Cube::applyNotation SiGN for n>3** (2R, Rw, 3Rw, M/E/S) + harness replaySolved
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK + verified native .so
 - [ ] Adaptive launcher icons
-- [ ] `Cube::applyNotation` for n>3 depth prefixes
+- [ ] Measure replaySolved rate on 4×4/5×5 after desktop compile
 
 ---
 
-## Next steps / approaches to try next time (2026-08-28)
+## Next steps / approaches to try next time (2026-08-28 post-SiGN)
 
-1. Compile + run `desktop_harness` on 4×4/5×5 with raised `RCS_MITM_*` budgets; log MITM hit rate and OBTM vs U(n) and vs community 54. Highest algorithm leverage.
-2. Fix `Cube::applyNotation` for n>3 (currently early-returns unless n==3) so JNI can replay `2R`-style tokens and `isSolved()` is honest after solve.
-3. Per-stage OBTM targeting: cut the fattest phase only.
-4. Verify green CI APK contains lib*.so.
-5. 3×3 dense full-index pruning DBs toward the proven 20 ceiling.
-6. Production signed APK + Material You + size selector to 20×20.
-7. Adaptive launcher icons.
-8. Recalibrate BoundHarness 3.8 scale if new community numbers appear; keep U(n) as hard constructive guarantee.
-9. Center BFS node-budget tuning on desktop.
-10. Edge pairing quality metrics (`pairedWings`) into BoundHarness.
-11. Shorter parity algs that still clear full-depth detectors.
-12. Optional full 24-wing Lehmer if 5×5+ residual stays deep.
-13. Denser 5×5 center residual under higher MITM budgets.
+1. Compile + run `desktop_harness` on 4×4/5×5 with raised `RCS_MITM_*`; log MITM hit rate, OBTM vs U(n) vs community 54, and **replaySolved=yes rate**. Highest remaining algorithm leverage.
+2. Per-stage OBTM targeting: cut the fattest phase only (centers vs edges vs parity).
+3. Verify green CI APK contains lib*.so.
+4. 3×3 dense full-index pruning DBs toward the proven 20 ceiling.
+5. Production signed APK + Material You + size selector to 20×20.
+6. Adaptive launcher icons.
+7. Recalibrate BoundHarness 3.8 scale if new community numbers appear; keep U(n) as hard constructive guarantee.
+8. Center BFS node-budget tuning on desktop.
+9. Edge pairing quality metrics (`pairedWings`) into BoundHarness.
+10. Shorter parity algs that still clear full-depth detectors.
+11. Optional full 24-wing Lehmer if 5×5+ residual stays deep.
+12. Denser 5×5 center residual under higher MITM budgets.
+13. Wire `Cube::movesToNotation` into ReductionSolver / GodsAlgorithm so emit+parse share one encoder.
 14. Do not claim exact g(n) for n≥4 until a published diameter proof exists.
 
 ---
 
-*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM is the universal algorithm this repo ships. ReducedSearch is no longer a placeholder (2026-08-28).*
+*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM is the universal algorithm this repo ships. SiGN applyNotation for n>3 landed 2026-08-28.*
