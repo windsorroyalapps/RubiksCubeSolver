@@ -37,21 +37,14 @@ public:
     std::string faceToString(int face) const;
     void applyNotation(const std::string& notation);
 
+    // SiGN / WCA-style: 2R, Rw, 3Rw2, R', M, E, S
+    static std::string movesToNotation(const std::vector<Move>& moves);
+
     // --- Solver helpers (3x3 focused) ---
 
-    // Edge positions: 12 edges. Returns facelet colors of an edge at (face, slot)
-    // slot: 0=U, 1=R, 2=D, 3=L relative to the face for side faces, etc.
-    // Simplified: get the two colors of the edge currently at a named position.
-    // Positions encoded as pair of faces that the edge sits between.
     std::pair<Color, Color> edgeColors(Face f1, Face f2) const;
-
-    // Corner colors at intersection of three faces
     std::array<Color, 3> cornerColors(Face f1, Face f2, Face f3) const;
-
-    // Check if white cross is solved (white edges on D, correctly aligned)
     bool isWhiteCrossSolved() const;
-
-    // Check if first layer (white face + sides) is solved
     bool isFirstLayerSolved() const;
 
 private:
@@ -63,7 +56,6 @@ private:
     static int normalizeTurns(int turns);
     void rotateFaceCW(int face);
 
-    // Map edge between two faces to facelet coordinates
     void edgeCoords(Face f1, Face f2, int& faceA, int& rowA, int& colA,
                     int& faceB, int& rowB, int& colB) const;
 };

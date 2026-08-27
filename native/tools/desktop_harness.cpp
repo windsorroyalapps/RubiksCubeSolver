@@ -1,4 +1,4 @@
-// Thin desktop harness: scramble -> reduce-solve -> print BoundHarness + MITM stats.
+// Thin desktop harness: scramble -> reduce-solve -> replay notation -> BoundHarness + MITM.
 // RCS_MITM_NODEBUDGET4=150000 RCS_MITM_DEPTHCAP4=28 ./rcs_harness 4 10
 
 #include "Cube.h"
@@ -39,8 +39,27 @@ int main(int argc, char** argv) {
         return 2;
     }
 
+    {
+        Cube probe(n);
+        probe.applyNotation("R U R' U' 2R Rw");
+        Cube raw(n);
+        raw.apply(Move{R, 0, 1});
+        raw.apply(Move{U, 0, 1});
+        raw.apply(Move{R, 0, -1});
+        raw.apply(Move{U, 0, -1});
+        if (n >= 4) {
+            raw.apply(Move{R, 1, 1});
+            raw.apply(Move{R, 0, 1});
+            raw.apply(Move{R, 1, 1});
+        }
+        const bool notationOk = (n < 4) || (probe.toString() == raw.toString());
+        std::cout << "notation_selftest=" << (notationOk ? "pass" : "FAIL")
+                  << " n=" << n << "\n";
+    }
+
     std::mt19937 rng(20260828);
     long long sumHits = 0, sumNodes = 0;
+    int replaySolved = 0;
 
     std::cout << "n=" << n
               << " U(n)=" << BoundHarness::constructiveUpper(n)
@@ -51,10 +70,17 @@ int main(int argc, char** argv) {
 
     for (int t = 0; t < trials; ++t) {
         Cube cube(n);
-        cube.apply(randomScramble(n, scrambleLen, rng));
+        auto scramble = randomScramble(n, scrambleLen, rng);
+        cube.apply(scramble);
         std::string notation;
         if (n == 3) notation = GodsAlgorithm::solveToNotation(cube);
         else notation = ReductionSolver::solveToNotation(cube);
+
+        Cube replay(n);
+        replay.apply(scramble);
+        replay.applyNotation(notation);
+        const bool solvedReplay = replay.isSolved();
+        if (solvedReplay) ++replaySolved;
 
         const std::string report = (n >= 4)
             ? ReductionSolver::lastBoundReportString()
@@ -66,6 +92,7 @@ int main(int argc, char** argv) {
 
         std::cout << "trial=" << (t + 1)
                   << " moves_str_len=" << notation.size()
+                  << " replaySolved=" << (solvedReplay ? "yes" : "no")
                   << " mitmHits=" << hits
                   << " nodes=" << nodes
                   << " " << report << "\n";
@@ -73,6 +100,7 @@ int main(int argc, char** argv) {
 
     std::cout << "avgMitmHits=" << (trials ? (double)sumHits / trials : 0.0)
               << " avgNodes=" << (trials ? (double)sumNodes / trials : 0.0)
+              << " replaySolved=" << replaySolved << "/" << trials
               << "\n";
     std::cout << "NOTE: exact g(n) proven only for n=2,3. Harness measures constructive length vs U(n)/OBTM.\n";
     return 0;

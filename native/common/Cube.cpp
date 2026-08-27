@@ -1,6 +1,7 @@
 #include "Cube.h"
 
 #include <algorithm>
+#include <cctype>
 #include <sstream>
 #include <stdexcept>
 
@@ -54,7 +55,7 @@ void Cube::cycleSides(int face, int depth, int turns) {
             int row = n_ - 1 - depth;
             for (int i = 0; i < n_; ++i)
                 cycle4(facelets_[F][row][i], facelets_[L][row][i],
-                       facelets_[B][row][n_-1-i], facelets_[R][row][n_-1-i]);
+                       facelets_[B][row][n_-1-i], facelets_[R][row][i]);
         } else if (face == F) {
             for (int i = 0; i < n_; ++i)
                 cycle4(facelets_[U][n_-1-depth][i], facelets_[R][i][depth],
@@ -114,42 +115,107 @@ std::string Cube::toString() const {
     return oss.str();
 }
 
+std::string Cube::movesToNotation(const std::vector<Move>& moves) {
+    static const char* faces = "UDFBLR";
+    std::ostringstream oss;
+    for (size_t i = 0; i < moves.size(); ++i) {
+        const auto& m = moves[i];
+        if (m.face < 0 || m.face > 5) continue;
+        if (m.depth > 0) oss << (m.depth + 1);
+        oss << faces[m.face];
+        if (m.turns == 2) oss << '2';
+        else if (m.turns == -1 || m.turns == 3) oss << '\'';
+        if (i + 1 < moves.size()) oss << ' ';
+    }
+    return oss.str();
+}
+
 void Cube::applyNotation(const std::string& notation) {
-    if (n_ != 3) return;
     std::istringstream iss(notation);
     std::string token;
+    auto mapFace = [](char c) -> int {
+        switch (c) {
+            case 'U': case 'u': return U;
+            case 'D': case 'd': return D;
+            case 'F': case 'f': return F;
+            case 'B': case 'b': return B;
+            case 'L': case 'l': return L;
+            case 'R': case 'r': return R;
+            default: return -1;
+        }
+    };
+
     while (iss >> token) {
         if (token.empty()) continue;
+        size_t i = 0;
+        int layerNum = 0;
+        bool hasLayer = false;
+        while (i < token.size() && std::isdigit(static_cast<unsigned char>(token[i]))) {
+            hasLayer = true;
+            layerNum = layerNum * 10 + (token[i] - '0');
+            ++i;
+        }
+        if (i < token.size() && token[i] == '-') {
+            ++i;
+            while (i < token.size() && std::isdigit(static_cast<unsigned char>(token[i]))) ++i;
+        }
+        if (i >= token.size()) continue;
+
+        char ch = token[i++];
         int face = -1;
-        switch (token[0]) {
-            case 'U': face = U; break;
-            case 'D': face = D; break;
-            case 'F': face = F; break;
-            case 'B': face = B; break;
-            case 'L': face = L; break;
-            case 'R': face = R; break;
-            default: continue;
-        }
         int turns = 1;
-        if (token.size() > 1) {
-            if (token[1] == '\'') turns = -1;
-            else if (token[1] == '2') turns = 2;
+        bool wide = false;
+        int midFace = -1;
+        int midTurnsSign = 1;
+
+        if (ch == 'M' || ch == 'm') { midFace = L; midTurnsSign = 1; }
+        else if (ch == 'E' || ch == 'e') { midFace = D; midTurnsSign = 1; }
+        else if (ch == 'S' || ch == 's') { midFace = F; midTurnsSign = 1; }
+        else {
+            face = mapFace(ch);
+            if (face < 0) continue;
+            if (std::islower(static_cast<unsigned char>(ch))) wide = true;
         }
-        apply(Move{face, 0, turns});
+
+        while (i < token.size()) {
+            char s = token[i++];
+            if (s == 'w' || s == 'W') wide = true;
+            else if (s == '2') turns = 2;
+            else if (s == '\'' || s == '`') turns = -1;
+            else if (s == '3') turns = -1;
+        }
+
+        if (midFace >= 0) {
+            int depth = n_ / 2;
+            if (depth >= n_) continue;
+            apply(Move{midFace, depth, turns * midTurnsSign});
+            if (n_ % 2 == 0 && depth - 1 >= 0) {
+                apply(Move{midFace, depth - 1, turns * midTurnsSign});
+            }
+            continue;
+        }
+
+        int d0 = 0;
+        int d1 = 0;
+        if (wide) {
+            int layers = hasLayer ? layerNum : 2;
+            if (layers < 1) layers = 1;
+            d1 = layers - 1;
+        } else if (hasLayer) {
+            d0 = d1 = layerNum - 1;
+        }
+        if (d0 < 0) d0 = 0;
+        if (d1 >= n_) d1 = n_ - 1;
+        for (int d = d0; d <= d1; ++d) {
+            apply(Move{face, d, turns});
+        }
     }
 }
 
-// ---------- Solver helpers (3x3) ----------
-
 void Cube::edgeCoords(Face f1, Face f2, int& faceA, int& rowA, int& colA,
                       int& faceB, int& rowB, int& colB) const {
-    // Only valid for n==3. Map the 12 edge positions.
-    // We always put the "primary" face first for consistency.
     auto mid = n_ / 2;
 
-    // Normalize order so smaller face index is first when helpful
-    struct Key { Face a, b; };
-    // Exhaustive mapping for 3x3 edges
     if ((f1 == U && f2 == F) || (f1 == F && f2 == U)) {
         faceA = U; rowA = n_-1; colA = mid;
         faceB = F; rowB = 0;    colB = mid;
@@ -183,7 +249,7 @@ void Cube::edgeCoords(Face f1, Face f2, int& faceA, int& rowA, int& colA,
     } else if ((f1 == B && f2 == L) || (f1 == L && f2 == B)) {
         faceA = B; rowA = mid; colA = n_-1;
         faceB = L; rowB = mid; colB = 0;
-    } else { // F-L
+    } else {
         faceA = F; rowA = mid; colA = 0;
         faceB = L; rowB = mid; colB = n_-1;
     }
@@ -196,13 +262,8 @@ std::pair<Color, Color> Cube::edgeColors(Face f1, Face f2) const {
 }
 
 std::array<Color, 3> Cube::cornerColors(Face f1, Face f2, Face f3) const {
-    // Simplified: read the three facelets at the corner of f1/f2/f3
-    // For 3x3 the corner is uniquely determined.
     int mid = n_ / 2;
-    // We use a practical approach: sample the three faces at their corner coords.
-    // This is a best-effort for the solver; full geometric mapping can be refined.
     auto cornerOn = [&](Face f, Face a, Face b) -> Color {
-        // Return the facelet of face f that is adjacent to both a and b
         if (f == U) {
             if ((a == F || b == F) && (a == R || b == R)) return facelets_[U][n_-1][n_-1];
             if ((a == F || b == F) && (a == L || b == L)) return facelets_[U][n_-1][0];
@@ -228,13 +289,13 @@ std::array<Color, 3> Cube::cornerColors(Face f1, Face f2, Face f3) const {
             if ((a == U || b == U) && (a == B || b == B)) return facelets_[L][0][0];
             if ((a == D || b == D) && (a == F || b == F)) return facelets_[L][n_-1][n_-1];
             if ((a == D || b == D) && (a == B || b == B)) return facelets_[L][n_-1][0];
-        } else { // R
+        } else {
             if ((a == U || b == U) && (a == F || b == F)) return facelets_[R][0][0];
             if ((a == U || b == U) && (a == B || b == B)) return facelets_[R][0][n_-1];
             if ((a == D || b == D) && (a == F || b == F)) return facelets_[R][n_-1][0];
             if ((a == D || b == D) && (a == B || b == B)) return facelets_[R][n_-1][n_-1];
         }
-        return facelets_[f][mid][mid]; // fallback center
+        return facelets_[f][mid][mid];
     };
 
     return {
@@ -246,15 +307,10 @@ std::array<Color, 3> Cube::cornerColors(Face f1, Face f2, Face f3) const {
 
 bool Cube::isWhiteCrossSolved() const {
     if (n_ != 3) return false;
-    // White is Color::D (we treat D as white/bottom for beginner method)
-    // Cross on D: four edges DF, DR, DB, DL must have D color on D face
-    // and matching side colors.
     auto check = [&](Face side, Color expectedSide) {
         auto [c1, c2] = edgeColors(D, side);
-        // one of them must be D (white), the other the side color
         bool hasWhite = (c1 == Color::D || c2 == Color::D);
         bool hasSide  = (c1 == expectedSide || c2 == expectedSide);
-        // Also the D facelet itself should be white
         int mid = n_ / 2;
         Color onD;
         if (side == F) onD = facelets_[D][0][mid];
@@ -270,7 +326,6 @@ bool Cube::isWhiteCrossSolved() const {
 bool Cube::isFirstLayerSolved() const {
     if (n_ != 3) return false;
     if (!isWhiteCrossSolved()) return false;
-    // Check four white corners on D
     for (int r = 0; r < n_; r += n_-1)
         for (int c = 0; c < n_; c += n_-1)
             if (facelets_[D][r][c] != Color::D) return false;
