@@ -8,8 +8,6 @@
 #include "../cfop/CFOPSolver.h"
 #include "../cfop/Kociemba.h"
 
-#include <sstream>
-
 static BoundReport g_lastBoundReport{};
 
 std::vector<Move> ReductionSolver::solveCenters(Cube& work) {
@@ -36,7 +34,6 @@ std::vector<Move> ReductionSolver::solve(const Cube& cube) {
     std::vector<Move> solution;
     StageLengths stages;
 
-    // Append moves, update SSTM counter and per-stage OBTM (independent subsequence)
     auto append = [&](const std::vector<Move>& moves, int* sstmCounter, int* obtmCounter) {
         solution.insert(solution.end(), moves.begin(), moves.end());
         if (sstmCounter) *sstmCounter += BoundHarness::count(moves);
@@ -50,7 +47,6 @@ std::vector<Move> ReductionSolver::solve(const Cube& cube) {
         append(ParityHandler::fix(work), &stages.parity, &stages.parityObtm);
     }
 
-    // Reduced-coordinate search for 4x4 / 5x5 (packed residual → tighten constructive)
     if (work.size() == 4 || work.size() == 5) {
         auto improved = ReducedSearch::improve(work);
         if (!improved.empty()) {
@@ -63,24 +59,12 @@ std::vector<Move> ReductionSolver::solve(const Cube& cube) {
     solution = BatchSolver::optimize(solution);
     stages.afterBatch = BoundHarness::count(solution);
 
-    // Dual metrics (SSTM + OBTM) for comparison against community ceilings
     g_lastBoundReport = BoundHarness::report(cube.size(), stages, solution);
     return solution;
 }
 
 std::string ReductionSolver::solveToNotation(const Cube& cube) {
-    auto moves = solve(cube);
-    static const char* faces = "UDFBLR";
-    std::ostringstream oss;
-    for (size_t i = 0; i < moves.size(); ++i) {
-        const auto& m = moves[i];
-        if (m.depth > 0) oss << (m.depth + 1);
-        oss << faces[m.face];
-        if (m.turns == 2) oss << '2';
-        else if (m.turns == -1 || m.turns == 3) oss << '\'';
-        if (i + 1 < moves.size()) oss << ' ';
-    }
-    return oss.str();
+    return Cube::movesToNotation(solve(cube));
 }
 
 std::string ReductionSolver::lastBoundReportString() {

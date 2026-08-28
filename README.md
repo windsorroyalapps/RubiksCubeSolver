@@ -3,9 +3,11 @@
 **Android + Native C++ Rubik's Cube Solver**
 
 - **3×3:** God's algorithm path toward **≤ 20 HTM** (proven God's Number)
-- **n×n (n ≥ 4):** Reduction + Demaine-style batching — **complete constructive algorithm** for any size; work backward from constructive **U(n)** and asymptotic **Θ(n² / log n)**
+- **n×n (n ≥ 4):** Universal constructive algorithm — reduction + Demaine batching + residual MITM. Always terminates. Exact integer g(n) is **open**; asymptotic **g(n)=Θ(n²/log n)**.
 
-Exact g(n) is proven only for n=2,3. For n>3 this repo implements the universal solving algorithm plus live bound instrumentation — not a false claim of a closed diameter.
+Exact g(n) is proven only for n=2,3. This repo implements the algorithm for every larger size plus live L(n)/U(n)/OBTM instrumentation — not a fake closed diameter.
+
+Canonical contract: [docs/UNIVERSAL_NXN_ALGORITHM.md](docs/UNIVERSAL_NXN_ALGORITHM.md)
 
 ```bash
 git clone https://github.com/windsorroyalapps/RubiksCubeSolver.git
@@ -41,13 +43,13 @@ Multi-probe Kociemba → if len > 20: optimal IDA* (≤20) → CFOP fallback
 
 ---
 
-## n×n path (practical God's algorithm for any n > 3)
+## n×n path (algorithm for any n > 3)
 
 ```text
 ClusterScheduler → BatchGroups → Centers → Edges → Parity (even n)
   → ReducedSearch (IDA* + residualKey MITM on 4x4/5x5) → 3×3 → BatchSolver
-  → BoundHarness (SSTM + OBTM + per-stage OBTM)
-  → Cube::applyNotation SiGN replay (2R / Rw / 3Rw / M E S)
+  → BoundHarness (L(n) + U(n) + SSTM + OBTM + per-stage OBTM)
+  → Cube::movesToNotation / applyNotation SiGN replay
 ```
 
 Exact diameter open for n≥4. Constructive algorithm always terminates.
@@ -56,19 +58,20 @@ Exact diameter open for n≥4. Constructive algorithm always terminates.
 
 ---
 
-## Bound harness — work backward from U(n)
+## Bound harness — work backward from U(n) toward L(n)
 
-| n | Constructive upper U(n) |
-|---|-------------------------|
-| 4 | **501** |
-| 5 | **878** |
-| 6 | **1321** |
-| 7 | **1852** |
-| 8 | **2473** |
-| 9 | **3182** |
-| 10 | **3981** |
+| n | L(n) ≥ | Constructive U(n) | Community OBTM upper |
+|---|--------|-------------------|----------------------|
+| 3 | **20** | **20** | **20** (proven) |
+| 4 | 35 | **501** | **54** |
+| 5 | 40 | **878** | ~130 claimed |
+| 6 | counting | **1321** | open |
+| 7 | counting | **1852** | open |
+| 8 | counting | **2473** | open |
+| 9 | counting | **3182** | open |
+| 10 | counting | **3981** | open |
 
-4×4 OBTM community upper **54**. Probabilistic estimates ~41 HTM / ~48 QTM.
+4×4 probabilistic estimates ~41 HTM / ~48 QTM.
 
 ```kotlin
 NativeSolver.create(5)
@@ -79,17 +82,18 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-08-28)
+## Status (2026-08-29)
 
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
 - [x] ClusterScheduler + BatchGroups + BatchSolver
 - [x] BoundHarness U(n) + OBTM/SSTM + per-stage OBTM
+- [x] BoundHarness **L(n) counting lower + generatorCount + community OBTM 54**
 - [x] JNI MITM budgets + env overrides
 - [x] ReducedSearch.cpp real IDA* + MITM
-- [x] docs/GODS_NUMBER_NXN.md filled
+- [x] docs/UNIVERSAL_NXN_ALGORITHM.md contract
 - [x] native/tools/desktop_harness.cpp
-- [x] **Cube::applyNotation SiGN for n>3** (2R, Rw, 3Rw, M/E/S) + harness replaySolved
+- [x] Cube::applyNotation SiGN for n>3 + **ReductionSolver uses movesToNotation**
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK + verified native .so
 - [ ] Adaptive launcher icons
@@ -97,23 +101,23 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Next steps / approaches to try next time (2026-08-28 post-SiGN)
+## Next steps / approaches to try next time (2026-08-29 post-L(n))
 
-1. Compile + run `desktop_harness` on 4×4/5×5 with raised `RCS_MITM_*`; log MITM hit rate, OBTM vs U(n) vs community 54, and **replaySolved=yes rate**. Highest remaining algorithm leverage.
-2. Per-stage OBTM targeting: cut the fattest phase only (centers vs edges vs parity).
-3. Verify green CI APK contains lib*.so.
-4. 3×3 dense full-index pruning DBs toward the proven 20 ceiling.
-5. Production signed APK + Material You + size selector to 20×20.
-6. Adaptive launcher icons.
-7. Recalibrate BoundHarness 3.8 scale if new community numbers appear; keep U(n) as hard constructive guarantee.
-8. Center BFS node-budget tuning on desktop.
-9. Edge pairing quality metrics (`pairedWings`) into BoundHarness.
-10. Shorter parity algs that still clear full-depth detectors.
-11. Optional full 24-wing Lehmer if 5×5+ residual stays deep.
-12. Denser 5×5 center residual under higher MITM budgets.
-13. Wire `Cube::movesToNotation` into ReductionSolver / GodsAlgorithm so emit+parse share one encoder.
+1. **Highest leverage:** compile + run `desktop_harness` on 4×4/5×5 with raised `RCS_MITM_*`. Log MITM hit rate, OBTM vs U(n) vs L(n) vs community 54, and **replaySolved=yes rate**.
+2. If replaySolved is low, debug SiGN encode/decode round-trip on ReductionSolver output (now a single encoder).
+3. Per-stage OBTM targeting: cut the fattest phase only (centers vs edges vs parity).
+4. Replace the 1.5 n² bit estimate in `countingLowerBound` with Salkinder's exact |G(n)| formula for a sharper L(n).
+5. Verify green CI APK contains lib*.so.
+6. 3×3 dense full-index pruning DBs toward the proven 20 ceiling.
+7. Production signed APK + Material You + size selector to 20×20.
+8. Recalibrate BoundHarness 3.8 scale if new community numbers appear; keep U(n) as hard constructive guarantee.
+9. Center BFS node-budget tuning on desktop.
+10. Edge pairing quality metrics (`pairedWings`) into BoundHarness.
+11. Shorter parity algs that still clear full-depth detectors.
+12. Optional full 24-wing Lehmer if 5×5+ residual stays deep.
+13. Denser 5×5 center residual under higher MITM budgets.
 14. Do not claim exact g(n) for n≥4 until a published diameter proof exists.
 
 ---
 
-*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM is the universal algorithm this repo ships. SiGN applyNotation for n>3 landed 2026-08-28.*
+*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM is the universal algorithm this repo ships. L(n)+community OBTM 54 + shared SiGN encoder landed 2026-08-29.*
