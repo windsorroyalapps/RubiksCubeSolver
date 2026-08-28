@@ -2,7 +2,7 @@
 
 #include "Cube.h"
 #include <string>
- legally#include <vector>
+#include <vector>
 
 /**
  * Bound harness for working backward toward God's Number on nxn.
