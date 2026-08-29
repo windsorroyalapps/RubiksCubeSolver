@@ -69,20 +69,22 @@ Exact diameter open for n≥4. Constructive algorithm always terminates.
 
 ## Bound harness — work backward from U(n) toward L(n)
 
-| n | L(n) ≥ | Constructive U(n) | Community OBTM upper |
-|---|--------|-------------------|----------------------|
-| 3 | **20** | **20** | **20** (proven) |
-| 4 | 35 | **501** | **54** |
-| 5 | 40 | **878** | ~130 claimed |
-| 6 | Hardwick count | **1321** | open |
-| 7 | Hardwick count | **1852** | open |
-| 8 | Hardwick count | **2473** | open |
-| 9 | Hardwick count | **3182** | open |
-| 10 | Hardwick count | **3981** | open |
+Verified by compiling `print_bounds` (2026-08-30):
+
+| n | L(n) ≥ | log10\|G\| | Constructive U(n) | Community OBTM upper |
+|---|--------|------------|-------------------|----------------------|
+| 3 | **20** | 19.64 | **20** | **20** (proven) |
+| 4 | 35 | 45.87 | **501** | **54** |
+| 5 | **47** | 74.45 | **878** | ~130 claimed |
+| 6 | 67 | 116.20 | **1727** | open |
+| 7 | 92 | 160.29 | **2472** | open |
+| 8 | 117 | 217.55 | **3689** | open |
+| 9 | 149 | 277.15 | **4802** | open |
+| 10 | 179 | 349.92 | **6387** | open |
 
 4×4 probabilistic estimates ~41 HTM / ~48 QTM.
 
-L(n) for n≥4 is `floor(ln|G|/ln|S|)` from Hardwick's exact |G(n)|, lifted to community 35/40 on 4×4/5×5. Still a *counting* lower bound, not a proven diameter.
+L(n) for n≥4 is `floor(ln|G|/ln|S|)` from Hardwick's exact |G(n)|, lifted to community 35 on 4×4. Still a *counting* lower bound, not a proven diameter. U(n) for n≥6 was previously under-counted in the docs; the C++ formula was always correct.
 
 ```kotlin
 NativeSolver.create(5)
@@ -102,6 +104,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 - [x] BoundHarness L(n) counting lower + generatorCount + community OBTM 54
 - [x] **Hardwick exact |G(n)| in log-space** (replaces 1.5 n² bit estimate)
 - [x] `native/tools/print_bounds.cpp` + [docs/GROUP_ORDER.md](docs/GROUP_ORDER.md)
+- [x] U(n) table n≥6 corrected to the formula (1727 / 2472 / 3689 / 4802 / 6387)
 - [x] JNI MITM budgets + env overrides
 - [x] ReducedSearch.cpp real IDA* + MITM
 - [x] docs/UNIVERSAL_NXN_ALGORITHM.md contract
@@ -116,7 +119,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ## Next steps / approaches to try next time (2026-08-30 post-Hardwick L(n))
 
-1. **Highest leverage:** compile + run `print_bounds 20` then `desktop_harness` on 4×4/5×5 with raised `RCS_MITM_*`. Confirm log10|G| matches OEIS (n=4 ≈ 45.87, n=5 ≈ 74.45). Log MITM hit rate, OBTM vs U(n) vs L(n) vs community 54, and **replaySolved=yes rate**.
+1. **Highest leverage:** run `desktop_harness` on 4×4/5×5 with raised `RCS_MITM_*`. Log MITM hit rate, OBTM vs U(n) vs L(n) vs community 54, and **replaySolved=yes rate**.
 2. If replaySolved is low, debug SiGN encode/decode round-trip on ReductionSolver output (single encoder).
 3. Per-stage OBTM targeting: cut the fattest phase only (centers vs edges vs parity).
 4. Optional: use *fixed-orientation* |G| (A054434, ×24 on even n) if you want L(n) in the face-fixed metric the 3×3 proof used.
@@ -134,4 +137,4 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM is the universal algorithm this repo ships. Hardwick |G(n)| L(n) landed 2026-08-30.*
+*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM is the universal algorithm this repo ships. Hardwick |G(n)| L(n) + corrected U(n) table landed 2026-08-30.*
