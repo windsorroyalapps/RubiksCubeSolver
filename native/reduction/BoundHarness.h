@@ -16,9 +16,12 @@
  *   even n: 92n^2 - 307n + 257
  *
  * Counting lower bound L(n):
- *   log(|G|) / log(|S|) with |S| = 6 * floor(n/2) * 3 STM generators
- *   and log(|G|) >= 1.5 n^2 ln 2 (conservative cubie coloring).
- *   For n=4/5 we lift to published community lowers (35 OBTM / ~40).
+ *   floor( ln|G(n)| / ln|S| ) with |S| = 6 * floor(n/2) * 3 STM generators.
+ *   ln|G(n)| from Chris Hardwick's exact position-count formula (OEIS A075152):
+ *     even n: 7! 3^6 (24!)^((n^2-2n)/4) / (4!)^{6((n-2)^2/4)}
+ *     odd  n: 8! 3^7 12! 2^10 (24!)^((n^2-2n-3)/4) / (4!)^{6((n^2-4n+3)/4)}
+ *   For n=2,3 we pin L to the proven diameters (11 / 20), not the counting floor.
+ *   For n=4/5 we still lift to published community lowers when those exceed counting.
  *
  * Asymptotic shape: c * n^2 / ln(n)  (Demaine Theta)
  *   c ≈ 3.8 calibrated to community 4×4 (~40-48) / 5×5 (~55-70).
@@ -43,7 +46,6 @@ struct StageLengths {
     int parityObtm = 0;
     int reducedObtm = 0;
     int reduce3x3Obtm = 0;
-
     int finalObtm = 0;
     int finalSstm = 0;
 
@@ -59,6 +61,8 @@ struct BoundReport {
     int communityObtmUpper = 0; // 0 if unpublished
     int generators = 0;         // |S| STM
     double asymptoticTarget = 0;
+    double lnGroupOrder = 0;    // ln|G(n)| Hardwick
+    double log10GroupOrder = 0;
     bool withinUpper = false;
     double ratioToUpper = 0;
     double ratioToAsymptotic = 0;
@@ -76,6 +80,8 @@ public:
     static int generatorCount(int n);
     static int communityObtmUpper(int n);
     static double asymptoticTarget(int n);
+    static double lnGroupOrder(int n);
+    static double log10GroupOrder(int n);
 
     static BoundReport report(int n, const StageLengths& stages);
     static BoundReport report(int n, const StageLengths& stages,

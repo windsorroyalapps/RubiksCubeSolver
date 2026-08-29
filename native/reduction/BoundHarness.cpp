@@ -20,22 +20,46 @@ int BoundHarness::generatorCount(int n) {
     return 6 * depths * 3;  // faces × slice depths × {90,180,270}
 }
 
+static double logFactorial(int k) {
+    return std::lgamma(static_cast<double>(k) + 1.0);
+}
+
+double BoundHarness::lnGroupOrder(int n) {
+    if (n <= 1) return 0.0;
+    // Chris Hardwick / speedsolving exact |G(n)| (not-s, not-m, not-i) = OEIS A075152.
+    if (n % 2 == 0) {
+        const double exp24 = (static_cast<double>(n) * n - 2.0 * n) / 4.0;
+        const double exp4f = 6.0 * ((n - 2.0) * (n - 2.0) / 4.0);
+        return logFactorial(7) + 6.0 * std::log(3.0)
+             + exp24 * logFactorial(24)
+             - exp4f * std::log(24.0);
+    }
+    const double exp24 = (static_cast<double>(n) * n - 2.0 * n - 3.0) / 4.0;
+    const double exp4f = 6.0 * ((static_cast<double>(n) * n - 4.0 * n + 3.0) / 4.0);
+    return logFactorial(8) + 7.0 * std::log(3.0) + logFactorial(12)
+         + 10.0 * std::log(2.0)
+         + exp24 * logFactorial(24)
+         - exp4f * std::log(24.0);
+}
+
+double BoundHarness::log10GroupOrder(int n) {
+    return lnGroupOrder(n) / std::log(10.0);
+}
+
 int BoundHarness::countingLowerBound(int n) {
     if (n < 2) return 0;
-    if (n == 2) return 11;
-    if (n == 3) return 20;
+    if (n == 2) return 11;  // proven g(2)
+    if (n == 3) return 20;  // proven g(3) HTM
 
     const int gens = generatorCount(n);
-    // Conservative |G| >= 2^{1.5 n^2} from independent-ish cubie coloring.
-    // Diameter >= log(|G|) / log(|S|).
-    const double logG = 1.5 * static_cast<double>(n) * static_cast<double>(n) * std::log(2.0);
-    const double lb = logG / std::log(static_cast<double>(std::max(2, gens)));
+    const double lb = lnGroupOrder(n) / std::log(static_cast<double>(std::max(2, gens)));
     int fromCount = static_cast<int>(std::floor(lb));
+    if (fromCount < 1) fromCount = 1;
 
-    // Lift to published community lowers where they exist.
+    // Lift to published community lowers where they exceed counting.
     if (n == 4) return std::max(fromCount, 35);  // OBTM lower ~35
     if (n == 5) return std::max(fromCount, 40);
-    return std::max(fromCount, 1);
+    return fromCount;
 }
 
 int BoundHarness::communityObtmUpper(int n) {
@@ -73,6 +97,8 @@ BoundReport BoundHarness::report(int n, const StageLengths& stages) {
     r.communityObtmUpper = communityObtmUpper(n);
     r.generators = generatorCount(n);
     r.asymptoticTarget = asymptoticTarget(n);
+    r.lnGroupOrder = lnGroupOrder(n);
+    r.log10GroupOrder = log10GroupOrder(n);
 
     int finalLen = stages.totalFinal();
     r.withinUpper = (r.constructiveUpper <= 0) || (finalLen <= r.constructiveUpper);
@@ -116,6 +142,7 @@ std::string BoundReport::toString() const {
         << " obtm=" << obtm
         << " L(n)=" << countingLower
         << " U(n)=" << constructiveUpper
+        << " log10|G|=" << static_cast<int>(log10GroupOrder)
         << " gens=" << generators
         << " asym~" << static_cast<int>(asymptoticTarget)
         << " withinU=" << (withinUpper ? "yes" : "NO")
