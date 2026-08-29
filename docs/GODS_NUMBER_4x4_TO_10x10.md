@@ -11,6 +11,8 @@ What we have: lower bounds, constructive upper bounds, community estimates, and 
 Asymptotic (Demaine et al. 2011):  
 \( g(n) = \Theta(n^2 / \log n) \)
 
+Verified against `./artifacts/print_bounds` (Hardwick |G| + the U(n) formula in BoundHarness).
+
 ---
 
 ## Table 1 — Summary estimates (HTM-style, order of magnitude)
@@ -18,15 +20,15 @@ Asymptotic (Demaine et al. 2011):
 | n | Lower (known / counting) | Community estimate | Constructive upper* | Status |
 |---|--------------------------|--------------------|---------------------|--------|
 | 3 | **20** | **20** | **20** | **Proven** |
-| 4 | ~29–35 | **~40–48** | ~501 | Open (OBTM ≤54) |
-| 5 | ~40+ | **~55–70** | ~878 | Open |
-| 6 | — | **~80–100** | ~1321 | Open |
-| 7 | — | **~110–140** | ~1852 | Open |
-| 8 | — | **~140–180** | ~2473 | Open |
-| 9 | — | **~180–230** | ~3182 | Open |
-| 10 | — | **~220–280** | ~3981 | Open |
+| 4 | ~29–35 (count + OBTM) | **~40–48** | **501** | Open (OBTM ≤54) |
+| 5 | Hardwick L=**47** | **~55–70** | **878** | Open |
+| 6 | Hardwick L=**67** | **~80–100** | **1727** | Open |
+| 7 | Hardwick L=**92** | **~110–140** | **2472** | Open |
+| 8 | Hardwick L=**117** | **~140–180** | **3689** | Open |
+| 9 | Hardwick L=**149** | **~180–230** | **4802** | Open |
+| 10 | Hardwick L=**179** | **~220–280** | **6387** | Open |
 
-\*Constructive upper = reduction-style formula below (always solvable in at most that many moves; far from tight).
+\*Constructive upper = reduction-style formula below (always solvable in at most that many moves; far from tight). Older copies of this table under-counted U(n) for n≥6; the formula in code was always the source of truth.
 
 ---
 
@@ -50,6 +52,7 @@ Nobody has proven exact g(4).
 | Metric | Lower | Upper | Notes |
 |--------|-------|-------|--------|
 | OBTM | — | ~130 | speedsolving upper-bound claim |
+| Hardwick counting L | **47** | — | `print_bounds` STM generators |
 | Conjecture (HTM) | — | ~58 | informal |
 | Conjecture (QTM) | — | ~68 | informal |
 | Gap | large | large | literature notes gap >2× on some bounds |
@@ -67,11 +70,11 @@ From community analysis of a concrete reduction solver:
 |---|--------------------------------------|
 | 4 | 92·16 − 307·4 + 257 = **501** |
 | 5 | 92·25 − 307·5 + 113 = **878** |
-| 6 | 92·36 − 307·6 + 257 = **1321** |
-| 7 | 92·49 − 307·7 + 113 = **1852** |
-| 8 | 92·64 − 307·8 + 257 = **2473** |
-| 9 | 92·81 − 307·9 + 113 = **3182** |
-| 10 | 92·100 − 307·10 + 257 = **3981** |
+| 6 | 92·36 − 307·6 + 257 = **1727** |
+| 7 | 92·49 − 307·7 + 113 = **2472** |
+| 8 | 92·64 − 307·8 + 257 = **3689** |
+| 9 | 92·81 − 307·9 + 113 = **4802** |
+| 10 | 92·100 − 307·10 + 257 = **6387** |
 
 These are **guaranteed solvable** lengths for that algorithm family — not God's Number (which is much smaller).
 
@@ -79,19 +82,17 @@ These are **guaranteed solvable** lengths for that algorithm family — not God'
 
 ## Table 5 — Asymptotic scale \( n^2 / \ln n \)
 
-Raw order-of-magnitude (natural log). **Not** calibrated to equal 20 at n=3; only shows growth shape.
+Raw order-of-magnitude (natural log). **Not** calibrated to equal 20 at n=3; only shows growth shape. BoundHarness uses 3.8 · n² / ln n.
 
-| n | n² | ln n | n² / ln n |
-|---|-----|------|-----------|
-| 4 | 16 | 1.39 | ~11.5 |
-| 5 | 25 | 1.61 | ~15.5 |
-| 6 | 36 | 1.79 | ~20.1 |
-| 7 | 49 | 1.95 | ~25.2 |
-| 8 | 64 | 2.08 | ~30.8 |
-| 9 | 81 | 2.20 | ~36.9 |
-| 10 | 100 | 2.30 | ~43.4 |
-
-If you scale so that the constant roughly matches 3×3 (× ~20/ (9/ln3) ≈ 2.4), you get ballpark numbers in the same region as the "community estimate" column in Table 1 — still only heuristic. BoundHarness currently uses a placeholder scale of 4.
+| n | n² | ln n | n² / ln n | 3.8 · that |
+|---|-----|------|-----------|-------------|
+| 4 | 16 | 1.39 | ~11.5 | ~44 |
+| 5 | 25 | 1.61 | ~15.5 | ~59 |
+| 6 | 36 | 1.79 | ~20.1 | ~76 |
+| 7 | 49 | 1.95 | ~25.2 | ~96 |
+| 8 | 64 | 2.08 | ~30.8 | ~117 |
+| 9 | 81 | 2.20 | ~36.9 | ~140 |
+| 10 | 100 | 2.30 | ~43.4 | ~165 |
 
 ---
 
