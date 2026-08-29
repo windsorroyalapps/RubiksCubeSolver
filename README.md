@@ -31,6 +31,15 @@ g++ -O2 -std=c++17 -Inative/common -Inative/cfop -Inative/reduction \
 RCS_MITM_NODEBUDGET4=150000 RCS_MITM_DEPTHCAP4=28 ./artifacts/rcs_harness 4 10
 ```
 
+Bounds table only (no full solver):
+
+```bash
+g++ -O2 -std=c++17 -Inative/common -Inative/reduction \
+  native/tools/print_bounds.cpp native/reduction/BoundHarness.cpp \
+  -o artifacts/print_bounds
+./artifacts/print_bounds 20
+```
+
 ---
 
 ## 3×3 path
@@ -48,13 +57,13 @@ Multi-probe Kociemba → if len > 20: optimal IDA* (≤20) → CFOP fallback
 ```text
 ClusterScheduler → BatchGroups → Centers → Edges → Parity (even n)
   → ReducedSearch (IDA* + residualKey MITM on 4x4/5x5) → 3×3 → BatchSolver
-  → BoundHarness (L(n) + U(n) + SSTM + OBTM + per-stage OBTM)
+  → BoundHarness (Hardwick |G| L(n) + U(n) + SSTM + OBTM + per-stage OBTM)
   → Cube::movesToNotation / applyNotation SiGN replay
 ```
 
 Exact diameter open for n≥4. Constructive algorithm always terminates.
 
-→ [docs/GODS_NUMBER_NXN.md](docs/GODS_NUMBER_NXN.md)
+→ [docs/GODS_NUMBER_NXN.md](docs/GODS_NUMBER_NXN.md) · [docs/GROUP_ORDER.md](docs/GROUP_ORDER.md)
 
 ---
 
@@ -65,13 +74,15 @@ Exact diameter open for n≥4. Constructive algorithm always terminates.
 | 3 | **20** | **20** | **20** (proven) |
 | 4 | 35 | **501** | **54** |
 | 5 | 40 | **878** | ~130 claimed |
-| 6 | counting | **1321** | open |
-| 7 | counting | **1852** | open |
-| 8 | counting | **2473** | open |
-| 9 | counting | **3182** | open |
-| 10 | counting | **3981** | open |
+| 6 | Hardwick count | **1321** | open |
+| 7 | Hardwick count | **1852** | open |
+| 8 | Hardwick count | **2473** | open |
+| 9 | Hardwick count | **3182** | open |
+| 10 | Hardwick count | **3981** | open |
 
 4×4 probabilistic estimates ~41 HTM / ~48 QTM.
+
+L(n) for n≥4 is `floor(ln|G|/ln|S|)` from Hardwick's exact |G(n)|, lifted to community 35/40 on 4×4/5×5. Still a *counting* lower bound, not a proven diameter.
 
 ```kotlin
 NativeSolver.create(5)
@@ -82,18 +93,20 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-08-29)
+## Status (2026-08-30)
 
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
 - [x] ClusterScheduler + BatchGroups + BatchSolver
 - [x] BoundHarness U(n) + OBTM/SSTM + per-stage OBTM
-- [x] BoundHarness **L(n) counting lower + generatorCount + community OBTM 54**
+- [x] BoundHarness L(n) counting lower + generatorCount + community OBTM 54
+- [x] **Hardwick exact |G(n)| in log-space** (replaces 1.5 n² bit estimate)
+- [x] `native/tools/print_bounds.cpp` + [docs/GROUP_ORDER.md](docs/GROUP_ORDER.md)
 - [x] JNI MITM budgets + env overrides
 - [x] ReducedSearch.cpp real IDA* + MITM
 - [x] docs/UNIVERSAL_NXN_ALGORITHM.md contract
 - [x] native/tools/desktop_harness.cpp
-- [x] Cube::applyNotation SiGN for n>3 + **ReductionSolver uses movesToNotation**
+- [x] Cube::applyNotation SiGN for n>3 + ReductionSolver uses movesToNotation
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK + verified native .so
 - [ ] Adaptive launcher icons
@@ -101,12 +114,12 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Next steps / approaches to try next time (2026-08-29 post-L(n))
+## Next steps / approaches to try next time (2026-08-30 post-Hardwick L(n))
 
-1. **Highest leverage:** compile + run `desktop_harness` on 4×4/5×5 with raised `RCS_MITM_*`. Log MITM hit rate, OBTM vs U(n) vs L(n) vs community 54, and **replaySolved=yes rate**.
-2. If replaySolved is low, debug SiGN encode/decode round-trip on ReductionSolver output (now a single encoder).
+1. **Highest leverage:** compile + run `print_bounds 20` then `desktop_harness` on 4×4/5×5 with raised `RCS_MITM_*`. Confirm log10|G| matches OEIS (n=4 ≈ 45.87, n=5 ≈ 74.45). Log MITM hit rate, OBTM vs U(n) vs L(n) vs community 54, and **replaySolved=yes rate**.
+2. If replaySolved is low, debug SiGN encode/decode round-trip on ReductionSolver output (single encoder).
 3. Per-stage OBTM targeting: cut the fattest phase only (centers vs edges vs parity).
-4. Replace the 1.5 n² bit estimate in `countingLowerBound` with Salkinder's exact |G(n)| formula for a sharper L(n).
+4. Optional: use *fixed-orientation* |G| (A054434, ×24 on even n) if you want L(n) in the face-fixed metric the 3×3 proof used.
 5. Verify green CI APK contains lib*.so.
 6. 3×3 dense full-index pruning DBs toward the proven 20 ceiling.
 7. Production signed APK + Material You + size selector to 20×20.
@@ -117,7 +130,8 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 12. Optional full 24-wing Lehmer if 5×5+ residual stays deep.
 13. Denser 5×5 center residual under higher MITM budgets.
 14. Do not claim exact g(n) for n≥4 until a published diameter proof exists.
+15. If a cluster appears: 4×4 coset / IDA* diameter attack is the only path to an *integer* g(4); phone solvers cannot close it.
 
 ---
 
-*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM is the universal algorithm this repo ships. L(n)+community OBTM 54 + shared SiGN encoder landed 2026-08-29.*
+*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM is the universal algorithm this repo ships. Hardwick |G(n)| L(n) landed 2026-08-30.*
