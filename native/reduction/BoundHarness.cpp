@@ -42,8 +42,23 @@ double BoundHarness::lnGroupOrder(int n) {
          - exp4f * std::log(24.0);
 }
 
+double BoundHarness::lnGroupOrderFixed(int n) {
+    // Odd n: fixed centres already pin spatial orientation.
+    // Even n: quotient by the 24 rotations of the whole cube (A054434 spirit).
+    if (n % 2 == 0) return lnGroupOrder(n) - std::log(24.0);
+    return lnGroupOrder(n);
+}
+
 double BoundHarness::log10GroupOrder(int n) {
     return lnGroupOrder(n) / std::log(10.0);
+}
+
+static int countingFloorFromLnG(int n, double lnG) {
+    const int gens = BoundHarness::generatorCount(n);
+    const double lb = lnG / std::log(static_cast<double>(std::max(2, gens)));
+    int fromCount = static_cast<int>(std::floor(lb));
+    if (fromCount < 1) fromCount = 1;
+    return fromCount;
 }
 
 int BoundHarness::countingLowerBound(int n) {
@@ -51,13 +66,20 @@ int BoundHarness::countingLowerBound(int n) {
     if (n == 2) return 11;  // proven g(2)
     if (n == 3) return 20;  // proven g(3) HTM
 
-    const int gens = generatorCount(n);
-    const double lb = lnGroupOrder(n) / std::log(static_cast<double>(std::max(2, gens)));
-    int fromCount = static_cast<int>(std::floor(lb));
-    if (fromCount < 1) fromCount = 1;
+    int fromCount = countingFloorFromLnG(n, lnGroupOrder(n));
 
     // Lift to published community lowers where they exceed counting.
     if (n == 4) return std::max(fromCount, 35);  // OBTM lower ~35
+    if (n == 5) return std::max(fromCount, 40);
+    return fromCount;
+}
+
+int BoundHarness::countingLowerBoundFixed(int n) {
+    if (n < 2) return 0;
+    if (n == 2) return 11;
+    if (n == 3) return 20;
+    int fromCount = countingFloorFromLnG(n, lnGroupOrderFixed(n));
+    if (n == 4) return std::max(fromCount, 32);  // face-fixed literature floor is weaker than OBTM 35
     if (n == 5) return std::max(fromCount, 40);
     return fromCount;
 }
@@ -69,10 +91,36 @@ int BoundHarness::communityObtmUpper(int n) {
     return 0;
 }
 
+int BoundHarness::gapUpperMinusLower(int n) {
+    return constructiveUpper(n) - countingLowerBound(n);
+}
+
 double BoundHarness::asymptoticTarget(int n) {
     if (n < 3) return static_cast<double>(constructiveUpper(n));
     double nn = static_cast<double>(n);
     return 3.8 * (nn * nn) / std::log(nn);
+}
+
+int BoundHarness::oeisSanityFailN() {
+    // Checkpoints: log10|G| rounded to 2 decimals against published Hardwick/wiki values.
+    struct CP { int n; double log10; };
+    const CP cps[] = {
+        {2, 6.56},   // 3,674,160 → 6.565
+        {3, 19.64},  // 4.3252e19
+        {4, 45.87},  // 7.4012e45
+        {5, 74.45},
+    };
+    for (const auto& c : cps) {
+        const double got = log10GroupOrder(c.n);
+        if (std::fabs(got - c.log10) > 0.02) return c.n;
+    }
+    // U(n) arithmetic lock so n>=6 cannot silently regress again.
+    if (constructiveUpper(4) != 501) return 4;
+    if (constructiveUpper(5) != 878) return 5;
+    if (constructiveUpper(6) != 1727) return 6;
+    if (constructiveUpper(7) != 2472) return 7;
+    if (constructiveUpper(10) != 6387) return 10;
+    return 0;
 }
 
 int BoundHarness::countObtm(const std::vector<Move>& moves) {
@@ -94,10 +142,13 @@ BoundReport BoundHarness::report(int n, const StageLengths& stages) {
     r.stages = stages;
     r.constructiveUpper = constructiveUpper(n);
     r.countingLower = countingLowerBound(n);
+    r.countingLowerFixed = countingLowerBoundFixed(n);
     r.communityObtmUpper = communityObtmUpper(n);
     r.generators = generatorCount(n);
+    r.gapUpperMinusLower = gapUpperMinusLower(n);
     r.asymptoticTarget = asymptoticTarget(n);
     r.lnGroupOrder = lnGroupOrder(n);
+    r.lnGroupOrderFixed = lnGroupOrderFixed(n);
     r.log10GroupOrder = log10GroupOrder(n);
 
     int finalLen = stages.totalFinal();
@@ -141,7 +192,9 @@ std::string BoundReport::toString() const {
         << " sstm=" << sstm
         << " obtm=" << obtm
         << " L(n)=" << countingLower
+        << " Lfix=" << countingLowerFixed
         << " U(n)=" << constructiveUpper
+        << " gapU-L=" << gapUpperMinusLower
         << " log10|G|=" << static_cast<int>(log10GroupOrder)
         << " gens=" << generators
         << " asym~" << static_cast<int>(asymptoticTarget)

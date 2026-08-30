@@ -8,18 +8,29 @@
 
 int main(int argc, char** argv) {
     const int nmax = (argc > 1) ? std::atoi(argv[1]) : 20;
-    std::printf("# Hardwick |G(n)| counting lower vs constructive U(n)\n");
-    std::printf("# n  gens  log10|G|   L(n)   U(n)   asym  commOBTM\n");
+    const int fail = BoundHarness::oeisSanityFailN();
+    if (fail != 0) {
+        std::fprintf(stderr, "OEIS/U(n) sanity FAILED at n=%d (log10|G|=%.4f U=%d)\n",
+                     fail,
+                     BoundHarness::log10GroupOrder(fail),
+                     BoundHarness::constructiveUpper(fail));
+        return 1;
+    }
+    std::printf("# Hardwick |G(n)| counting lower vs constructive U(n) + face-fixed L_fixed\n");
+    std::printf("# n  gens  log10|G|   L(n)  Lfix   U(n)   gap   asym  commOBTM\n");
     for (int n = 2; n <= nmax && n <= 40; ++n) {
-        std::printf("%2d  %4d  %9.2f  %5d  %5d  %5d  %5d\n",
+        std::printf("%2d  %4d  %9.2f  %5d  %5d  %5d  %5d  %5d  %5d\n",
                     n,
                     BoundHarness::generatorCount(n),
                     BoundHarness::log10GroupOrder(n),
                     BoundHarness::countingLowerBound(n),
+                    BoundHarness::countingLowerBoundFixed(n),
                     BoundHarness::constructiveUpper(n),
+                    BoundHarness::gapUpperMinusLower(n),
                     static_cast<int>(BoundHarness::asymptoticTarget(n)),
                     BoundHarness::communityObtmUpper(n));
     }
     std::printf("# exact g(n) proven only for n=2 (11) and n=3 (20 HTM). n>=4 open.\n");
+    std::printf("# L_fixed = face-fixed counting (even n: |G|/24). gap = U(n)-L(n).\n");
     return 0;
 }

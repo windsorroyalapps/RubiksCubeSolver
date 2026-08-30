@@ -23,6 +23,11 @@
  *   For n=2,3 we pin L to the proven diameters (11 / 20), not the counting floor.
  *   For n=4/5 we still lift to published community lowers when those exceed counting.
  *
+ * Face-fixed / orientation-quotient lower L_fixed(n) (2026-08-31):
+ *   Odd n already has fixed face-centers, so L_fixed == counting floor.
+ *   Even n: ln(|G|/24) / ln|S|  (A054434-style cube-rotation quotient).
+ *   This is the metric closer to how g(3)=20 was proved (space-fixed cube).
+ *
  * Asymptotic shape: c * n^2 / ln(n)  (Demaine Theta)
  *   c ≈ 3.8 calibrated to community 4×4 (~40-48) / 5×5 (~55-70).
  *
@@ -58,10 +63,13 @@ struct BoundReport {
     StageLengths stages;
     int constructiveUpper = 0;  // U(n)
     int countingLower = 0;      // L(n)
+    int countingLowerFixed = 0; // L_fixed(n) face-fixed / A054434-style
     int communityObtmUpper = 0; // 0 if unpublished
     int generators = 0;         // |S| STM
+    int gapUpperMinusLower = 0; // U(n) - L(n), how far the diameter window is
     double asymptoticTarget = 0;
     double lnGroupOrder = 0;    // ln|G(n)| Hardwick
+    double lnGroupOrderFixed = 0;
     double log10GroupOrder = 0;
     bool withinUpper = false;
     double ratioToUpper = 0;
@@ -77,11 +85,17 @@ class BoundHarness {
 public:
     static int constructiveUpper(int n);
     static int countingLowerBound(int n);
+    static int countingLowerBoundFixed(int n);
     static int generatorCount(int n);
     static int communityObtmUpper(int n);
+    static int gapUpperMinusLower(int n);
     static double asymptoticTarget(int n);
     static double lnGroupOrder(int n);
+    static double lnGroupOrderFixed(int n);
     static double log10GroupOrder(int n);
+
+    // Returns 0 if Hardwick checkpoints match; else the first failing n.
+    static int oeisSanityFailN();
 
     static BoundReport report(int n, const StageLengths& stages);
     static BoundReport report(int n, const StageLengths& stages,
