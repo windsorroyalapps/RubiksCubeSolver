@@ -11,24 +11,24 @@ What we have: lower bounds, constructive upper bounds, community estimates, and 
 Asymptotic (Demaine et al. 2011):  
 \( g(n) = \Theta(n^2 / \log n) \)
 
-Verified against `./artifacts/print_bounds` (Hardwick |G| + the U(n) formula in BoundHarness).
+Verified against `./artifacts/print_bounds` (Hardwick |G| + the U(n) formula in BoundHarness, 2026-08-31 OEIS lock).
 
 ---
 
 ## Table 1 — Summary estimates (HTM-style, order of magnitude)
 
-| n | Lower (known / counting) | Community estimate | Constructive upper* | Status |
-|---|--------------------------|--------------------|---------------------|--------|
-| 3 | **20** | **20** | **20** | **Proven** |
-| 4 | ~29–35 (count + OBTM) | **~40–48** | **501** | Open (OBTM ≤54) |
-| 5 | Hardwick L=**47** | **~55–70** | **878** | Open |
-| 6 | Hardwick L=**67** | **~80–100** | **1727** | Open |
-| 7 | Hardwick L=**92** | **~110–140** | **2472** | Open |
-| 8 | Hardwick L=**117** | **~140–180** | **3689** | Open |
-| 9 | Hardwick L=**149** | **~180–230** | **4802** | Open |
-| 10 | Hardwick L=**179** | **~220–280** | **6387** | Open |
+| n | Lower (known / counting) | L_fixed | Community estimate | Constructive upper* | Status |
+|---|--------------------------|---------|--------------------|---------------------|--------|
+| 3 | **20** | **20** | **20** | **20** | **Proven** |
+| 4 | ~29–35 (count + OBTM) | ≥32 | **~40–48** | **501** | Open (OBTM ≤54) |
+| 5 | Hardwick L=**47** | 47 | **~55–70** | **878** | Open |
+| 6 | Hardwick L=**67** | 66 | **~80–100** | **1727** | Open |
+| 7 | Hardwick L=**92** | 92 | **~110–140** | **2472** | Open |
+| 8 | Hardwick L=**117** | 116 | **~140–180** | **3689** | Open |
+| 9 | Hardwick L=**149** | 149 | **~180–230** | **4802** | Open |
+| 10 | Hardwick L=**179** | 178 | **~220–280** | **6387** | Open |
 
-\*Constructive upper = reduction-style formula below (always solvable in at most that many moves; far from tight). Older copies of this table under-counted U(n) for n≥6; the formula in code was always the source of truth.
+\*Constructive upper = reduction-style formula below (always solvable in at most that many moves; far from tight).
 
 ---
 
@@ -61,8 +61,6 @@ Nobody has proven exact g(4).
 
 ## Table 4 — Constructive upper bound (reduction algorithm)
 
-From community analysis of a concrete reduction solver:
-
 - Odd n: \( 92n^2 - 307n + 113 \)
 - Even n: \( 92n^2 - 307n + 257 \)
 
@@ -82,7 +80,7 @@ These are **guaranteed solvable** lengths for that algorithm family — not God'
 
 ## Table 5 — Asymptotic scale \( n^2 / \ln n \)
 
-Raw order-of-magnitude (natural log). **Not** calibrated to equal 20 at n=3; only shows growth shape. BoundHarness uses 3.8 · n² / ln n.
+Raw order-of-magnitude (natural log). BoundHarness uses 3.8 · n² / ln n.
 
 | n | n² | ln n | n² / ln n | 3.8 · that |
 |---|-----|------|-----------|-------------|

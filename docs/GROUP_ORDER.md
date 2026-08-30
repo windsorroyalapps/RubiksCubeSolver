@@ -8,7 +8,7 @@ L(n) = floor( ln|G(n)| / ln|S(n)| )
 
 where |S(n)| = 6 · ⌊n/2⌋ · 3 (faces × slice depths × quarter-turn amounts).
 
-This repo now uses **Chris Hardwick's closed formula** (OEIS A075152, not-s / not-m / not-i) instead of the old `2^{1.5 n²}` coloring estimate.
+This repo uses **Chris Hardwick's closed formula** (OEIS A075152, not-s / not-m / not-i).
 
 ## Formula
 
@@ -26,7 +26,18 @@ Odd n > 1:
 
 Computed in `BoundHarness::lnGroupOrder` via `std::lgamma` (never materialises the integer).
 
-## Sanity checks
+## Face-fixed quotient L_fixed (2026-08-31)
+
+Odd n already has fixed centres, so spatial orientation is pinned.
+Even n: `lnGroupOrderFixed = ln|G| − ln(24)` (A054434-style whole-cube rotation quotient).
+
+```text
+L_fixed(n) = floor( ln|G_fixed| / ln|S| )
+```
+
+Pinned to proven diameters for n=2,3. This is closer to the metric used in the g(3)=20 proof.
+
+## Sanity checks (locked in `BoundHarness::oeisSanityFailN`)
 
 | n | log10 |G| (approx) | known |
 |---|-------------------|--------|
@@ -35,9 +46,11 @@ Computed in `BoundHarness::lnGroupOrder` via `std::lgamma` (never materialises t
 | 4 | 45.87 | 7.4011968 × 10^45 |
 | 5 | 74.45 | 2.8287 × 10^74 |
 
+U(n) arithmetic is also locked: 501 / 878 / 1727 / 2472 / 6387 for n=4,5,6,7,10.
+
 L(2) and L(3) are **pinned** to the proven diameters 11 and 20, not the (weaker) counting floors.
 
-L(4) counting is typically mid-20s in STM generators; we still lift to the published OBTM lower 35.
+L(4) counting is typically mid-20s in STM generators; we still lift published L to OBTM lower 35. L_fixed(4) lifts only to 32.
 
 ## What this is not
 
