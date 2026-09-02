@@ -14,6 +14,19 @@ int BoundHarness::constructiveUpper(int n) {
     return 92 * nn - 307 * n + 113;
 }
 
+int BoundHarness::constructiveUpperCascade(int n) {
+    if (n < 2) return 0;
+    if (n == 2) return 11;
+    if (n == 3) return 20;
+    const int extra = n - 2;
+    const int centers = 8 * extra * extra;
+    const int wings = 8 * 12 * extra;
+    const int parity = (n % 2 == 0) ? 20 : 0;
+    const int kernel = 20;
+    const int setup = 6 * n;
+    return centers + wings + parity + kernel + setup;
+}
+
 int BoundHarness::generatorCount(int n) {
     if (n < 2) return 0;
     const int depths = std::max(1, n / 2);
@@ -69,8 +82,8 @@ int BoundHarness::countingLowerBound(int n) {
     int fromCount = countingFloorFromLnG(n, lnGroupOrder(n));
 
     // Lift to published community lowers where they exceed counting.
-    if (n == 4) return std::max(fromCount, 35);  // OBTM lower ~35
-    if (n == 5) return std::max(fromCount, 40);
+    if (n == 4) return std::max(fromCount, 35);  // OBTM lower 35 (Tronto/Sheu)
+    if (n == 5) return std::max(fromCount, 52);  // speedsolving wiki OBTM lower
     return fromCount;
 }
 
@@ -80,7 +93,7 @@ int BoundHarness::countingLowerBoundFixed(int n) {
     if (n == 3) return 20;
     int fromCount = countingFloorFromLnG(n, lnGroupOrderFixed(n));
     if (n == 4) return std::max(fromCount, 32);  // face-fixed literature floor is weaker than OBTM 35
-    if (n == 5) return std::max(fromCount, 40);
+    if (n == 5) return std::max(fromCount, 47);  // Hardwick counting, not OBTM
     return fromCount;
 }
 
@@ -120,6 +133,9 @@ int BoundHarness::oeisSanityFailN() {
     if (constructiveUpper(6) != 1727) return 6;
     if (constructiveUpper(7) != 2472) return 7;
     if (constructiveUpper(10) != 6387) return 10;
+    if (constructiveUpperCascade(4) != 288) return 4;
+    if (constructiveUpperCascade(5) != 410) return 5;
+    if (constructiveUpperCascade(10) != 1380) return 10;
     return 0;
 }
 
@@ -141,6 +157,7 @@ BoundReport BoundHarness::report(int n, const StageLengths& stages) {
     r.n = n;
     r.stages = stages;
     r.constructiveUpper = constructiveUpper(n);
+    r.constructiveUpperCascade = constructiveUpperCascade(n);
     r.countingLower = countingLowerBound(n);
     r.countingLowerFixed = countingLowerBoundFixed(n);
     r.communityObtmUpper = communityObtmUpper(n);
@@ -194,6 +211,7 @@ std::string BoundReport::toString() const {
         << " L(n)=" << countingLower
         << " Lfix=" << countingLowerFixed
         << " U(n)=" << constructiveUpper
+        << " Ucas=" << constructiveUpperCascade
         << " gapU-L=" << gapUpperMinusLower
         << " log10|G|=" << static_cast<int>(log10GroupOrder)
         << " gens=" << generators
