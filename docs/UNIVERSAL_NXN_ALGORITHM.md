@@ -11,6 +11,7 @@ What *is* settled:
 3. **Asymptotic God's number** g(n) = Θ(n² / log n) (Demaine et al. 2011).
 4. **Counting lower bound** L(n) = ⌊ ln|G| / ln|S| ⌋ with Hardwick's exact |G(n)| and |S| = 6·⌊n/2⌋·3.
 5. **Face-fixed lower** L_fixed(n) (even n quotients |G| by 24).
+6. **Cascade budget** Ucas(n) — piece-budget family the solver is driven toward (not a diameter).
 
 ## Algorithm (constructive God's-algorithm family)
 
@@ -25,7 +26,7 @@ Input: scrambled n×n×n, n≥4.
 6. ReducedSearch         n∈{4,5}: packed residual IDA* + bidirectional MITM
 7. 3×3 kernel            Kociemba → GodsAlgorithm ≤20 → CFOP fallback
 8. BatchSolver.optimize  window collapse → log-factor compression
-9. BoundHarness          emit Hardwick L(n), L_fixed, U(n), gap, SSTM, OBTM
+9. BoundHarness          emit Hardwick L(n), L_fixed, U(n), Ucas, gap, SSTM, OBTM
 10. Cube::applyNotation  SiGN replay (2R / Rw / 3Rw / M E S)
 ```
 
@@ -37,7 +38,8 @@ Output: SiGN move string + BoundReport.
 |--------|---------|
 | L(n) | Hardwick counting + community lower |
 | L_fixed | face-fixed counting (even n: |G|/24) |
-| U(n) | constructive reduction formula |
+| U(n) | constructive reduction formula (official guarantee) |
+| Ucas | cascade piece-budget family (solver target, 2026-09-03) |
 | gap | U(n) − L(n) |
 | log10\|G\| | Hardwick group order |
 | asym | 3.8 · n² / ln n |
@@ -49,6 +51,9 @@ U(n):
 
 Locked values: U(4)=501, U(5)=878, U(6)=1727, U(7)=2472, U(10)=6387.
 
+Ucas(n) = 8(n−2)² + 96(n−2) + 20·[n even] + 20 + 6n  
+Locked: Ucas(4)=288, Ucas(5)=410, Ucas(10)=1380.
+
 ## Honest statement for the README claim
 
 > "God's number and algorithm for any size > 3"
@@ -57,4 +62,4 @@ Locked values: U(4)=501, U(5)=878, U(6)=1727, U(7)=2472, U(10)=6387.
 - **Asymptotic number:** yes — Θ(n² / log n).
 - **Exact integer g(n):** no, and this repo will not invent one. Closing g(4) is a multi-CPU-year research program, not a phone solver.
 
-Progress metric for the next session: desktop_harness replaySolved rate + measured OBTM vs community 54 + fattest per-stage OBTM cut.
+Progress metric for the next session: desktop_harness replaySolved rate + measured OBTM vs Ucas vs community 54 + fattest per-stage OBTM cut. Drive stage lengths under Ucas without claiming diameter.
