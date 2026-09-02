@@ -37,6 +37,15 @@
  *           every inner slice (depth>0) still counts 1
  *
  * Community 4×4 OBTM published upper is 54 (not U(4)=501).
+ *
+ * Cascade / piece-budget family U_cas(n) (2026-09-03):
+ *   8*(n-2)^2          extra-center cells, 8-move commutator budget
+ * + 96*(n-2)           12 edges × (n-2) wings × 8-move pair budget
+ * + 20 even-n parity   OLL+PLL wing pair
+ * + 20                 3×3 God's number
+ * + 6n                 slice-setup overhead
+ * This is the budget we drive ReductionSolver toward. Official guarantee
+ * remains U(n). U_cas is not a published diameter.
  */
 struct StageLengths {
     int centers = 0;
@@ -62,6 +71,7 @@ struct BoundReport {
     int n = 0;
     StageLengths stages;
     int constructiveUpper = 0;  // U(n)
+    int constructiveUpperCascade = 0; // U_cas(n) piece-budget family
     int countingLower = 0;      // L(n)
     int countingLowerFixed = 0; // L_fixed(n) face-fixed / A054434-style
     int communityObtmUpper = 0; // 0 if unpublished
@@ -84,6 +94,7 @@ struct BoundReport {
 class BoundHarness {
 public:
     static int constructiveUpper(int n);
+    static int constructiveUpperCascade(int n);
     static int countingLowerBound(int n);
     static int countingLowerBoundFixed(int n);
     static int generatorCount(int n);
