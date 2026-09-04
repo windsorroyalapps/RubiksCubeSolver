@@ -8,6 +8,7 @@
 Exact g(n) is proven only for n=2,3. This repo implements the algorithm for every larger size plus live L(n)/L_fixed(n)/U(n)/Ucas/OBTM instrumentation — not a fake closed diameter.
 
 Canonical contract: [docs/UNIVERSAL_NXN_ALGORITHM.md](docs/UNIVERSAL_NXN_ALGORITHM.md)
+Stage budgets: [docs/STAGE_BUDGETS.md](docs/STAGE_BUDGETS.md)
 Session log: [docs/NEXT.md](docs/NEXT.md)
 
 ```bash
@@ -58,19 +59,19 @@ Multi-probe Kociemba → if len > 20: optimal IDA* (≤20) → CFOP fallback
 ```text
 ClusterScheduler → BatchGroups → Centers → Edges → Parity (even n)
   → ReducedSearch (IDA* + residualKey MITM on 4x4/5x5) → 3×3 → BatchSolver
-  → BoundHarness (Hardwick |G| L(n) + L_fixed + U(n) + Ucas + gap + SSTM + OBTM)
+  → BoundHarness (Hardwick |G| L(n) + L_fixed + U(n) + Ucas + fattest stage)
   → Cube::movesToNotation / applyNotation SiGN replay
 ```
 
 Exact diameter open for n≥4. Constructive algorithm always terminates.
 
-→ [docs/GODS_NUMBER_NXN.md](docs/GODS_NUMBER_NXN.md) · [docs/GROUP_ORDER.md](docs/GROUP_ORDER.md)
+→ [docs/GODS_NUMBER_NXN.md](docs/GODS_NUMBER_NXN.md) · [docs/GROUP_ORDER.md](docs/GROUP_ORDER.md) · [docs/STAGE_BUDGETS.md](docs/STAGE_BUDGETS.md)
 
 ---
 
 ## Bound harness — work backward from U(n) toward L(n)
 
-Verified by compiling `print_bounds` (2026-09-03, OEIS + U(n) + Ucas lock):
+Verified by compiling `print_bounds` (2026-09-05, OEIS + U(n) + Ucas + stage-budget lock):
 
 | n | L(n) ≥ | L_fixed | log10\|G\| | Constructive U(n) | gap U−L | Community OBTM upper |
 |---|--------|---------|------------|-------------------|---------|----------------------|
@@ -91,19 +92,21 @@ L(n) for n≥4 is `floor(ln|G|/ln|S|)` from Hardwick's exact |G(n)|, lifted to c
 NativeSolver.create(5)
 val sol = NativeSolver.solve()
 val report = NativeSolver.boundReport()
+NativeSolver.constructiveUpperCascade(5)
+NativeSolver.countingLower(5)
 NativeSolver.setMitmBudget(4, 150000, 28)
 ```
 
 ---
 
-## Status (2026-09-03)
+## Status (2026-09-05)
 
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
 - [x] ClusterScheduler + BatchGroups + BatchSolver
 - [x] BoundHarness U(n) + OBTM/SSTM + per-stage OBTM
 - [x] BoundHarness L(n) counting lower + generatorCount + community OBTM 54
-- [x] **Hardwick exact |G(n)| in log-space** (replaces 1.5 n² bit estimate)
+- [x] **Hardwick exact |G(n)| in log-space**
 - [x] `native/tools/print_bounds.cpp` + [docs/GROUP_ORDER.md](docs/GROUP_ORDER.md)
 - [x] U(n) table n≥6 corrected to the formula (1727 / 2472 / 3689 / 4802 / 6387)
 - [x] JNI MITM budgets + env overrides
@@ -111,41 +114,40 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 - [x] docs/UNIVERSAL_NXN_ALGORITHM.md contract
 - [x] native/tools/desktop_harness.cpp
 - [x] Cube::applyNotation SiGN for n>3 + ReductionSolver uses movesToNotation
-- [x] **L_fixed(n)** face-fixed counting (even n: |G|/24, A054434 spirit)
+- [x] **L_fixed(n)** face-fixed counting (even n: |G|/24)
 - [x] **gap = U(n)−L(n)** on BoundReport + print_bounds
-- [x] **OEIS / U(n) sanity lock** (`oeisSanityFailN`) so n=2..5 log10|G| and U(6/7/10) cannot silently regress
-- [x] **U_cas(n) cascade / piece-budget family** (4→288, 5→410, 10→1380) + sanity lock + print_bounds column (2026-09-03)
+- [x] **OEIS / U(n) sanity lock** (`oeisSanityFailN`)
+- [x] **U_cas(n) cascade / piece-budget family** (4→288, 5→410, 10→1380)
+- [x] **Per-stage Ucas budgets** + BoundReport fattest-stage + JNI L/Ucas/Lfix (2026-09-05)
 - [x] Lift L(5) to published OBTM lower **52** (wiki), keep L_fixed(5)=47 counting
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK + verified native .so
 - [ ] Adaptive launcher icons
 - [ ] Measure replaySolved rate on 4×4/5×5 after desktop compile
+- [ ] Cap CenterSolver/EdgePairing when overC/overE > 0
 
 ---
 
-## Next steps / approaches to try next time (2026-09-03 post-U_cas)
+## Next steps / approaches to try next time (2026-09-05 post-stage-budgets)
 
-Shipped this session: `constructiveUpperCascade`, print_bounds Ucas column, L(5)=52, OEIS lock on Ucas(4/5/10), docs contract update. Exact integer g(n) for n≥4 remains open.
+Shipped this session: `CascadeStageBudget`, BoundReport over/fattest fields, JNI L/Ucas/Lfix, [docs/STAGE_BUDGETS.md](docs/STAGE_BUDGETS.md). Exact integer g(n) for n≥4 remains open.
 
-1. **Highest leverage:** compile and run `desktop_harness` on 4×4/5×5 with raised `RCS_MITM_*`. Log MITM hit rate, measured OBTM vs Ucas vs U vs L vs community 54/130, and **replaySolved=yes rate**.
-2. Make ReductionSolver *respect* U_cas budgets per stage (centers ≤ 8(n−2)², wings ≤ 96(n−2)). If a stage blows the budget, swap that stage to a commutator that is length-capped.
-3. If replaySolved is low, debug SiGN encode/decode round-trip on ReductionSolver output (single encoder).
-4. Per-stage OBTM targeting: cut the fattest phase only. BoundReport already splits stages.
-5. Surface Ucas + L_fixed in the Android JNI bound string (Java still shows L/U only).
-6. Verify green CI APK contains lib*.so.
-7. 3×3 dense full-index pruning DBs toward the proven 20 ceiling.
-8. Production signed APK + Material You + size selector to 20×20.
-9. Recalibrate BoundHarness 3.8 scale if new community numbers appear; keep U(n) as hard constructive guarantee and Ucas as the solver budget.
-10. Center BFS node-budget tuning on desktop.
-11. Edge pairing quality metrics (`pairedWings`) into BoundHarness.
-12. Shorter parity algs that still clear full-depth detectors.
-13. Optional full 24-wing Lehmer if 5×5+ residual stays deep.
-14. Denser 5×5 center residual under higher MITM budgets.
-15. Do not claim exact g(n) for n≥4 until a published diameter proof exists.
-16. If a cluster appears: 4×4 coset / IDA* diameter attack is the only path to an *integer* g(4); phone solvers cannot close it. Literature still sits at 35–54 OBTM.
-17. Sample-based “demigod” estimate (Merino–Subercaseaux 2025): average distance × 2 as a high-confidence diameter cap once desktop_harness can emit lengths on random 4×4 states.
-18. Keep Ucas formula honest: if measured solutions exceed Ucas, raise the constant instead of pretending the budget holds.
+1. **Highest leverage:** compile `desktop_harness` on 4×4 with raised `RCS_MITM_*`. Log replaySolved rate, fattest stage, overC/overE vs UcasC/UcasE, measured OBTM vs community 54.
+2. Cap the fattest stage only. If overC>0, swap CenterSolver remaining cells to an 8-move commutator. Same for EdgePairing at 8 moves/wing.
+3. If replaySolved is low, debug SiGN encode/decode round-trip (single encoder).
+4. Surface Ucas + L + L_fixed + fattest in the Android UI (JNI already exposes the integers).
+5. Verify green CI APK contains lib*.so.
+6. 3×3 dense full-index pruning DBs toward the proven 20 ceiling.
+7. Production signed APK + Material You + size selector to 20×20.
+8. Recalibrate BoundHarness 3.8 scale if new community numbers appear; keep U(n) as hard constructive guarantee and Ucas as the solver budget.
+9. Center BFS node-budget tuning on desktop.
+10. Edge pairing quality metrics (`pairedWings`) into BoundHarness.
+11. Shorter parity algs that still clear full-depth detectors.
+12. Optional full 24-wing Lehmer if 5×5+ residual stays deep.
+13. Sample-based “demigod” estimate once harness emits lengths on random 4×4 states (avg distance × 2 as a high-confidence cap, not a proof).
+14. Keep Ucas honest: if measured solutions exceed Ucas, raise the constant instead of pretending the budget holds.
+15. Do not claim exact g(n) for n≥4 until a published diameter proof exists. Phone solvers cannot close g(4).
 
 ---
 
-*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM is the universal algorithm this repo ships. U_cas piece-budget family landed 2026-09-03.*
+*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM is the universal algorithm this repo ships. Per-stage Ucas budgets landed 2026-09-05.*
