@@ -15,16 +15,22 @@ int BoundHarness::constructiveUpper(int n) {
 }
 
 int BoundHarness::constructiveUpperCascade(int n) {
-    if (n < 2) return 0;
-    if (n == 2) return 11;
-    if (n == 3) return 20;
+    return cascadeStageBudget(n).total;
+}
+
+CascadeStageBudget BoundHarness::cascadeStageBudget(int n) {
+    CascadeStageBudget b;
+    if (n < 2) return b;
+    if (n == 2) { b.kernel = 11; b.total = 11; return b; }
+    if (n == 3) { b.kernel = 20; b.total = 20; return b; }
     const int extra = n - 2;
-    const int centers = 8 * extra * extra;
-    const int wings = 8 * 12 * extra;
-    const int parity = (n % 2 == 0) ? 20 : 0;
-    const int kernel = 20;
-    const int setup = 6 * n;
-    return centers + wings + parity + kernel + setup;
+    b.centers = 8 * extra * extra;
+    b.edges = 8 * 12 * extra;
+    b.parity = (n % 2 == 0) ? 20 : 0;
+    b.kernel = 20;
+    b.setup = 6 * n;
+    b.total = b.centers + b.edges + b.parity + b.kernel + b.setup;
+    return b;
 }
 
 int BoundHarness::generatorCount(int n) {
@@ -181,6 +187,40 @@ BoundReport BoundHarness::report(int n, const StageLengths& stages) {
         : 0.0;
     r.sstm = stages.finalSstm > 0 ? stages.finalSstm : finalLen;
     r.obtm = stages.finalObtm;
+
+    r.cascadeBudget = constructiveUpperCascade(n) ? cascadeStageBudget(n) : CascadeStageBudget{};
+    r.overCenters = std::max(0, stages.centers - r.cascadeBudget.centers);
+    r.overEdges = std::max(0, stages.edges - r.cascadeBudget.edges);
+    r.overParity = std::max(0, stages.parity - r.cascadeBudget.parity);
+    r.overKernel = std::max(0, stages.reduce3x3 - r.cascadeBudget.kernel);
+    r.overTotalVsUcas = std::max(0, finalLen - r.constructiveUpperCascade);
+
+    struct Cand { int over; const char* name; };
+    const Cand cands[] = {
+        {r.overCenters, "centers"},
+        {r.overEdges, "edges"},
+        {r.overParity, "parity"},
+        {r.overKernel, "3x3"},
+        {std::max(0, stages.reduced - r.cascadeBudget.setup), "reduced"},
+    };
+    int best = 0;
+    r.fattestStage = "none";
+    for (const auto& c : cands) {
+        if (c.over > best) { best = c.over; r.fattestStage = c.name; }
+    }
+    if (best == 0) {
+        const Cand raw[] = {
+            {stages.centers, "centers"},
+            {stages.edges, "edges"},
+            {stages.parity, "parity"},
+            {stages.reduced, "reduced"},
+            {stages.reduce3x3, "3x3"},
+        };
+        int rawBest = -1;
+        for (const auto& c : raw) {
+            if (c.over > rawBest) { rawBest = c.over; r.fattestStage = c.name; }
+        }
+    }
     return r;
 }
 
@@ -219,7 +259,13 @@ std::string BoundReport::toString() const {
         << " withinU=" << (withinUpper ? "yes" : "NO")
         << " final/L=" << ratioToLower
         << " final/U=" << ratioToUpper
-        << " final/asym=" << ratioToAsymptotic;
+        << " final/asym=" << ratioToAsymptotic
+        << " UcasC=" << cascadeBudget.centers
+        << " UcasE=" << cascadeBudget.edges
+        << " UcasP=" << cascadeBudget.parity
+        << " overC=" << overCenters
+        << " overE=" << overEdges
+        << " fattest=" << (fattestStage ? fattestStage : "?");
     if (communityObtmUpper > 0 && obtm > 0) {
         oss << " vsOBTM" << communityObtmUpper << "="
             << (obtm <= communityObtmUpper ? "under" : "over");
