@@ -31,6 +31,15 @@ object NativeSolver {
     /** Constructive upper bound U(n) for working backward toward God's Number. */
     external fun nativeConstructiveUpper(n: Int): Int
 
+    /** Piece-budget cascade family Ucas(n). Solver target, not a diameter. */
+    external fun nativeConstructiveUpperCascade(n: Int): Int
+
+    /** Hardwick + community counting lower L(n). */
+    external fun nativeCountingLower(n: Int): Int
+
+    /** Face-fixed counting lower L_fixed(n). */
+    external fun nativeCountingLowerFixed(n: Int): Int
+
     /** 2026-08-23: set residual MITM nodeBudget + depthCap for n=4 or n=5. */
     external fun nativeSetMitmBudget(n: Int, nodeBudget: Long, depthCap: Int)
     external fun nativeGetMitmNodeBudget(n: Int): Long
@@ -58,6 +67,9 @@ object NativeSolver {
     fun boundReport(): String = nativeBoundReport()
 
     fun constructiveUpper(n: Int): Int = nativeConstructiveUpper(n)
+    fun constructiveUpperCascade(n: Int): Int = nativeConstructiveUpperCascade(n)
+    fun countingLower(n: Int): Int = nativeCountingLower(n)
+    fun countingLowerFixed(n: Int): Int = nativeCountingLowerFixed(n)
 
     /**
      * Raise (or lower) residual MITM budgets for n=4 or n=5.

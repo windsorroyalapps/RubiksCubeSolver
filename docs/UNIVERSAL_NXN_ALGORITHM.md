@@ -54,6 +54,9 @@ Locked values: U(4)=501, U(5)=878, U(6)=1727, U(7)=2472, U(10)=6387.
 Ucas(n) = 8(n−2)² + 96(n−2) + 20·[n even] + 20 + 6n  
 Locked: Ucas(4)=288, Ucas(5)=410, Ucas(10)=1380.
 
+Per-stage split (2026-09-05): see [STAGE_BUDGETS.md](STAGE_BUDGETS.md).
+BoundReport prints UcasC/UcasE/UcasP + overC/overE + fattest stage.
+
 ## Honest statement for the README claim
 
 > "God's number and algorithm for any size > 3"
