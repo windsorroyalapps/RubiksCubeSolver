@@ -61,8 +61,15 @@ int main(int argc, char** argv) {
     long long sumHits = 0, sumNodes = 0;
     int replaySolved = 0;
 
+    const auto cas = BoundHarness::cascadeStageBudget(n);
     std::cout << "n=" << n
+              << " L(n)=" << BoundHarness::countingLowerBound(n)
+              << " Lfix=" << BoundHarness::countingLowerBoundFixed(n)
               << " U(n)=" << BoundHarness::constructiveUpper(n)
+              << " Ucas=" << cas.total
+              << " UcasC=" << cas.centers
+              << " UcasE=" << cas.edges
+              << " UcasP=" << cas.parity
               << " asym~" << static_cast<int>(BoundHarness::asymptoticTarget(n))
               << " mitmBudget=" << ReducedSearch::getNodeBudget(n)
               << " depthCap=" << ReducedSearch::getDepthCap(n)
