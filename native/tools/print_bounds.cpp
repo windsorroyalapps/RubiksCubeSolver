@@ -34,5 +34,11 @@ int main(int argc, char** argv) {
     std::printf("# exact g(n) proven only for n=2 (11) and n=3 (20 HTM). n>=4 open.\n");
     std::printf("# L_fixed = face-fixed counting (even n: |G|/24). gap = U(n)-L(n).\n");
     std::printf("# Ucas = piece-budget cascade family (drive solver toward; not diameter).\n");
+    std::printf("# stage budgets (Ucas split): n  C=8(n-2)^2  E=96(n-2)  P  K  setup=6n\n");
+    for (int n = 4; n <= std::min(nmax, 10); ++n) {
+        auto b = BoundHarness::cascadeStageBudget(n);
+        std::printf("#   n=%d  C=%d  E=%d  P=%d  K=%d  setup=%d  total=%d\n",
+                    n, b.centers, b.edges, b.parity, b.kernel, b.setup, b.total);
+    }
     return 0;
 }
