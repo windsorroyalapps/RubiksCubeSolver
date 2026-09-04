@@ -78,7 +78,6 @@ JNIEXPORT jstring JNICALL
 Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeBoundReport(
         JNIEnv* env, jobject) {
     if (!g_cube || g_cube->size() < 4) {
-        // Still useful: show static U(n) table row for current size if any
         if (g_cube) {
             int n = g_cube->size();
             StageLengths empty{};
@@ -96,7 +95,24 @@ Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeConstructiveUpper(
     return static_cast<jint>(BoundHarness::constructiveUpper(static_cast<int>(n)));
 }
 
-// 2026-08-23: expose MITM budgets so desktop / stress tests can raise nodeBudget + depthCap
+JNIEXPORT jint JNICALL
+Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeConstructiveUpperCascade(
+        JNIEnv*, jobject, jint n) {
+    return static_cast<jint>(BoundHarness::constructiveUpperCascade(static_cast<int>(n)));
+}
+
+JNIEXPORT jint JNICALL
+Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeCountingLower(
+        JNIEnv*, jobject, jint n) {
+    return static_cast<jint>(BoundHarness::countingLowerBound(static_cast<int>(n)));
+}
+
+JNIEXPORT jint JNICALL
+Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeCountingLowerFixed(
+        JNIEnv*, jobject, jint n) {
+    return static_cast<jint>(BoundHarness::countingLowerBoundFixed(static_cast<int>(n)));
+}
+
 JNIEXPORT void JNICALL
 Java_com_windsorroyal_rubikscubesolver_NativeSolver_nativeSetMitmBudget(
         JNIEnv*, jobject, jint n, jlong nodeBudget, jint depthCap) {
