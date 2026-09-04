@@ -47,6 +47,16 @@
  * This is the budget we drive ReductionSolver toward. Official guarantee
  * remains U(n). U_cas is not a published diameter.
  */
+/** Per-stage slice of U_cas(n). Solver should keep each stage at or under these. */
+struct CascadeStageBudget {
+    int centers = 0;  // 8*(n-2)^2
+    int edges = 0;    // 96*(n-2)
+    int parity = 0;   // 20 if even n else 0
+    int kernel = 0;   // 20 (3x3)
+    int setup = 0;    // 6n (slice setup / residual overhead)
+    int total = 0;    // U_cas(n)
+};
+
 struct StageLengths {
     int centers = 0;
     int edges = 0;
@@ -87,6 +97,13 @@ struct BoundReport {
     double ratioToLower = 0;
     int obtm = 0;
     int sstm = 0;
+    CascadeStageBudget cascadeBudget{};
+    int overCenters = 0;   // max(0, stage - budget)
+    int overEdges = 0;
+    int overParity = 0;
+    int overKernel = 0;
+    int overTotalVsUcas = 0;
+    const char* fattestStage = "";
 
     std::string toString() const;
 };
@@ -95,6 +112,7 @@ class BoundHarness {
 public:
     static int constructiveUpper(int n);
     static int constructiveUpperCascade(int n);
+    static CascadeStageBudget cascadeStageBudget(int n);
     static int countingLowerBound(int n);
     static int countingLowerBoundFixed(int n);
     static int generatorCount(int n);
