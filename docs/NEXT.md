@@ -1,16 +1,20 @@
-# Next session log — 2026-09-03
+# Next session log — 2026-09-05
 
 ## Done this session
-- Added `BoundHarness::constructiveUpperCascade` (piece-budget family).
-- Locked Ucas(4)=288, Ucas(5)=410, Ucas(10)=1380 in `oeisSanityFailN`.
-- `print_bounds` prints Ucas column.
-- Lifted L(5) to published OBTM lower 52; L_fixed(5) stays Hardwick counting 47.
-- BoundReport string includes `Ucas=`.
-- Docs / README next-steps rewritten for the next agent.
+- Split Ucas(n) into per-stage budgets (`CascadeStageBudget`).
+- BoundReport now prints UcasC/UcasE/UcasP, overC/overE, fattest stage.
+- JNI + Kotlin: `constructiveUpperCascade`, `countingLower`, `countingLowerFixed`.
+- print_bounds prints stage-budget rows for n=4..10.
+- desktop_harness header prints L / Lfix / Ucas split.
+- New contract: [STAGE_BUDGETS.md](STAGE_BUDGETS.md).
 
 ## Do not claim
 Exact integer God's number for any n≥4. |G(4)|≈7.4e45. Published window is still 35–54 OBTM.
 
 ## Try next
-See README "Next steps / approaches to try next time (2026-09-03 post-U_cas)".
-First compile target: `desktop_harness` replaySolved on n=4,10 scrambles.
+1. Compile `desktop_harness` and log replaySolved + fattest stage on n=4 trials=10.
+2. Cap CenterSolver / EdgePairing when overC or overE > 0 (swap to length-capped commutator).
+3. If replaySolved is low, debug SiGN encode/decode only (single encoder).
+4. Surface Ucas/L/Lfix in the Android UI, not just JNI.
+5. 3×3 dense pruning DBs toward proven 20.
+6. Do not invent an integer g(4). Coset/IDA* diameter attack needs a cluster.

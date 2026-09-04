@@ -10,7 +10,8 @@
  * Pipeline:
  *   1. Centers  2. Edges  3. Parity (even)  4. 3x3  5. Batch optimize
  *
- * BoundHarness records stage lengths vs constructive U(n) and n^2/log n.
+ * BoundHarness records stage lengths vs U(n), Ucas, L(n), L_fixed and
+ * per-stage cascade budgets (centers 8(n-2)^2, wings 96(n-2), ...).
  */
 class ReductionSolver {
 public:
