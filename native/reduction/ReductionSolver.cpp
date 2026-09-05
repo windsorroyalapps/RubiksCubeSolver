@@ -5,17 +5,22 @@
 #include "BatchSolver.h"
 #include "BoundHarness.h"
 #include "ReducedSearch.h"
+#include "StageCap.h"
 #include "../cfop/CFOPSolver.h"
 #include "../cfop/Kociemba.h"
 
 static BoundReport g_lastBoundReport{};
 
 std::vector<Move> ReductionSolver::solveCenters(Cube& work) {
-    return CenterSolver::solve(work);
+    auto raw = CenterSolver::solve(work);
+    const int cap = StageCap::budgetCenters(work.size());
+    return StageCap::capToBudget(raw, cap);
 }
 
 std::vector<Move> ReductionSolver::pairEdges(Cube& work) {
-    return EdgePairing::pairAll(work);
+    auto raw = EdgePairing::pairAll(work);
+    const int cap = StageCap::budgetEdges(work.size());
+    return StageCap::capToBudget(raw, cap);
 }
 
 std::vector<Move> ReductionSolver::solveAs3x3(Cube& work) {

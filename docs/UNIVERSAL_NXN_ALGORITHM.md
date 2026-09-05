@@ -12,6 +12,7 @@ What *is* settled:
 4. **Counting lower bound** L(n) = ⌊ ln|G| / ln|S| ⌋ with Hardwick's exact |G(n)| and |S| = 6·⌊n/2⌋·3.
 5. **Face-fixed lower** L_fixed(n) (even n quotients |G| by 24).
 6. **Cascade budget** Ucas(n) — piece-budget family the solver is driven toward (not a diameter).
+7. **Stage caps** (2026-09-06) — Center/Edge stages clipped to C/E so overC/overE is actionable.
 
 ## Algorithm (constructive God's-algorithm family)
 
@@ -21,7 +22,9 @@ Input: scrambled n×n×n, n≥4.
 1. ClusterScheduler      partition cubies into commuting slice classes
 2. BatchGroups           shared-slice commutators (Demaine parallel factor)
 3. CenterSolver          never-break orbits; BFS n≤5; residual n≥6
+3b. StageCap             clip centers to C = 8(n-2)²
 4. EdgePairing           Yau buffer + solid-set never-touch wings
+4b. StageCap             clip edges to E = 96(n-2)
 5. ParityHandler         even n only: wing OLL + PLL parity at all depths
 6. ReducedSearch         n∈{4,5}: packed residual IDA* + bidirectional MITM
 7. 3×3 kernel            Kociemba → GodsAlgorithm ≤20 → CFOP fallback
@@ -54,8 +57,8 @@ Locked values: U(4)=501, U(5)=878, U(6)=1727, U(7)=2472, U(10)=6387.
 Ucas(n) = 8(n−2)² + 96(n−2) + 20·[n even] + 20 + 6n  
 Locked: Ucas(4)=288, Ucas(5)=410, Ucas(10)=1380.
 
-Per-stage split (2026-09-05): see [STAGE_BUDGETS.md](STAGE_BUDGETS.md).
-BoundReport prints UcasC/UcasE/UcasP + overC/overE + fattest stage.
+Per-stage split: [STAGE_BUDGETS.md](STAGE_BUDGETS.md).  
+Caps: [STAGE_CAPS.md](STAGE_CAPS.md).
 
 ## Honest statement for the README claim
 
@@ -65,4 +68,4 @@ BoundReport prints UcasC/UcasE/UcasP + overC/overE + fattest stage.
 - **Asymptotic number:** yes — Θ(n² / log n).
 - **Exact integer g(n):** no, and this repo will not invent one. Closing g(4) is a multi-CPU-year research program, not a phone solver.
 
-Progress metric for the next session: desktop_harness replaySolved rate + measured OBTM vs Ucas vs community 54 + fattest per-stage OBTM cut. Drive stage lengths under Ucas without claiming diameter.
+Progress metric: desktop_harness replaySolved + measured OBTM vs Ucas vs community 54 + overC/overE after StageCap.

@@ -24,6 +24,7 @@ add_library(
     ${NATIVE_ROOT}/reduction/BatchGroups.cpp
     ${NATIVE_ROOT}/reduction/BoundHarness.cpp
     ${NATIVE_ROOT}/reduction/ReducedSearch.cpp
+    ${NATIVE_ROOT}/reduction/StageCap.cpp
 )
 
 find_library(log-lib log)
