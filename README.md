@@ -3,12 +3,13 @@
 **Android + Native C++ Rubik's Cube Solver**
 
 - **3×3:** God's algorithm path toward **≤ 20 HTM** (proven God's Number)
-- **n×n (n ≥ 4):** Universal constructive algorithm — reduction + Demaine batching + residual MITM. Always terminates. Exact integer g(n) is **open**; asymptotic **g(n)=Θ(n²/log n)**.
+- **n×n (n ≥ 4):** Universal constructive algorithm — reduction + Demaine batching + residual MITM + **StageCap**. Always terminates. Exact integer g(n) is **open**; asymptotic **g(n)=Θ(n²/log n)**.
 
 Exact g(n) is proven only for n=2,3. This repo implements the algorithm for every larger size plus live L(n)/L_fixed(n)/U(n)/Ucas/OBTM instrumentation — not a fake closed diameter.
 
 Canonical contract: [docs/UNIVERSAL_NXN_ALGORITHM.md](docs/UNIVERSAL_NXN_ALGORITHM.md)
 Stage budgets: [docs/STAGE_BUDGETS.md](docs/STAGE_BUDGETS.md)
+Stage caps: [docs/STAGE_CAPS.md](docs/STAGE_CAPS.md)
 Session log: [docs/NEXT.md](docs/NEXT.md)
 
 ```bash
@@ -28,7 +29,7 @@ g++ -O2 -std=c++17 -Inative/common -Inative/cfop -Inative/reduction \
   native/reduction/EdgePairing.cpp native/reduction/ParityHandler.cpp \
   native/reduction/BatchSolver.cpp native/reduction/ClusterScheduler.cpp \
   native/reduction/BatchGroups.cpp native/reduction/BoundHarness.cpp \
-  native/reduction/ReducedSearch.cpp \
+  native/reduction/ReducedSearch.cpp native/reduction/StageCap.cpp \
   -o artifacts/rcs_harness
 RCS_MITM_NODEBUDGET4=150000 RCS_MITM_DEPTHCAP4=28 ./artifacts/rcs_harness 4 10
 ```
@@ -57,15 +58,15 @@ Multi-probe Kociemba → if len > 20: optimal IDA* (≤20) → CFOP fallback
 ## n×n path (algorithm for any n > 3)
 
 ```text
-ClusterScheduler → BatchGroups → Centers → Edges → Parity (even n)
-  → ReducedSearch (IDA* + residualKey MITM on 4x4/5x5) → 3×3 → BatchSolver
-  → BoundHarness (Hardwick |G| L(n) + L_fixed + U(n) + Ucas + fattest stage)
+ClusterScheduler → BatchGroups → Centers → StageCap(C) → Edges → StageCap(E)
+  → Parity (even n) → ReducedSearch (IDA* + residualKey MITM on 4x4/5x5)
+  → 3×3 → BatchSolver → BoundHarness (L / L_fixed / U / Ucas / overC / overE)
   → Cube::movesToNotation / applyNotation SiGN replay
 ```
 
 Exact diameter open for n≥4. Constructive algorithm always terminates.
 
-→ [docs/GODS_NUMBER_NXN.md](docs/GODS_NUMBER_NXN.md) · [docs/GROUP_ORDER.md](docs/GROUP_ORDER.md) · [docs/STAGE_BUDGETS.md](docs/STAGE_BUDGETS.md)
+→ [docs/GODS_NUMBER_NXN.md](docs/GODS_NUMBER_NXN.md) · [docs/GROUP_ORDER.md](docs/GROUP_ORDER.md) · [docs/STAGE_BUDGETS.md](docs/STAGE_BUDGETS.md) · [docs/STAGE_CAPS.md](docs/STAGE_CAPS.md)
 
 ---
 
@@ -99,7 +100,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-09-05)
+## Status (2026-09-06)
 
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
@@ -120,22 +121,23 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 - [x] **U_cas(n) cascade / piece-budget family** (4→288, 5→410, 10→1380)
 - [x] **Per-stage Ucas budgets** + BoundReport fattest-stage + JNI L/Ucas/Lfix (2026-09-05)
 - [x] Lift L(5) to published OBTM lower **52** (wiki), keep L_fixed(5)=47 counting
+- [x] **StageCap** clips Center/Edge stages to C/E (2026-09-06)
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK + verified native .so
 - [ ] Adaptive launcher icons
-- [ ] Measure replaySolved rate on 4×4/5×5 after desktop compile
-- [ ] Cap CenterSolver/EdgePairing when overC/overE > 0
+- [ ] Measure replaySolved rate on 4×4/5×5 after desktop compile **with StageCap.cpp**
+- [ ] Replace clip-tail with never-break 8-move commutator per leftover cell/wing
 
 ---
 
-## Next steps / approaches to try next time (2026-09-05 post-stage-budgets)
+## Next steps / approaches to try next time (2026-09-06 post-StageCap)
 
-Shipped this session: `CascadeStageBudget`, BoundReport over/fattest fields, JNI L/Ucas/Lfix, [docs/STAGE_BUDGETS.md](docs/STAGE_BUDGETS.md). Exact integer g(n) for n≥4 remains open.
+Shipped this session: `StageCap` + ReductionSolver C/E clip + [docs/STAGE_CAPS.md](docs/STAGE_CAPS.md). Exact integer g(n) for n≥4 remains open.
 
-1. **Highest leverage:** compile `desktop_harness` on 4×4 with raised `RCS_MITM_*`. Log replaySolved rate, fattest stage, overC/overE vs UcasC/UcasE, measured OBTM vs community 54.
-2. Cap the fattest stage only. If overC>0, swap CenterSolver remaining cells to an 8-move commutator. Same for EdgePairing at 8 moves/wing.
+1. **Highest leverage:** compile `desktop_harness` **including StageCap.cpp** on 4×4. Log replaySolved, fattest, overC/overE, measured OBTM vs community 54. A drop in replaySolved after the clip means the tail was load-bearing — replace it with leftover-cell commutators, do not silently raise Ucas.
+2. When clip fires, count leftover unsolved center cells / unpaired wings and apply `StageCap::eightMoveCommutator` per leftover (never-break).
 3. If replaySolved is low, debug SiGN encode/decode round-trip (single encoder).
-4. Surface Ucas + L + L_fixed + fattest in the Android UI (JNI already exposes the integers).
+4. Surface Ucas + L + L_fixed + overC/overE + fattest in the Android UI.
 5. Verify green CI APK contains lib*.so.
 6. 3×3 dense full-index pruning DBs toward the proven 20 ceiling.
 7. Production signed APK + Material You + size selector to 20×20.
@@ -145,9 +147,9 @@ Shipped this session: `CascadeStageBudget`, BoundReport over/fattest fields, JNI
 11. Shorter parity algs that still clear full-depth detectors.
 12. Optional full 24-wing Lehmer if 5×5+ residual stays deep.
 13. Sample-based “demigod” estimate once harness emits lengths on random 4×4 states (avg distance × 2 as a high-confidence cap, not a proof).
-14. Keep Ucas honest: if measured solutions exceed Ucas, raise the constant instead of pretending the budget holds.
+14. Keep Ucas honest: if measured *correct* solutions exceed Ucas, raise the constant instead of pretending the budget holds.
 15. Do not claim exact g(n) for n≥4 until a published diameter proof exists. Phone solvers cannot close g(4).
 
 ---
 
-*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM is the universal algorithm this repo ships. Per-stage Ucas budgets landed 2026-09-05.*
+*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM + StageCap is the universal algorithm this repo ships. StageCap landed 2026-09-06.*
