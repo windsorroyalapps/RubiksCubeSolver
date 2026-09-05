@@ -12,15 +12,19 @@
 static BoundReport g_lastBoundReport{};
 
 std::vector<Move> ReductionSolver::solveCenters(Cube& work) {
-    auto raw = CenterSolver::solve(work);
-    const int cap = StageCap::budgetCenters(work.size());
-    return StageCap::capToBudget(raw, cap);
+    Cube probe = work;
+    auto raw = CenterSolver::solve(probe);
+    auto capped = StageCap::capToBudget(raw, StageCap::budgetCenters(work.size()));
+    work.apply(capped);
+    return capped;
 }
 
 std::vector<Move> ReductionSolver::pairEdges(Cube& work) {
-    auto raw = EdgePairing::pairAll(work);
-    const int cap = StageCap::budgetEdges(work.size());
-    return StageCap::capToBudget(raw, cap);
+    Cube probe = work;
+    auto raw = EdgePairing::pairAll(probe);
+    auto capped = StageCap::capToBudget(raw, StageCap::budgetEdges(work.size()));
+    work.apply(capped);
+    return capped;
 }
 
 std::vector<Move> ReductionSolver::solveAs3x3(Cube& work) {
