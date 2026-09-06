@@ -10,21 +10,25 @@
 #include "../cfop/Kociemba.h"
 
 static BoundReport g_lastBoundReport{};
+static int g_lastLeftoverCenters = 0;
+static int g_lastLeftoverWings = 0;
 
 std::vector<Move> ReductionSolver::solveCenters(Cube& work) {
     Cube probe = work;
     auto raw = CenterSolver::solve(probe);
-    auto capped = StageCap::capToBudget(raw, StageCap::budgetCenters(work.size()));
-    work.apply(capped);
-    return capped;
+    auto pair = StageCap::capThenRepair(raw, probe, StageCap::budgetCenters(work.size()), true);
+    g_lastLeftoverCenters = pair.second;
+    work.apply(pair.first);
+    return pair.first;
 }
 
 std::vector<Move> ReductionSolver::pairEdges(Cube& work) {
     Cube probe = work;
     auto raw = EdgePairing::pairAll(probe);
-    auto capped = StageCap::capToBudget(raw, StageCap::budgetEdges(work.size()));
-    work.apply(capped);
-    return capped;
+    auto pair = StageCap::capThenRepair(raw, probe, StageCap::budgetEdges(work.size()), false);
+    g_lastLeftoverWings = pair.second;
+    work.apply(pair.first);
+    return pair.first;
 }
 
 std::vector<Move> ReductionSolver::solveAs3x3(Cube& work) {
@@ -34,6 +38,8 @@ std::vector<Move> ReductionSolver::solveAs3x3(Cube& work) {
 }
 
 std::vector<Move> ReductionSolver::solve(const Cube& cube) {
+    g_lastLeftoverCenters = 0;
+    g_lastLeftoverWings = 0;
     if (cube.size() < 4) {
         g_lastBoundReport = {};
         return Kociemba::solve(cube);
@@ -77,5 +83,10 @@ std::string ReductionSolver::solveToNotation(const Cube& cube) {
 }
 
 std::string ReductionSolver::lastBoundReportString() {
-    return g_lastBoundReport.toString();
+    std::string s = g_lastBoundReport.toString();
+    s += " leftoverC=";
+    s += std::to_string(g_lastLeftoverCenters);
+    s += " leftoverE=";
+    s += std::to_string(g_lastLeftoverWings);
+    return s;
 }
