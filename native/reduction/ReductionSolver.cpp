@@ -12,20 +12,23 @@
 static BoundReport g_lastBoundReport{};
 static int g_lastLeftoverCenters = 0;
 static int g_lastLeftoverWings = 0;
+static bool g_lastWorkSolved = false;
 
 std::vector<Move> ReductionSolver::solveCenters(Cube& work) {
+    Cube pre = work;
     Cube probe = work;
     auto raw = CenterSolver::solve(probe);
-    auto pair = StageCap::capThenRepair(raw, probe, StageCap::budgetCenters(work.size()), true);
+    auto pair = StageCap::capThenRepair(raw, pre, StageCap::budgetCenters(work.size()), true);
     g_lastLeftoverCenters = pair.second;
     work.apply(pair.first);
     return pair.first;
 }
 
 std::vector<Move> ReductionSolver::pairEdges(Cube& work) {
+    Cube pre = work;
     Cube probe = work;
     auto raw = EdgePairing::pairAll(probe);
-    auto pair = StageCap::capThenRepair(raw, probe, StageCap::budgetEdges(work.size()), false);
+    auto pair = StageCap::capThenRepair(raw, pre, StageCap::budgetEdges(work.size()), false);
     g_lastLeftoverWings = pair.second;
     work.apply(pair.first);
     return pair.first;
@@ -40,6 +43,7 @@ std::vector<Move> ReductionSolver::solveAs3x3(Cube& work) {
 std::vector<Move> ReductionSolver::solve(const Cube& cube) {
     g_lastLeftoverCenters = 0;
     g_lastLeftoverWings = 0;
+    g_lastWorkSolved = false;
     if (cube.size() < 4) {
         g_lastBoundReport = {};
         return Kociemba::solve(cube);
@@ -74,6 +78,7 @@ std::vector<Move> ReductionSolver::solve(const Cube& cube) {
     solution = BatchSolver::optimize(solution);
     stages.afterBatch = BoundHarness::count(solution);
 
+    g_lastWorkSolved = work.isSolved();
     g_lastBoundReport = BoundHarness::report(cube.size(), stages, solution);
     return solution;
 }
@@ -88,5 +93,7 @@ std::string ReductionSolver::lastBoundReportString() {
     s += std::to_string(g_lastLeftoverCenters);
     s += " leftoverE=";
     s += std::to_string(g_lastLeftoverWings);
+    s += " workSolved=";
+    s += (g_lastWorkSolved ? "yes" : "no");
     return s;
 }

@@ -3,7 +3,7 @@
 static Move invertMove(const Move& m) {
     Move inv = m;
     if (m.turns == 1) inv.turns = 3;
-    else if (m.turns == 3) inv.turns = 1;
+    else if (m.turns == 3 || m.turns == -1) inv.turns = 1;
     return inv;
 }
 
@@ -53,12 +53,10 @@ int StageCap::leftoverUnpairedWings(const Cube& cube) {
     const int n = cube.size();
     if (n < 4) return 0;
     int bad = 0;
-    // U-row adjacent to F vs F-row adjacent to U, inner columns only.
     auto stripMismatch = [&](int fa, int ra, int fb, int rb) {
         for (int i = 1; i < n - 1; ++i) {
             Color a = cube.get(fa, ra, i);
             Color b = cube.get(fb, rb, i);
-            // A paired wing shares the two face colors; mismatch if either is wrong face.
             if (a != static_cast<Color>(fa) || b != static_cast<Color>(fb)) ++bad;
         }
     };
@@ -75,10 +73,9 @@ std::vector<Move> StageCap::leftoverCommutators(const Cube& cube, int leftoverCo
     const int n = cube.size();
     const int k = leftoverCount < maxLeftovers ? leftoverCount : maxLeftovers;
     out.reserve(static_cast<size_t>(k) * 8);
-    // Cycle faces so leftovers do not all hit the same orbit.
     const int facesA[] = {R, U, F, L, D, B};
     const int facesB[] = {U, F, R, D, B, L};
-    const int depth = n > 3 ? 1 : 0; // inner slice for n>=4
+    const int depth = n > 3 ? 1 : 0;
     for (int i = 0; i < k; ++i) {
         Move a{facesA[i % 6], depth, 1};
         Move b{facesB[i % 6], 0, 1};
@@ -88,23 +85,38 @@ std::vector<Move> StageCap::leftoverCommutators(const Cube& cube, int leftoverCo
     return out;
 }
 
+static int measure(const Cube& cube, bool centersNotEdges) {
+    return centersNotEdges ? StageCap::leftoverCenterCells(cube)
+                           : StageCap::leftoverUnpairedWings(cube);
+}
+
 std::pair<std::vector<Move>, int> StageCap::capThenRepair(
-    const std::vector<Move>& raw, const Cube& afterRawApply, int budget, bool centersNotEdges) {
+    const std::vector<Move>& raw, const Cube& preStage, int budget, bool centersNotEdges) {
+    Cube afterFull = preStage;
+    afterFull.apply(raw);
+    const int leftoverFull = measure(afterFull, centersNotEdges);
+
     auto capped = capToBudget(raw, budget);
-    const bool clipped = static_cast<int>(raw.size()) > budget;
-    int leftover = 0;
-    if (clipped) {
-        leftover = centersNotEdges ? leftoverCenterCells(afterRawApply)
-                                   : leftoverUnpairedWings(afterRawApply);
-        auto repair = leftoverCommutators(afterRawApply, leftover);
-        capped.insert(capped.end(), repair.begin(), repair.end());
-    } else {
-        leftover = centersNotEdges ? leftoverCenterCells(afterRawApply)
-                                   : leftoverUnpairedWings(afterRawApply);
-        if (leftover > 0) {
-            auto repair = leftoverCommutators(afterRawApply, leftover);
-            capped.insert(capped.end(), repair.begin(), repair.end());
-        }
+    Cube afterCap = preStage;
+    afterCap.apply(capped);
+    const int leftoverCap = measure(afterCap, centersNotEdges);
+
+    if (leftoverCap > leftoverFull) {
+        return {raw, leftoverFull};
     }
-    return {capped, leftover};
+    if (leftoverCap == 0) {
+        return {capped, 0};
+    }
+
+    auto repair = leftoverCommutators(afterCap, leftoverCap);
+    Cube afterRepair = afterCap;
+    afterRepair.apply(repair);
+    const int leftoverRep = measure(afterRepair, centersNotEdges);
+    if (leftoverRep < leftoverCap) {
+        capped.insert(capped.end(), repair.begin(), repair.end());
+        return {capped, leftoverRep};
+    }
+
+    if (leftoverFull <= leftoverCap) return {raw, leftoverFull};
+    return {capped, leftoverCap};
 }
