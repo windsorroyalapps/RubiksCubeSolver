@@ -101,7 +101,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-09-07)
+## Status (2026-09-08)
 
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
@@ -124,34 +124,36 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 - [x] Lift L(5) to published OBTM lower **52** (wiki), keep L_fixed(5)=47 counting
 - [x] **StageCap** clips Center/Edge stages to C/E (2026-09-06)
 - [x] **Leftover 8-move commutators** after clip (`leftoverC`/`leftoverE`) (2026-09-07)
+- [x] **capThenRepair measures leftovers on pre-stage cube** (2026-09-08). Clip is refused if it worsens leftover vs full raw. `workSolved` is logged.
+- [ ] CenterSolver reaches leftoverC=0 on random 4×4 (desktop: leftoverC=2 after raw 666-move stage)
+- [ ] EdgePairing reaches leftoverE=0 on random 4×4 (desktop: leftoverE=8 after raw 908-move stage)
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK + verified native .so
 - [ ] Adaptive launcher icons
-- [ ] Measure replaySolved rate on 4×4/5×5 after desktop compile **with leftover repair**
-- [ ] Per-cell targeted commutators (restrict A/B to the leftover's owning face)
+- [ ] replaySolved > 0 on 4×4 (blocked on workSolved; SiGN short selftest already passes)
+- [ ] Per-cell targeted commutators (owning face + orthogonal slice)
 
 ---
 
-## Next steps / approaches to try next time (2026-09-07 leftover repair)
+## Next steps / approaches to try next time (2026-09-08 cap completeness)
 
-Shipped this session: leftover-cell commutators after StageCap clip. Exact integer g(n) for n≥4 remains open.
+Shipped this session: StageCap no longer measures leftovers on the *fully applied raw* cube while emitting a clipped prefix. If clip worsens leftover, keep full raw. Harness logs `workSolved`. Exact integer g(n) for n≥4 remains open.
 
-1. **Highest leverage:** compile `desktop_harness` with StageCap.cpp on 4×4. Log replaySolved, fattest, overC/overE, leftoverC/leftoverE, measured OBTM vs community 54. Compare clip-only vs leftover-repair.
-2. If leftover commutators scramble good orbits, switch to per-cell A/B targeting (owning face + orthogonal slice).
-3. If replaySolved is low, debug SiGN encode/decode round-trip (single encoder).
-4. Surface leftoverC/leftoverE + Ucas + L + L_fixed + overC/overE in the Android UI.
-5. Verify green CI APK contains lib*.so.
-6. 3×3 dense full-index pruning DBs toward the proven 20 ceiling.
-7. Production signed APK + Material You + size selector to 20×20.
-8. Recalibrate BoundHarness 3.8 scale if new community numbers appear; keep U(n) as hard constructive guarantee and Ucas as the solver budget.
-9. Center BFS node-budget tuning on desktop.
-10. Edge pairing quality metrics (`pairedWings`) into BoundHarness.
-11. Shorter parity algs that still clear full-depth detectors.
-12. Optional full 24-wing Lehmer if 5×5+ residual stays deep.
-13. Sample-based “demigod” estimate once harness emits lengths on random 4×4 states (avg distance × 2 as a high-confidence cap, not a proof).
-14. Keep Ucas honest: leftover repair can exceed Ucas; if measured *correct* solutions exceed Ucas, raise the constant.
-15. Do not claim exact g(n) for n≥4 until a published diameter proof exists. Phone solvers cannot close g(4).
+Desktop 4×4 × 1 (seed 20260828, scrambleLen=16, MITM 50k/16):
+- notation_selftest=pass
+- workSolved=no, replaySolved=no
+- leftoverC=2 leftoverE=8 after preferring full raw
+- centers raw length 666 / edges 908 — stages do not finish
+
+1. **Highest leverage:** make `CenterSolver` terminate with leftoverC=0 on n=4. Raise centerOrbitBfs node budget; reject the outer-turn fallback that burns attempts without reducing incorrectCenters.
+2. Make `EdgePairing::pairAll` terminate with leftoverE=0; hook `pairedWings` into the stop condition and BoundHarness.
+3. Only after workSolved=yes: re-check SiGN replay (short selftest already passes).
+4. Per-cell A/B targeting if leftover commutators scramble orbits.
+5. Surface leftoverC/E + workSolved + Ucas/L/Lfix in Android UI — blocked on workSolved.
+6. 3×3 dense pruning DBs toward proven 20.
+7. Verify green CI APK contains lib*.so.
+8. Do not invent an integer g(4). |G(4)|≈7.4e45. Published window 35–54 OBTM.
 
 ---
 
-*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM + StageCap + leftover commutators is the universal algorithm this repo ships. Leftover repair landed 2026-09-07.*
+*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM + completeness-first StageCap is the universal algorithm this repo ships. Cap-vs-raw leftover compare landed 2026-09-08.*
