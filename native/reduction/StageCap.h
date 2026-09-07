@@ -34,7 +34,12 @@ public:
      */
     static std::vector<Move> leftoverCommutators(const Cube& cube, int leftoverCount, int maxLeftovers = 64);
 
-    /** Cap raw stage then append leftover commutators. Returns {seq, leftoverCount}. */
+    /**
+     * Choose a stage sequence vs Ucas budget without breaking completeness.
+     * `preStage` is the cube *before* the stage, not after full raw apply.
+     * If clipping increases leftovers vs full raw, keep full raw.
+     * Returns {seq, leftoverCount after chosen seq}.
+     */
     static std::pair<std::vector<Move>, int> capThenRepair(
-        const std::vector<Move>& raw, const Cube& afterRawApply, int budget, bool centersNotEdges);
+        const std::vector<Move>& raw, const Cube& preStage, int budget, bool centersNotEdges);
 };
