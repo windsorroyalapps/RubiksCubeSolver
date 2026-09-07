@@ -88,6 +88,10 @@ int main(int argc, char** argv) {
         replay.applyNotation(notation);
         const bool solvedReplay = replay.isSolved();
         if (solvedReplay) ++replaySolved;
+        if (!solvedReplay && t == 0) {
+            std::cout << "DEBUG trial1 scramble=" << Cube::movesToNotation(scramble) << "\n";
+            std::cout << "DEBUG trial1 notation=" << notation << "\n";
+        }
 
         const std::string report = (n >= 4)
             ? ReductionSolver::lastBoundReportString()
