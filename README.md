@@ -31,7 +31,9 @@ g++ -O2 -std=c++17 -Inative/common -Inative/cfop -Inative/reduction \
   native/reduction/BatchGroups.cpp native/reduction/BoundHarness.cpp \
   native/reduction/ReducedSearch.cpp native/reduction/StageCap.cpp \
   -o artifacts/rcs_harness
-RCS_MITM_NODEBUDGET4=150000 RCS_MITM_DEPTHCAP4=28 ./artifacts/rcs_harness 4 10
+RCS_MITM_NODEBUDGET4=150000 RCS_MITM_DEPTHCAP4=28 \
+RCS_CENTER_BFS_NODES=40000 RCS_CENTER_BFS_DEPTH=7 \
+./artifacts/rcs_harness 4 10
 ```
 
 Bounds table only (no full solver):
@@ -101,7 +103,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-09-08)
+## Status (2026-09-09)
 
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
@@ -124,9 +126,12 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 - [x] Lift L(5) to published OBTM lower **52** (wiki), keep L_fixed(5)=47 counting
 - [x] **StageCap** clips Center/Edge stages to C/E (2026-09-06)
 - [x] **Leftover 8-move commutators** after clip (`leftoverC`/`leftoverE`) (2026-09-07)
-- [x] **capThenRepair measures leftovers on pre-stage cube** (2026-09-08). Clip is refused if it worsens leftover vs full raw. `workSolved` is logged.
-- [ ] CenterSolver reaches leftoverC=0 on random 4×4 (desktop: leftoverC=2 after raw 666-move stage)
-- [ ] EdgePairing reaches leftoverE=0 on random 4×4 (desktop: leftoverE=8 after raw 908-move stage)
+- [x] **capThenRepair measures leftovers on pre-stage cube** (2026-09-08)
+- [x] **CenterSolver refuses no-gain outer-turn fallback** (2026-09-09)
+- [x] **centerOrbitBfs n=4 default 40k nodes / depth 7 + env overrides + multi-round** (2026-09-09)
+- [x] **EdgePairing::leftoverUnpairedWings + pairAll stop** (2026-09-09)
+- [ ] CenterSolver leftoverC=0 on random 4×4 (last measured leftoverC=2)
+- [ ] EdgePairing leftoverE=0 on random 4×4 (last measured leftoverE=8)
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK + verified native .so
 - [ ] Adaptive launcher icons
@@ -135,25 +140,25 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Next steps / approaches to try next time (2026-09-08 cap completeness)
+## Next steps / approaches to try next time (2026-09-09)
 
-Shipped this session: StageCap no longer measures leftovers on the *fully applied raw* cube while emitting a clipped prefix. If clip worsens leftover, keep full raw. Harness logs `workSolved`. Exact integer g(n) for n≥4 remains open.
+Shipped this session: no-gain outer turns removed from CenterSolver; BFS budget raised; EdgePairing stops at leftoverWings=0. Exact integer g(n) for n≥4 remains open. Do not invent g(4).
 
-Desktop 4×4 × 1 (seed 20260828, scrambleLen=16, MITM 50k/16):
+Last desktop 4×4 × 1 (seed 20260828, *before* this session's solver change):
 - notation_selftest=pass
 - workSolved=no, replaySolved=no
-- leftoverC=2 leftoverE=8 after preferring full raw
-- centers raw length 666 / edges 908 — stages do not finish
+- leftoverC=2 leftoverE=8
+- centers raw 666 / edges 908
 
-1. **Highest leverage:** make `CenterSolver` terminate with leftoverC=0 on n=4. Raise centerOrbitBfs node budget; reject the outer-turn fallback that burns attempts without reducing incorrectCenters.
-2. Make `EdgePairing::pairAll` terminate with leftoverE=0; hook `pairedWings` into the stop condition and BoundHarness.
-3. Only after workSolved=yes: re-check SiGN replay (short selftest already passes).
-4. Per-cell A/B targeting if leftover commutators scramble orbits.
-5. Surface leftoverC/E + workSolved + Ucas/L/Lfix in Android UI — blocked on workSolved.
+1. Re-run `desktop_harness 4 1` with `RCS_CENTER_BFS_NODES=40000` and record leftoverC/E + workSolved.
+2. If leftoverC>0: per-cell 8-move commutator (owning face + orthogonal inner slice). No outer-only turns.
+3. If leftoverE>0: replace freeslice RUR' with a single-depth wing commutator.
+4. After workSolved=yes: re-measure replaySolved.
+5. UI leftovers only after workSolved is real.
 6. 3×3 dense pruning DBs toward proven 20.
 7. Verify green CI APK contains lib*.so.
-8. Do not invent an integer g(4). |G(4)|≈7.4e45. Published window 35–54 OBTM.
+8. Do not invent an integer g(4). |G(4)|≈7.4e45. Window 35–54 OBTM.
 
 ---
 
-*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM + completeness-first StageCap is the universal algorithm this repo ships. Cap-vs-raw leftover compare landed 2026-09-08.*
+*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM + completeness-first StageCap is the universal algorithm this repo ships. Center fallback removal + edge leftover stop landed 2026-09-09.*
