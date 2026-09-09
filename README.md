@@ -103,7 +103,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-09-09)
+## Status (2026-09-10)
 
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
@@ -130,8 +130,8 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 - [x] **CenterSolver refuses no-gain outer-turn fallback** (2026-09-09)
 - [x] **centerOrbitBfs n=4 default 40k nodes / depth 7 + env overrides + multi-round** (2026-09-09)
 - [x] **EdgePairing::leftoverUnpairedWings + pairAll stop** (2026-09-09)
-- [ ] CenterSolver leftoverC=0 on random 4×4 (last measured leftoverC=2)
-- [ ] EdgePairing leftoverE=0 on random 4×4 (last measured leftoverE=8)
+- [x] CenterSolver leftoverC=0 on random 4×4 (measured 2026-09-10)
+- [ ] EdgePairing leftoverE=0 on random 4×4 (last measured leftoverE=8; priority)
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK + verified native .so
 - [ ] Adaptive launcher icons
@@ -140,25 +140,26 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Next steps / approaches to try next time (2026-09-09)
+## Next steps / approaches to try next time (2026-09-10)
 
-Shipped this session: no-gain outer turns removed from CenterSolver; BFS budget raised; EdgePairing stops at leftoverWings=0. Exact integer g(n) for n≥4 remains open. Do not invent g(4).
+Shipped measurement: after 2026-09-09 center completeness, desktop_harness 4×1 now reports **leftoverC=0**, leftoverE=8, final OBTM=92, workSolved=no. Exact integer g(n) for n≥4 remains open. Do not invent g(4).
 
-Last desktop 4×4 × 1 (seed 20260828, *before* this session's solver change):
+Last desktop 4×4 × 1 (2026-09-10):
 - notation_selftest=pass
 - workSolved=no, replaySolved=no
-- leftoverC=2 leftoverE=8
-- centers raw 666 / edges 908
+- leftoverC=0 leftoverE=8
+- centers 150 / edges 908 → final 92 OBTM (within U=501, target Ucas=288)
 
-1. Re-run `desktop_harness 4 1` with `RCS_CENTER_BFS_NODES=40000` and record leftoverC/E + workSolved.
-2. If leftoverC>0: per-cell 8-move commutator (owning face + orthogonal inner slice). No outer-only turns.
-3. If leftoverE>0: replace freeslice RUR' with a single-depth wing commutator.
-4. After workSolved=yes: re-measure replaySolved.
-5. UI leftovers only after workSolved is real.
-6. 3×3 dense pruning DBs toward proven 20.
-7. Verify green CI APK contains lib*.so.
-8. Do not invent an integer g(4). |G(4)|≈7.4e45. Window 35–54 OBTM.
+1. Replace EdgePairing::pairOne freeslice RUR' with single-depth wing 8-move commutator (A B A' B' where B is inner slice at exact unpaired depth).
+2. Post-pairAll leftover repair: per-edge depth-specific commutators that respect solid bitset.
+3. After leftoverE=0 on ≥3 trials: confirm workSolved + replaySolved + measure OBTM vs Ucas 288 / community 54.
+4. Surface leftover + workSolved in Android UI only after real solves.
+5. 3×3 dense pruning DBs toward proven 20.
+6. Verify CI APK contains lib*.so; adaptive icons.
+7. Do not invent an integer g(4). |G(4)|≈7.4e45. Window 35–54 OBTM.
+
+See [docs/NEXT.md](docs/NEXT.md) for full session log and queued approaches (edge commutator tables, residual MITM hand-off).
 
 ---
 
-*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM + completeness-first StageCap is the universal algorithm this repo ships. Center fallback removal + edge leftover stop landed 2026-09-09.*
+*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM + StageCap + leftover commutators is the universal algorithm this repo ships. leftoverC=0 confirmed 2026-09-10; edge completeness is the remaining completeness gate.*
