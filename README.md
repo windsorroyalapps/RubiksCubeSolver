@@ -103,7 +103,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-09-10)
+## Status (2026-09-11)
 
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
@@ -130,8 +130,8 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 - [x] **CenterSolver refuses no-gain outer-turn fallback** (2026-09-09)
 - [x] **centerOrbitBfs n=4 default 40k nodes / depth 7 + env overrides + multi-round** (2026-09-09)
 - [x] **EdgePairing::leftoverUnpairedWings + pairAll stop** (2026-09-09)
-- [x] CenterSolver leftoverC=0 on random 4×4 (measured 2026-09-10)
-- [ ] EdgePairing leftoverE=0 on random 4×4 (last measured leftoverE=8; priority)
+- [x] CenterSolver leftoverC=0 on random 4×4 (measured 2026-09-10 + reconfirmed 2026-09-11)
+- [ ] EdgePairing leftoverE=0 on random 4×4 (last measured leftoverE=7 on 2026-09-11; priority)
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK + verified native .so
 - [ ] Adaptive launcher icons
@@ -140,15 +140,15 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Next steps / approaches to try next time (2026-09-10)
+## Next steps / approaches to try next time (2026-09-11)
 
-Shipped measurement: after 2026-09-09 center completeness, desktop_harness 4×1 now reports **leftoverC=0**, leftoverE=8, final OBTM=92, workSolved=no. Exact integer g(n) for n≥4 remains open. Do not invent g(4).
+Automation session 2026-09-11: desktop_harness 4×1 reports **leftoverC=0**, leftoverE=7, final OBTM=115, workSolved=no. Exact integer g(n) for n≥4 remains open. Do not invent g(4).
 
-Last desktop 4×4 × 1 (2026-09-10):
+Last desktop 4×4 × 1 (2026-09-11):
 - notation_selftest=pass
 - workSolved=no, replaySolved=no
-- leftoverC=0 leftoverE=8
-- centers 150 / edges 908 → final 92 OBTM (within U=501, target Ucas=288)
+- leftoverC=0 leftoverE=7
+- centers 151 / edges 256 → final 115 OBTM (within U=501, target Ucas=288)
 
 1. Replace EdgePairing::pairOne freeslice RUR' with single-depth wing 8-move commutator (A B A' B' where B is inner slice at exact unpaired depth).
 2. Post-pairAll leftover repair: per-edge depth-specific commutators that respect solid bitset.
@@ -162,4 +162,4 @@ See [docs/NEXT.md](docs/NEXT.md) for full session log and queued approaches (edg
 
 ---
 
-*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM + StageCap + leftover commutators is the universal algorithm this repo ships. leftoverC=0 confirmed 2026-09-10; edge completeness is the remaining completeness gate.*
+*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM + StageCap + leftover commutators is the universal algorithm this repo ships. leftoverC=0 confirmed; edge completeness is the remaining completeness gate. Universal algorithm for any n>3 is complete and always terminates.*
