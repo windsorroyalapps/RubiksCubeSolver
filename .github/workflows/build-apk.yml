@@ -1,14 +1,15 @@
-name: Build Production APK
+name: Build release artifacts
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, play-store-readiness ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
 
 jobs:
-  build:
+  debug-apk:
+    name: Debug APK
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -26,36 +27,121 @@ jobs:
       - name: Grant execute permission for gradlew
         run: |
           if [ ! -f gradlew ]; then
-            # Generate wrapper if missing (repo has properties only)
             gradle wrapper --gradle-version 8.9 || true
           fi
           chmod +x gradlew 2>/dev/null || true
 
       - name: Build Debug APK (native + Kotlin)
         run: |
-          # Use system gradle if no wrapper binary
           if [ -f gradlew ]; then
             ./gradlew assembleDebug --stacktrace
           else
             gradle assembleDebug --stacktrace
           fi
 
-      - name: Check APK artifact
+      - name: Check APK artifact + native .so
         run: |
           APK=$(find app/build/outputs/apk -name "*.apk" 2>/dev/null | head -1)
-          if [ -n "$APK" ]; then
-            echo "APK produced: $APK"
-            ls -lh "$APK"
-            echo "APK_SIZE=$(stat -c%s "$APK")" >> $GITHUB_ENV
-          else
-            echo "No APK found — checking build outputs"
-            find app/build -type f -name "*.apk" -o -name "*.so" | head -20 || true
+          if [ -z "$APK" ]; then
+            echo "No APK found"
+            find app/build -type f \( -name "*.apk" -o -name "*.so" \) | head -40 || true
             exit 1
           fi
+          echo "APK produced: $APK"
+          ls -lh "$APK"
+          TMP=$(mktemp -d)
+          unzip -q "$APK" -d "$TMP"
+          SO=$(find "$TMP" -name "librubikssolver.so" | head -1)
+          if [ -z "$SO" ]; then
+            echo "ERROR: librubikssolver.so missing inside APK"
+            find "$TMP" -name "*.so" | head -20 || true
+            exit 1
+          fi
+          echo "Native lib OK: $SO"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: rubikscubesolver-debug-apk
           path: app/build/outputs/apk/**/*.apk
+          retention-days: 14
+
+  release-bundle:
+    name: Release AAB / APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Grant execute permission for gradlew
+        run: |
+          if [ ! -f gradlew ]; then
+            gradle wrapper --gradle-version 8.9 || true
+          fi
+          chmod +x gradlew 2>/dev/null || true
+
+      # Unsigned is OK when KEYSTORE_* secrets are not configured.
+      - name: Build release bundle + APK
+        run: |
+          if [ -f gradlew ]; then
+            ./gradlew bundleRelease assembleRelease --stacktrace
+          else
+            gradle bundleRelease assembleRelease --stacktrace
+          fi
+
+      - name: Verify native .so in outputs
+        run: |
+          set -e
+          FOUND_SO=0
+          # Prefer unzipping AAB/APK; also accept intermediates
+          for ART in $(find app/build/outputs -type f \( -name "*.aab" -o -name "*.apk" \) 2>/dev/null); do
+            echo "Inspecting $ART"
+            TMP=$(mktemp -d)
+            unzip -q "$ART" -d "$TMP" || true
+            if find "$TMP" -name "librubikssolver.so" | grep -q .; then
+              echo "Found librubikssolver.so in $ART"
+              FOUND_SO=1
+            fi
+            # AAB may nest base modules as zip — check common paths
+            if find "$TMP" -name "*.so" | grep -q rubikssolver; then
+              FOUND_SO=1
+            fi
+            rm -rf "$TMP"
+          done
+          if [ "$FOUND_SO" -eq 0 ]; then
+            echo "Searching intermediates for .so"
+            if find app/build/intermediates -name "librubikssolver.so" 2>/dev/null | grep -q .; then
+              find app/build/intermediates -name "librubikssolver.so" | head -5
+              FOUND_SO=1
+            fi
+          fi
+          if [ "$FOUND_SO" -eq 0 ]; then
+            echo "ERROR: librubikssolver.so not found in release outputs"
+            find app/build -name "*.so" 2>/dev/null | head -40 || true
+            exit 1
+          fi
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rubikscubesolver-release-aab
+          path: app/build/outputs/bundle/**/*.aab
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload release APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rubikscubesolver-release-apk
+          path: app/build/outputs/apk/release/**/*.apk
+          if-no-files-found: warn
           retention-days: 14
