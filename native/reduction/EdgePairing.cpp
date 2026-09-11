@@ -69,8 +69,6 @@ static bool validEdgeColors(Color a, Color b) {
     return true;
 }
 
-// Reduction pairing: wings form a solid dedge when they share the same
-// color pair (floating OK). Home-face placement is the 3x3 stage's job.
 int EdgePairing::pairedWings(const Cube& work, int edgeIndex) {
     const int n = work.size();
     if (n < 4) return 0;
@@ -134,16 +132,31 @@ static int totalPairedAll(const Cube& work) {
     return s;
 }
 
+// Protect only home-correct Yau strips — floating wrong pairs must remain breakable.
+static bool stageEdgeHomeSolid(const Cube& work, int edgeIndex) {
+    const int n = work.size();
+    int f1 = 0, f2 = 0;
+    edgeFaces(edgeIndex, f1, f2);
+    const Color c1 = static_cast<Color>(f1);
+    const Color c2 = static_cast<Color>(f2);
+    for (int slot = 1; slot <= n - 2; ++slot) {
+        Color a = Color::U, b = Color::U;
+        if (!wingColors(work, edgeIndex, slot, a, b)) return false;
+        if (a != c1 || b != c2) return false;
+    }
+    return true;
+}
+
 static int stageSolidCount(const Cube& work) {
     int s = 0;
     for (int e : kStageEdges)
-        if (EdgePairing::isSolid(work, e)) ++s;
+        if (stageEdgeHomeSolid(work, e)) ++s;
     return s;
 }
 
 static bool breaksStageSolid(const Cube& before, const Cube& after) {
     for (int e : kStageEdges) {
-        if (EdgePairing::isSolid(before, e) && !EdgePairing::isSolid(after, e))
+        if (stageEdgeHomeSolid(before, e) && !stageEdgeHomeSolid(after, e))
             return true;
     }
     return false;
