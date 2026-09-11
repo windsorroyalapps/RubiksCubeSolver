@@ -112,7 +112,10 @@ std::pair<std::vector<Move>, int> StageCap::capThenRepair(
     Cube afterRepair = afterCap;
     afterRepair.apply(repair);
     const int leftoverRep = measure(afterRepair, centersNotEdges);
-    if (leftoverRep < leftoverCap) {
+    // Edge repair must not destroy solved centers.
+    const bool centersOk = centersNotEdges ||
+        StageCap::leftoverCenterCells(afterRepair) <= StageCap::leftoverCenterCells(afterCap);
+    if (leftoverRep < leftoverCap && centersOk) {
         capped.insert(capped.end(), repair.begin(), repair.end());
         return {capped, leftoverRep};
     }
