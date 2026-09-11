@@ -54,17 +54,9 @@ std::vector<Move> BatchSolver::batchWindow(const std::vector<Move>& raw, int win
 }
 
 std::vector<Move> BatchSolver::optimize(const std::vector<Move>& raw) {
-    auto s = compress(raw);
-
-    // Window sizes inspired by log-factor batching: try several scales
-    // Larger window => more aggressive parallel collapse (more risk of
-    // order sensitivity; we re-compress after).
-    const int windows[] = {4, 8, 16, 32};
-    for (int w : windows) {
-        s = batchWindow(s, w);
-        s = compress(s);
-    }
-    return s;
+    // Only consecutive same-(face,depth) merging is semantics-preserving.
+    // batchWindow collapses non-adjacent duplicates and breaks replay.
+    return compress(raw);
 }
 
 int BatchSolver::estimatedClusters(int n) {
