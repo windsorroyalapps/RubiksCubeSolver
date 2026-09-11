@@ -11,6 +11,7 @@ Canonical contract: [docs/UNIVERSAL_NXN_ALGORITHM.md](docs/UNIVERSAL_NXN_ALGORIT
 Stage budgets: [docs/STAGE_BUDGETS.md](docs/STAGE_BUDGETS.md)
 Stage caps: [docs/STAGE_CAPS.md](docs/STAGE_CAPS.md)
 Session log: [docs/NEXT.md](docs/NEXT.md)
+Play Store: [docs/PLAY_STORE.md](docs/PLAY_STORE.md) · Privacy: [docs/PRIVACY.md](docs/PRIVACY.md) · Checklist: [docs/CHECKLIST_STATUS.md](docs/CHECKLIST_STATUS.md)
 
 ```bash
 git clone https://github.com/windsorroyalapps/RubiksCubeSolver.git
@@ -131,10 +132,12 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 - [x] **centerOrbitBfs n=4 default 40k nodes / depth 7 + env overrides + multi-round** (2026-09-09)
 - [x] **EdgePairing::leftoverUnpairedWings + pairAll stop** (2026-09-09)
 - [x] CenterSolver leftoverC=0 on random 4×4 (measured 2026-09-10 + reconfirmed 2026-09-11)
-- [ ] EdgePairing leftoverE=0 on random 4×4 (last measured leftoverE=7 on 2026-09-11; priority)
+- [ ] EdgePairing leftoverE=0 on random 4×4 (commutator rewrite on `play-store-readiness`; **verify** with desktop_harness 4 10 — do not assume 0)
+- [x] Play Billing scaffold (`premium_unlock`) + PremiumStore free-tier gate (this branch)
+- [x] MainActivity size chips / paywall / restore purchases UX (this branch)
 - [ ] Perfect offline 3×3 pruning DBs
-- [ ] Production signed APK + verified native .so
-- [ ] Adaptive launcher icons
+- [x] Release Gradle path + CI assemble/bundle + `.so` check (signed upload still **manual** keystore)
+- [x] Adaptive launcher icons (anydpi-v26 + vector fg/bg/mono)
 - [ ] replaySolved > 0 on 4×4 (blocked on workSolved; SiGN short selftest already passes)
 - [ ] Per-cell targeted commutators (owning face + orthogonal slice)
 
@@ -150,8 +153,8 @@ Last desktop 4×4 × 1 (2026-09-11):
 - leftoverC=0 leftoverE=7
 - centers 151 / edges 256 → final 115 OBTM (within U=501, target Ucas=288)
 
-1. Replace EdgePairing::pairOne freeslice RUR' with single-depth wing 8-move commutator (A B A' B' where B is inner slice at exact unpaired depth).
-2. Post-pairAll leftover repair: per-edge depth-specific commutators that respect solid bitset.
+1. ~~Replace EdgePairing::pairOne freeslice RUR' with single-depth wing 8-move commutator~~ (landed on `play-store-readiness` — **measure leftoverE**).
+2. ~~Post-pairAll leftover repair~~ (`repairLeftovers` up to 24 rounds — **verify**).
 3. After leftoverE=0 on ≥3 trials: confirm workSolved + replaySolved + measure OBTM vs Ucas 288 / community 54.
 4. Surface leftover + workSolved in Android UI only after real solves.
 5. 3×3 dense pruning DBs toward proven 20.

@@ -13,9 +13,11 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("boolean", "DEBUG_PREMIUM", "false")
 
         externalNativeBuild {
             cmake {
@@ -24,18 +26,47 @@ android {
             }
         }
 
+        // Prefer arm ABIs for smaller Play artifacts (drop x86/x86_64 emulators).
         ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+        }
+    }
+
+    signingConfigs {
+        // Optional — do not fail the build when keystore props are absent.
+        val keystoreFile = project.findProperty("KEYSTORE_FILE") as String?
+        val keystorePassword = project.findProperty("KEYSTORE_PASSWORD") as String?
+        val keyAlias = project.findProperty("KEY_ALIAS") as String?
+        val keyPassword = project.findProperty("KEY_PASSWORD") as String?
+        if (!keystoreFile.isNullOrBlank() &&
+            !keystorePassword.isNullOrBlank() &&
+            !keyAlias.isNullOrBlank() &&
+            !keyPassword.isNullOrBlank()
+        ) {
+            create("release") {
+                storeFile = file(keystoreFile)
+                storePassword = keystorePassword
+                this.keyAlias = keyAlias
+                this.keyPassword = keyPassword
+            }
         }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfigs.findByName("release")?.let { signingConfig = it }
+        }
+        debug {
+            // Optional local premium bypass for UI testing:
+            // ./gradlew assembleDebug -PDEBUG_PREMIUM=true
+            val debugPremium = (project.findProperty("DEBUG_PREMIUM") as String?) == "true"
+            buildConfigField("boolean", "DEBUG_PREMIUM", if (debugPremium) "true" else "false")
         }
     }
 
@@ -50,6 +81,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     externalNativeBuild {
@@ -60,6 +92,7 @@ android {
     }
 }
 
+// Play prefers AAB via: ./gradlew bundleRelease
 dependencies {
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
@@ -70,6 +103,8 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
+
+    implementation("com.android.billingclient:billing-ktx:7.1.1")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
