@@ -61,18 +61,27 @@ static bool wingColors(const Cube& work, int edgeIndex, int slot, Color& a, Colo
     return true;
 }
 
+static bool validEdgeColors(Color a, Color b) {
+    if (a == b) return false;
+    const int fa = static_cast<int>(a);
+    const int fb = static_cast<int>(b);
+    if ((fa ^ 1) == fb) return false;
+    return true;
+}
+
+// Reduction pairing: wings form a solid dedge when they share the same
+// color pair (floating OK). Home-face placement is the 3x3 stage's job.
 int EdgePairing::pairedWings(const Cube& work, int edgeIndex) {
     const int n = work.size();
     if (n < 4) return 0;
-    int f1, f2;
-    edgeFaces(edgeIndex, f1, f2);
-    const Color c1 = static_cast<Color>(f1);
-    const Color c2 = static_cast<Color>(f2);
-    int paired = 0;
-    for (int slot = 1; slot <= n - 2; ++slot) {
+    Color a0 = Color::U, b0 = Color::U;
+    if (!wingColors(work, edgeIndex, 1, a0, b0)) return 0;
+    if (!validEdgeColors(a0, b0)) return 0;
+    int paired = 1;
+    for (int slot = 2; slot <= n - 2; ++slot) {
         Color a = Color::U, b = Color::U;
         if (!wingColors(work, edgeIndex, slot, a, b)) continue;
-        if (a == c1 && b == c2) ++paired;
+        if (a == a0 && b == b0) ++paired;
     }
     return paired;
 }
@@ -149,6 +158,15 @@ static void appendCommutator(int aFace, int aDepth, int aTurns,
     out.push_back({mB, mA, inverse(mB), inverse(mA)});
 }
 
+static std::vector<Move> classicWingCycle() {
+    return {
+        Move{R, 1, 2}, Move{B, 0, 2}, Move{U, 0, 2}, Move{L, 1, 1},
+        Move{U, 0, 2}, Move{R, 1, -1}, Move{U, 0, 2}, Move{R, 1, 1},
+        Move{U, 0, 2}, Move{F, 0, 2}, Move{R, 1, 1}, Move{F, 0, 2},
+        Move{L, 1, -1}, Move{B, 0, 2}, Move{R, 1, 2}
+    };
+}
+
 static void collectCandidates(int n, std::vector<std::vector<Move>>& out) {
     static const int kFaces[6] = {U, D, F, B, L, R};
     const int maxSlice = std::max(1, n / 2);
@@ -190,19 +208,34 @@ static void collectCandidates(int n, std::vector<std::vector<Move>>& out) {
     }
 
     if (n == 4) {
-        out.push_back({
-            Move{R, 1, 2}, Move{B, 0, 2}, Move{U, 0, 2}, Move{L, 1, 1},
-            Move{U, 0, 2}, Move{R, 1, -1}, Move{U, 0, 2}, Move{R, 1, 1},
-            Move{U, 0, 2}, Move{F, 0, 2}, Move{R, 1, 1}, Move{F, 0, 2},
-            Move{L, 1, -1}, Move{B, 0, 2}, Move{R, 1, 2}
-        });
-        const auto base = out.back();
+        const auto base = classicWingCycle();
+        out.push_back(base);
         for (int xf : kFaces) {
             for (int xt : {1, -1, 2}) {
                 Move mX{xf, 0, xt};
                 std::vector<Move> seq = {mX};
                 seq.insert(seq.end(), base.begin(), base.end());
                 seq.push_back(inverse(mX));
+                out.push_back(seq);
+                for (int yf : kFaces) {
+                    if (yf == xf) continue;
+                    for (int yt : {1, -1, 2}) {
+                        Move mY{yf, 0, yt};
+                        std::vector<Move> seq2 = {mX, mY};
+                        seq2.insert(seq2.end(), base.begin(), base.end());
+                        seq2.push_back(inverse(mY));
+                        seq2.push_back(inverse(mX));
+                        out.push_back(std::move(seq2));
+                    }
+                }
+            }
+        }
+        for (int sf : kFaces) {
+            for (int st : {1, -1, 2}) {
+                Move mS{sf, 1, st};
+                std::vector<Move> seq = {mS};
+                seq.insert(seq.end(), base.begin(), base.end());
+                seq.push_back(inverse(mS));
                 out.push_back(std::move(seq));
             }
         }
@@ -443,9 +476,11 @@ static bool improveEdge(Cube& work, int edgeIndex, std::vector<Move>& out,
     const int before = EdgePairing::pairedWings(work, edgeIndex);
     const int scBefore = stageCapLeftover(work);
     const int cBefore = absoluteCenterBad(work);
+    const int allBefore = EdgePairing::leftoverUnpairedWings(work);
 
     bool found = false;
     int bestDelta = 0;
+    int bestAll = allBefore;
     int bestSc = scBefore;
     int bestC = cBefore + (allowCenterDamage ? 64 : 0);
     int bestLen = 999;
@@ -464,16 +499,19 @@ static bool improveEdge(Cube& work, int edgeIndex, std::vector<Move>& out,
             if (c > cBefore + 8) continue;
         }
         const int delta = EdgePairing::pairedWings(probe, edgeIndex) - before;
-        if (delta <= 0) continue;
+        const int allLeft = EdgePairing::leftoverUnpairedWings(probe);
+        if (delta <= 0 && allLeft >= allBefore) continue;
         const int len = static_cast<int>(seq.size());
         const bool better =
-            !found || delta > bestDelta ||
-            (delta == bestDelta && c < bestC) ||
-            (delta == bestDelta && c == bestC && sc < bestSc) ||
-            (delta == bestDelta && c == bestC && sc == bestSc && len < bestLen);
+            !found || allLeft < bestAll ||
+            (allLeft == bestAll && delta > bestDelta) ||
+            (allLeft == bestAll && delta == bestDelta && c < bestC) ||
+            (allLeft == bestAll && delta == bestDelta && c == bestC && sc < bestSc) ||
+            (allLeft == bestAll && delta == bestDelta && c == bestC && sc == bestSc && len < bestLen);
         if (better) {
             found = true;
             bestDelta = delta;
+            bestAll = allLeft;
             bestSc = sc;
             bestC = c;
             bestLen = len;
@@ -499,10 +537,17 @@ static std::vector<Move> pairRemaining(Cube& work, bool allowCenterDamage) {
 
     static const int order[8] = {1, 3, 5, 7, 9, 10, 11, 8};
 
-    for (int pass = 0; pass < 6; ++pass) {
+    for (int pass = 0; pass < 8; ++pass) {
         bool any = false;
         for (int e : order) {
-            for (int attempt = 0; attempt < 32; ++attempt) {
+            for (int attempt = 0; attempt < 48; ++attempt) {
+                if (!improveEdge(work, e, moves, candidates, true, allowCenterDamage)) break;
+                any = true;
+                if (EdgePairing::isSolid(work, e)) break;
+            }
+        }
+        for (int e : kStageEdges) {
+            for (int attempt = 0; attempt < 16; ++attempt) {
                 if (!improveEdge(work, e, moves, candidates, true, allowCenterDamage)) break;
                 any = true;
                 if (EdgePairing::isSolid(work, e)) break;
@@ -522,9 +567,10 @@ static std::vector<Move> pairRemaining(Cube& work, bool allowCenterDamage) {
 static std::vector<Move> restoreCentersHoldEdges(Cube& work) {
     std::vector<Move> out;
     static const int kFaces[6] = {U, D, F, B, L, R};
-    for (int round = 0; round < 48; ++round) {
+    for (int round = 0; round < 64; ++round) {
         const int c0 = absoluteCenterBad(work);
         const int e0 = stageCapLeftover(work);
+        const int all0 = EdgePairing::leftoverUnpairedWings(work);
         if (c0 == 0) break;
         bool found = false;
         int bestC = c0;
@@ -543,7 +589,8 @@ static std::vector<Move> restoreCentersHoldEdges(Cube& work) {
                                 for (const Move& m : seq) probe.apply(m);
                                 const int c = absoluteCenterBad(probe);
                                 const int e = stageCapLeftover(probe);
-                                if (e <= e0 && c < bestC) {
+                                const int all = EdgePairing::leftoverUnpairedWings(probe);
+                                if (e <= e0 && all <= all0 && c < bestC) {
                                     bestC = c;
                                     best = seq;
                                     found = true;
@@ -563,6 +610,55 @@ static std::vector<Move> restoreCentersHoldEdges(Cube& work) {
     return out;
 }
 
+static std::vector<Move> finishFloatingPairsStrict(Cube& work) {
+    std::vector<Move> moves;
+    if (stageCapLeftover(work) > 0) return moves;
+    std::vector<std::vector<Move>> candidates;
+    collectCandidates(work.size(), candidates);
+    std::stable_sort(candidates.begin(), candidates.end(),
+                     [](const std::vector<Move>& a, const std::vector<Move>& b) {
+                         return a.size() < b.size();
+                     });
+
+    for (int round = 0; round < 64; ++round) {
+        if (EdgePairing::leftoverUnpairedWings(work) == 0) break;
+        const int c0 = absoluteCenterBad(work);
+        const int sc0 = stageCapLeftover(work);
+        const int all0 = EdgePairing::leftoverUnpairedWings(work);
+        bool found = false;
+        int bestAll = all0;
+        int bestC = c0;
+        int bestLen = 999;
+        std::vector<Move> bestSeq;
+
+        for (const auto& seq : candidates) {
+            Cube probe = work;
+            for (const Move& m : seq) probe.apply(m);
+            if (stageCapLeftover(probe) > sc0) continue;
+            if (absoluteCenterBad(probe) > c0) continue;
+            if (breaksStageSolid(work, probe)) continue;
+            const int all = EdgePairing::leftoverUnpairedWings(probe);
+            if (all >= all0) continue;
+            const int c = absoluteCenterBad(probe);
+            const int len = static_cast<int>(seq.size());
+            if (!found || all < bestAll || (all == bestAll && c < bestC) ||
+                (all == bestAll && c == bestC && len < bestLen)) {
+                found = true;
+                bestAll = all;
+                bestC = c;
+                bestLen = len;
+                bestSeq = seq;
+            }
+        }
+        if (!found) break;
+        for (const Move& m : bestSeq) {
+            work.apply(m);
+            moves.push_back(m);
+        }
+    }
+    return moves;
+}
+
 std::vector<Move> EdgePairing::pairOne(Cube& work, int edgeIndex,
                                        const std::bitset<12>& /*solid*/) {
     std::vector<Move> moves;
@@ -580,13 +676,11 @@ std::vector<Move> EdgePairing::pairAll(Cube& work) {
     std::vector<Move> solution;
     if (work.size() < 4) return solution;
 
-    // Phase 1: center-safe pairing.
     auto stage = solveStageCapEdges(work, false);
     solution.insert(solution.end(), stage.begin(), stage.end());
     auto rest = pairRemaining(work, false);
     solution.insert(solution.end(), rest.begin(), rest.end());
 
-    // Phase 2: if leftoverE remains, allow limited center damage to finish edges.
     if (stageCapLeftover(work) > 0) {
         auto stage2 = solveStageCapEdges(work, true);
         solution.insert(solution.end(), stage2.begin(), stage2.end());
@@ -598,10 +692,18 @@ std::vector<Move> EdgePairing::pairAll(Cube& work) {
         }
     }
 
-    // Phase 3: restore absolute centers without worsening leftoverE.
     if (absoluteCenterBad(work) > 0) {
         auto restore = restoreCentersHoldEdges(work);
         solution.insert(solution.end(), restore.begin(), restore.end());
+    }
+
+    if (EdgePairing::leftoverUnpairedWings(work) > 0) {
+        auto fin = finishFloatingPairsStrict(work);
+        solution.insert(solution.end(), fin.begin(), fin.end());
+        if (absoluteCenterBad(work) > 0) {
+            auto restore2 = restoreCentersHoldEdges(work);
+            solution.insert(solution.end(), restore2.begin(), restore2.end());
+        }
     }
     return solution;
 }
