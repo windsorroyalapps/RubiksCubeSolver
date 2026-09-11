@@ -113,6 +113,18 @@ static int stageCapLeftover(const Cube& work) {
     return bad;
 }
 
+static int absoluteCenterBad(const Cube& work) {
+    const int n = work.size();
+    int bad = 0;
+    for (int f = 0; f < 6; ++f) {
+        const Color want = static_cast<Color>(f);
+        for (int r = 1; r < n - 1; ++r)
+            for (int c = 1; c < n - 1; ++c)
+                if (work.get(f, r, c) != want) ++bad;
+    }
+    return bad;
+}
+
 static int totalPairedAll(const Cube& work) {
     int s = 0;
     for (int e = 0; e < 12; ++e) s += EdgePairing::pairedWings(work, e);
@@ -147,6 +159,7 @@ static void collectCandidates(int n, std::vector<std::vector<Move>>& out) {
     static const int kFaces[6] = {U, D, F, B, L, R};
     const int maxSlice = std::max(1, n / 2);
 
+    // Outer + slice commutators (often center-safe when net absC checked).
     for (int sliceFace : kFaces) {
         for (int depth = 1; depth < maxSlice; ++depth) {
             for (int outerFace : kFaces) {
@@ -158,6 +171,7 @@ static void collectCandidates(int n, std::vector<std::vector<Move>>& out) {
         }
     }
 
+    // Slice-slice commutators.
     for (int aFace : kFaces) {
         for (int bFace : kFaces) {
             if (aFace == bFace || sameAxisOpposite(aFace, bFace)) continue;
@@ -169,21 +183,24 @@ static void collectCandidates(int n, std::vector<std::vector<Move>>& out) {
         }
     }
 
-    const size_t baseLimit = std::min(out.size(), size_t{64});
-    for (size_t i = 0; i < baseLimit; ++i) {
-        if (out[i].size() != 4) continue;
-        const auto comm = out[i];
-        for (int xf : kFaces) {
-            for (int xt : {1, -1, 2}) {
-                Move mX{xf, 0, xt};
-                std::vector<Move> seq = {mX};
-                seq.insert(seq.end(), comm.begin(), comm.end());
-                seq.push_back(inverse(mX));
-                out.push_back(std::move(seq));
+    // Doubled slice (180) commutators — often preserve absolute centers.
+    for (int sliceFace : kFaces) {
+        for (int depth = 1; depth < maxSlice; ++depth) {
+            for (int outerFace : kFaces) {
+                if (outerFace == sliceFace || sameAxisOpposite(outerFace, sliceFace)) continue;
+                for (int ot : {1, -1, 2}) {
+                    appendCommutator(outerFace, 0, ot, sliceFace, depth, 2, out);
+                    // [slice180, outer] twice (8-move) for wing double-swap patterns
+                    Move mO{outerFace, 0, ot};
+                    Move mS{sliceFace, depth, 2};
+                    std::vector<Move> twice = {mS, mO, mS, inverse(mO), mS, mO, mS, inverse(mO)};
+                    out.push_back(twice);
+                }
             }
         }
     }
 
+    // Wide-turn style: (outer+slice) as unit conjugated by outer — wing 3-cycles.
     for (int face : kFaces) {
         for (int depth = 1; depth < maxSlice; ++depth) {
             for (int turns : {1, -1, 2}) {
@@ -195,8 +212,31 @@ static void collectCandidates(int n, std::vector<std::vector<Move>>& out) {
                         Move mO{other, 0, ot};
                         out.push_back({w0, w1, mO, inverse(w0), inverse(w1), inverse(mO)});
                         out.push_back({mO, w0, w1, inverse(mO), inverse(w0), inverse(w1)});
+                        // Rw U' Lw' U Rw' U' Lw U style (partial)
+                        Move w0i = inverse(w0);
+                        Move w1i = inverse(w1);
+                        int oppFace = face ^ 1;
+                        Move lw0{oppFace, 0, turns};
+                        Move lw1{oppFace, depth, turns};
+                        out.push_back({w0, w1, mO, inverse(lw0), inverse(lw1), inverse(mO),
+                                       inverse(w0), inverse(w1), mO, lw0, lw1, inverse(mO)});
                     }
                 }
+            }
+        }
+    }
+
+    const size_t baseLimit = std::min(out.size(), size_t{96});
+    for (size_t i = 0; i < baseLimit; ++i) {
+        if (out[i].size() != 4) continue;
+        const auto comm = out[i];
+        for (int xf : kFaces) {
+            for (int xt : {1, -1, 2}) {
+                Move mX{xf, 0, xt};
+                std::vector<Move> seq = {mX};
+                seq.insert(seq.end(), comm.begin(), comm.end());
+                seq.push_back(inverse(mX));
+                out.push_back(std::move(seq));
             }
         }
     }
@@ -215,9 +255,11 @@ static bool improveStageCap(Cube& work, std::vector<Move>& out,
     if (scBefore == 0) return false;
     const int solidBefore = stageSolidCount(work);
     const int pairedBefore = totalPairedAll(work);
+    const int cBefore = absoluteCenterBad(work);
 
     bool found = false;
     int bestSc = scBefore;
+    int bestC = cBefore;
     int bestSolid = solidBefore;
     int bestPaired = pairedBefore;
     int bestLen = 999;
@@ -228,22 +270,28 @@ static bool improveStageCap(Cube& work, std::vector<Move>& out,
         Cube probe = work;
         for (const Move& m : seq) probe.apply(m);
         if (breaksStageSolid(work, probe)) continue;
+        const int c = absoluteCenterBad(probe);
+        // Never worsen absolute centers — root blocker for workSolved.
+        if (c > cBefore) continue;
         const int sc = stageCapLeftover(probe);
         if (sc > scBefore) continue;
         const int sol = stageSolidCount(probe);
         const int paired = totalPairedAll(probe);
         const int len = static_cast<int>(seq.size());
-        if (sc == scBefore && sol <= solidBefore && paired <= pairedBefore) continue;
+        if (sc == scBefore && c >= cBefore && sol <= solidBefore && paired <= pairedBefore)
+            continue;
 
         const bool better =
             !found ||
             sc < bestSc ||
-            (sc == bestSc && sol > bestSolid) ||
-            (sc == bestSc && sol == bestSolid && paired > bestPaired) ||
-            (sc == bestSc && sol == bestSolid && paired == bestPaired && len < bestLen);
+            (sc == bestSc && c < bestC) ||
+            (sc == bestSc && c == bestC && sol > bestSolid) ||
+            (sc == bestSc && c == bestC && sol == bestSolid && paired > bestPaired) ||
+            (sc == bestSc && c == bestC && sol == bestSolid && paired == bestPaired && len < bestLen);
         if (better) {
             found = true;
             bestSc = sc;
+            bestC = c;
             bestSolid = sol;
             bestPaired = paired;
             bestLen = len;
@@ -261,17 +309,20 @@ static bool improveStageCap(Cube& work, std::vector<Move>& out,
 static bool bfsStageCap(Cube& work, std::vector<Move>& out, int maxDepth, size_t nodeCap) {
     const int sc0 = stageCapLeftover(work);
     if (sc0 == 0) return false;
+    const int c0 = absoluteCenterBad(work);
 
     static const int kFaces[6] = {U, D, F, B, L, R};
     const int n = work.size();
     const int maxSlice = std::max(1, n / 2);
     std::vector<Move> gens;
+    // Prefer outer gens first (preserve abs centers), then slices.
     for (int f : kFaces)
-        for (int t : {1, -1, 2}) {
+        for (int t : {1, -1, 2})
             gens.push_back(Move{f, 0, t});
+    for (int f : kFaces)
+        for (int t : {1, -1, 2})
             for (int d = 1; d < maxSlice; ++d)
                 gens.push_back(Move{f, d, t});
-        }
 
     struct Node {
         Cube cube;
@@ -281,18 +332,24 @@ static bool bfsStageCap(Cube& work, std::vector<Move>& out, int maxDepth, size_t
     q.push({work, {}});
 
     auto keyOf = [&](const Cube& c) -> uint64_t {
-        uint64_t k = 0;
-        int bit = 0;
-        auto put = [&](Color col) {
-            k ^= uint64_t(static_cast<unsigned>(col) + 1) * 0x9e3779b97f4a7c15ULL
-                 << (bit % 57);
-            bit += 3;
+        uint64_t k = 1469598103934665603ULL;
+        auto feed = [&](unsigned v) {
+            k ^= static_cast<uint64_t>(v) + 0x9e3779b97f4a7c15ULL;
+            k *= 1099511628211ULL;
         };
+        for (int f = 0; f < 6; ++f)
+            for (int r = 1; r < n - 1; ++r)
+                for (int col = 1; col < n - 1; ++col)
+                    feed(static_cast<unsigned>(c.get(f, r, col)));
         for (int i = 1; i < n - 1; ++i) {
-            put(c.get(U, n - 1, i)); put(c.get(F, 0, i));
-            put(c.get(U, 0, i)); put(c.get(B, 0, i));
-            put(c.get(D, 0, i)); put(c.get(F, n - 1, i));
-            put(c.get(D, n - 1, i)); put(c.get(B, n - 1, i));
+            feed(static_cast<unsigned>(c.get(U, n - 1, i)));
+            feed(static_cast<unsigned>(c.get(F, 0, i)));
+            feed(static_cast<unsigned>(c.get(U, 0, i)));
+            feed(static_cast<unsigned>(c.get(B, 0, i)));
+            feed(static_cast<unsigned>(c.get(D, 0, i)));
+            feed(static_cast<unsigned>(c.get(F, n - 1, i)));
+            feed(static_cast<unsigned>(c.get(D, n - 1, i)));
+            feed(static_cast<unsigned>(c.get(B, n - 1, i)));
         }
         return k;
     };
@@ -301,6 +358,7 @@ static bool bfsStageCap(Cube& work, std::vector<Move>& out, int maxDepth, size_t
     seen.insert(keyOf(work));
     size_t nodes = 0;
     int bestSc = sc0;
+    int bestC = c0;
     std::vector<Move> bestPath;
 
     while (!q.empty() && nodes < nodeCap) {
@@ -308,10 +366,12 @@ static bool bfsStageCap(Cube& work, std::vector<Move>& out, int maxDepth, size_t
         q.pop();
         ++nodes;
         const int sc = stageCapLeftover(cur.cube);
-        if (sc < bestSc) {
+        const int c = absoluteCenterBad(cur.cube);
+        if (c <= c0 && (sc < bestSc || (sc == bestSc && c < bestC))) {
             bestSc = sc;
+            bestC = c;
             bestPath = cur.path;
-            if (sc == 0) break;
+            if (sc == 0 && c <= c0) break;
         }
         if (static_cast<int>(cur.path.size()) >= maxDepth) continue;
         const int lastF = cur.path.empty() ? -1 : cur.path.back().face;
@@ -321,6 +381,9 @@ static bool bfsStageCap(Cube& work, std::vector<Move>& out, int maxDepth, size_t
             Cube nxt = cur.cube;
             nxt.apply(m);
             if (breaksStageSolid(cur.cube, nxt) && stageCapLeftover(nxt) >= sc) continue;
+            // Allow tiny mid-path center drift only if start was already dirty.
+            const int cn = absoluteCenterBad(nxt);
+            if (cn > c0 + (c0 == 0 ? 0 : 2)) continue;
             if (stageCapLeftover(nxt) > sc0 + 3) continue;
             const uint64_t k = keyOf(nxt);
             if (seen.count(k)) continue;
@@ -334,6 +397,10 @@ static bool bfsStageCap(Cube& work, std::vector<Move>& out, int maxDepth, size_t
     }
 
     if (bestPath.empty() || bestSc >= sc0) return false;
+    // Final path must not worsen absolute centers.
+    Cube verify = work;
+    for (const Move& m : bestPath) verify.apply(m);
+    if (absoluteCenterBad(verify) > c0) return false;
     for (const Move& m : bestPath) {
         work.apply(m);
         out.push_back(m);
@@ -344,7 +411,7 @@ static bool bfsStageCap(Cube& work, std::vector<Move>& out, int maxDepth, size_t
 static std::vector<Move> solveStageCapEdges(Cube& work) {
     std::vector<Move> moves;
     std::vector<std::vector<Move>> candidates;
-    candidates.reserve(5000);
+    candidates.reserve(8000);
     collectCandidates(work.size(), candidates);
     std::stable_sort(candidates.begin(), candidates.end(),
                      [](const std::vector<Move>& a, const std::vector<Move>& b) {
@@ -369,10 +436,12 @@ static bool improveEdge(Cube& work, int edgeIndex, std::vector<Move>& out,
     if (EdgePairing::isSolid(work, edgeIndex)) return false;
     const int before = EdgePairing::pairedWings(work, edgeIndex);
     const int scBefore = stageCapLeftover(work);
+    const int cBefore = absoluteCenterBad(work);
 
     bool found = false;
     int bestDelta = 0;
     int bestSc = scBefore;
+    int bestC = cBefore;
     int bestLen = 999;
     std::vector<Move> bestSeq;
 
@@ -380,6 +449,8 @@ static bool improveEdge(Cube& work, int edgeIndex, std::vector<Move>& out,
         Cube probe = work;
         for (const Move& m : seq) probe.apply(m);
         if (protectStage && breaksStageSolid(work, probe)) continue;
+        const int c = absoluteCenterBad(probe);
+        if (c > cBefore) continue;
         const int sc = stageCapLeftover(probe);
         if (sc > scBefore) continue;
         const int delta = EdgePairing::pairedWings(probe, edgeIndex) - before;
@@ -387,12 +458,14 @@ static bool improveEdge(Cube& work, int edgeIndex, std::vector<Move>& out,
         const int len = static_cast<int>(seq.size());
         const bool better =
             !found || delta > bestDelta ||
-            (delta == bestDelta && sc < bestSc) ||
-            (delta == bestDelta && sc == bestSc && len < bestLen);
+            (delta == bestDelta && c < bestC) ||
+            (delta == bestDelta && c == bestC && sc < bestSc) ||
+            (delta == bestDelta && c == bestC && sc == bestSc && len < bestLen);
         if (better) {
             found = true;
             bestDelta = delta;
             bestSc = sc;
+            bestC = c;
             bestLen = len;
             bestSeq = seq;
         }
