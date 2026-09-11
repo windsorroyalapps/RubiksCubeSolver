@@ -1,0 +1,51 @@
+name: Desktop harness leftoverE
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [play-store-readiness]
+    paths:
+      - 'native/**'
+      - '.github/workflows/desktop-harness.yml'
+
+jobs:
+  harness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install g++
+        run: sudo apt-get update && sudo apt-get install -y g++
+
+      - name: Build desktop harness
+        run: |
+          mkdir -p artifacts
+          g++ -O2 -std=c++17 -Inative/common -Inative/cfop -Inative/reduction \
+            native/tools/desktop_harness.cpp native/common/Cube.cpp \
+            native/cfop/CFOPSolver.cpp native/cfop/Kociemba.cpp native/cfop/CoordCube.cpp \
+            native/cfop/Pruning.cpp native/cfop/MoveTables.cpp native/cfop/GodsAlgorithm.cpp \
+            native/reduction/ReductionSolver.cpp native/reduction/CenterSolver.cpp \
+            native/reduction/EdgePairing.cpp native/reduction/ParityHandler.cpp \
+            native/reduction/BatchSolver.cpp native/reduction/ClusterScheduler.cpp \
+            native/reduction/BatchGroups.cpp native/reduction/BoundHarness.cpp \
+            native/reduction/ReducedSearch.cpp native/reduction/StageCap.cpp \
+            -o artifacts/rcs_harness
+
+      - name: Run harness 4 10
+        env:
+          RCS_MITM_NODEBUDGET4: "150000"
+          RCS_MITM_DEPTHCAP4: "28"
+          RCS_CENTER_BFS_NODES: "40000"
+          RCS_CENTER_BFS_DEPTH: "7"
+        run: |
+          ./artifacts/rcs_harness 4 10 | tee artifacts/harness-4-10.txt
+          echo "---- leftoverE summary ----"
+          grep -E 'leftoverE|leftoverC|workSolved|replaySolved|notation_selftest' artifacts/harness-4-10.txt || true
+
+      - name: Upload harness log
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-harness-4-10
+          path: artifacts/harness-4-10.txt
+          retention-days: 14
