@@ -116,7 +116,20 @@ std::pair<std::vector<Move>, int> StageCap::capThenRepair(
     if (leftoverCap > leftoverFull) {
         return {raw, leftoverFull};
     }
+
+    // Critical: do NOT drop the tail of raw just because the prefix already
+    // hits stage leftover==0. EdgePairing Phase3/4 (center restore + floating
+    // dedge finish) lives past the Ucas edge budget and must be kept when it
+    // does not worsen stage leftovers and improves absolute centers.
     if (leftoverCap == 0) {
+        if (!centersNotEdges) {
+            const int absFull = absoluteCenterBad(afterFull);
+            const int absCap = absoluteCenterBad(afterCap);
+            if (leftoverFull == 0 && absFull <= absCap) return {raw, 0};
+            if (leftoverFull == 0 && absFull > absCap) return {capped, 0};
+            // Cap reached stage-0 but full raw still has stage leftovers — keep cap.
+            if (leftoverFull > 0) return {capped, 0};
+        }
         return {capped, 0};
     }
 
@@ -124,7 +137,6 @@ std::pair<std::vector<Move>, int> StageCap::capThenRepair(
     Cube afterRepair = afterCap;
     afterRepair.apply(repair);
     const int leftoverRep = measure(afterRepair, centersNotEdges);
-    // Edge repair must not destroy relative OR absolute centers.
     const bool centersOk = centersNotEdges ||
         (StageCap::leftoverCenterCells(afterRepair) <= StageCap::leftoverCenterCells(afterCap) &&
          absoluteCenterBad(afterRepair) <= absoluteCenterBad(afterCap));
@@ -133,7 +145,6 @@ std::pair<std::vector<Move>, int> StageCap::capThenRepair(
         return {capped, leftoverRep};
     }
 
-    // Prefer raw when it keeps better absolute centers on edge stage.
     if (!centersNotEdges) {
         const int absFull = absoluteCenterBad(afterFull);
         const int absCap = absoluteCenterBad(afterCap);
