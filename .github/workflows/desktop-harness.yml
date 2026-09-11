@@ -12,6 +12,10 @@ jobs:
   harness:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     steps:
       - uses: actions/checkout@v4
 
@@ -41,7 +45,7 @@ jobs:
         run: |
           ./artifacts/rcs_harness 4 10 | tee artifacts/harness-4-10.txt
           echo "---- leftoverE summary ----"
-          grep -E 'leftoverE|leftoverC|workSolved|replaySolved|notation_selftest' artifacts/harness-4-10.txt || true
+          grep -E 'leftoverE|leftoverC|workSolved|replaySolved|notation_selftest|avgMitm' artifacts/harness-4-10.txt || true
 
       - name: Upload harness log
         uses: actions/upload-artifact@v4
@@ -49,3 +53,18 @@ jobs:
           name: desktop-harness-4-10
           path: artifacts/harness-4-10.txt
           retention-days: 14
+
+      - name: Comment summary on PR
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SUMMARY=$(grep -E '^(trial=|avgMitm|notation_selftest|n=4 )' artifacts/harness-4-10.txt || true)
+          {
+            echo "## Harness 4 10 (${GITHUB_SHA})"
+            echo
+            echo '```'
+            echo "$SUMMARY"
+            echo '```'
+          } > /tmp/harness_comment.md
+          gh api repos/${{ github.repository }}/issues/1/comments -F body=@/tmp/harness_comment.md || true
