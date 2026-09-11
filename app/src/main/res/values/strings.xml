@@ -1,4 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">RubiksCubeSolver</string>
+    <string name="app_name">Cube Solver</string>
+    <string name="app_tagline">Offline Rubik’s Cube solver</string>
+    <string name="onboarding_subtitle">Free 3×3 · Premium unlocks 4×4 &amp; 5×5</string>
+    <string name="premium_required">Larger cubes need Premium. Unlock once via Google Play.</string>
+    <string name="unlock_premium">Unlock Premium</string>
+    <string name="restore_purchases">Restore purchases</string>
+    <string name="premium_active">Premium active</string>
+    <string name="scramble">Scramble</string>
+    <string name="scramble_tperm">Scramble (T-perm)</string>
+    <string name="solve">Solve</string>
+    <string name="reset">Reset</string>
 </resources>
