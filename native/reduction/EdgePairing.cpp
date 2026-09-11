@@ -14,6 +14,99 @@ static void edgeFaces(int edgeIndex, int& f1, int& f2) {
     f2 = map[edgeIndex][1];
 }
 
+static Move inverse(const Move& m) {
+    return Move{m.face, m.depth, -m.turns};
+}
+
+/** Apply seq; keep if pairedWings(edge) increases, else undo via inverses. */
+static bool trySequence(Cube& work, int edgeIndex, const std::vector<Move>& seq,
+                        std::vector<Move>& out) {
+    if (seq.empty()) return false;
+    const int before = EdgePairing::pairedWings(work, edgeIndex);
+    for (const Move& m : seq)
+        work.apply(m);
+    const int after = EdgePairing::pairedWings(work, edgeIndex);
+    if (after > before) {
+        out.insert(out.end(), seq.begin(), seq.end());
+        return true;
+    }
+    for (int i = static_cast<int>(seq.size()) - 1; i >= 0; --i)
+        work.apply(inverse(seq[static_cast<size_t>(i)]));
+    return false;
+}
+
+static bool sameAxisOpposite(int f1, int f2) {
+    return (f1 ^ 1) == f2 && (f1 / 2) == (f2 / 2);
+}
+
+/**
+ * Wing commutator variants: A = outer face turn (depth 0), B = inner slice
+ * at exact depth d. Emit A B A' B' and B A B' A' (4-move), plus 8-move
+ * doubles and conjugated X A B A' B' X' A Ap forms that stay 8 moves.
+ */
+static void appendWingCommutators(int aFace, int bFace, int depth, int turns,
+                                  std::vector<std::vector<Move>>& out) {
+    const Move A{aFace, 0, turns};
+    const Move B{bFace, depth, turns};
+    const Move Ap = inverse(A);
+    const Move Bp = inverse(B);
+
+    // 4-move commutators: A B A' B' and B A B' A'
+    out.push_back({A, B, Ap, Bp});
+    out.push_back({B, A, Bp, Ap});
+
+    // 8-move: double application of each 4-move form
+    out.push_back({A, B, Ap, Bp, A, B, Ap, Bp});
+    out.push_back({B, A, Bp, Ap, B, A, Bp, Ap});
+
+    // 8-move interleaved: B A C A' B' A C' A'  (slice + two outers)
+    // and conjugate X A B A' B' X' (6) kept as a lighter option.
+    static const int kFaces[6] = {U, D, F, B, L, R};
+    for (int cFace : kFaces) {
+        if (cFace == aFace || cFace == bFace) continue;
+        if (sameAxisOpposite(cFace, aFace) || sameAxisOpposite(cFace, bFace)) continue;
+        const Move C{cFace, 0, turns};
+        const Move Cp = inverse(C);
+        out.push_back({B, A, C, Ap, Bp, A, Cp, Ap});
+        out.push_back({A, B, C, Bp, Ap, B, Cp, Bp});
+        const Move X{cFace, 0, 1};
+        const Move Xp = inverse(X);
+        out.push_back({X, A, B, Ap, Bp, Xp});
+        break; // one helper face per (A,B,turns)
+    }
+}
+
+static std::vector<std::vector<Move>> wingCommutatorsForDepth(int n, int depth,
+                                                              int preferA,
+                                                              int preferB) {
+    std::vector<std::vector<Move>> variants;
+    if (depth < 1 || depth > n - 2) return variants;
+
+    auto addPair = [&](int aFace, int bFace) {
+        for (int turns : {1, -1, 2})
+            appendWingCommutators(aFace, bFace, depth, turns, variants);
+    };
+
+    // Prefer edge-local faces first
+    if (preferA >= 0 && preferB >= 0) {
+        addPair(preferA, preferB);
+        addPair(preferB, preferA);
+    }
+
+    static const int kOuter[6] = {U, D, F, B, L, R};
+    for (int aFace : kOuter) {
+        for (int bFace : kOuter) {
+            if (aFace == bFace) continue;
+            if (sameAxisOpposite(aFace, bFace)) continue;
+            if ((aFace == preferA && bFace == preferB) ||
+                (aFace == preferB && bFace == preferA))
+                continue;
+            addPair(aFace, bFace);
+        }
+    }
+    return variants;
+}
+
 int EdgePairing::pairedWings(const Cube& work, int edgeIndex) {
     int n = work.size();
     if (n < 4) return 0;
@@ -93,33 +186,76 @@ std::vector<Move> EdgePairing::pairOne(Cube& work, int edgeIndex,
     if (solid.test(edgeIndex) || isSolid(work, edgeIndex))
         return moves;
 
-    auto append = [&](Move m) {
-        work.apply(m);
-        moves.push_back(m);
-    };
+    int ef1, ef2;
+    edgeFaces(edgeIndex, ef1, ef2);
 
-    int maxWing = n - 2;
-    int depthSpan = std::max(1, n / 2 - 1);
-    for (int wing = 0; wing < maxWing; ++wing) {
+    for (int depth = 1; depth <= n - 2; ++depth) {
         if (isSolid(work, edgeIndex)) break;
-
-        int depth = 1 + (wing % depthSpan);
-
-        append(Move{R, 0, 1});
-        append(Move{U, 0, 1});
-        append(Move{R, 0, -1});
-
-        append(Move{F, depth, 1});
-        append(Move{U, 0, 2});
-        append(Move{F, depth, -1});
-
-        append(Move{R, 0, 1});
-        append(Move{U, 0, -1});
-        append(Move{R, 0, -1});
+        auto variants = wingCommutatorsForDepth(n, depth, ef1, ef2);
+        // Prefer shorter sequences first
+        std::stable_sort(variants.begin(), variants.end(),
+                         [](const std::vector<Move>& a, const std::vector<Move>& b) {
+                             return a.size() < b.size();
+                         });
+        for (const auto& seq : variants) {
+            if (isSolid(work, edgeIndex)) break;
+            trySequence(work, edgeIndex, seq, moves);
+        }
     }
 
-    if (edgeIndex != kBufferEdge)
-        append(Move{U, 0, 1});
+    if (!isSolid(work, edgeIndex) && edgeIndex != kBufferEdge) {
+        Move u{U, 0, 1};
+        work.apply(u);
+        moves.push_back(u);
+    }
+    return moves;
+}
+
+static std::vector<Move> repairLeftovers(Cube& work, std::bitset<12>& solid) {
+    std::vector<Move> moves;
+    const int n = work.size();
+    if (n < 4) return moves;
+
+    static const int order[12] = {
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0
+    };
+
+    for (int round = 0; round < 24; ++round) {
+        const int beforeLeftover = EdgePairing::leftoverUnpairedWings(work);
+        if (beforeLeftover == 0) break;
+
+        bool progress = false;
+        for (int i = 0; i < 12; ++i) {
+            const int e = order[i];
+            if (EdgePairing::isSolid(work, e)) {
+                solid.set(e);
+                continue;
+            }
+
+            int ef1, ef2;
+            edgeFaces(e, ef1, ef2);
+
+            for (int depth = 1; depth <= n - 2; ++depth) {
+                if (EdgePairing::isSolid(work, e)) break;
+                auto variants = wingCommutatorsForDepth(n, depth, ef1, ef2);
+                std::stable_sort(variants.begin(), variants.end(),
+                                 [](const std::vector<Move>& a, const std::vector<Move>& b) {
+                                     return a.size() < b.size();
+                                 });
+                for (const auto& seq : variants) {
+                    if (EdgePairing::isSolid(work, e)) break;
+                    if (trySequence(work, e, seq, moves))
+                        progress = true;
+                }
+            }
+            if (EdgePairing::isSolid(work, e))
+                solid.set(e);
+        }
+
+        const int afterLeftover = EdgePairing::leftoverUnpairedWings(work);
+        if (!progress || afterLeftover >= beforeLeftover)
+            break;
+    }
     return moves;
 }
 
@@ -149,5 +285,8 @@ std::vector<Move> EdgePairing::pairAll(Cube& work) {
                 solid.set(e);
         }
     }
+
+    auto repair = repairLeftovers(work, solid);
+    solution.insert(solution.end(), repair.begin(), repair.end());
     return solution;
 }
