@@ -60,7 +60,6 @@ static std::vector<Move> makeComm(const Move& a, const Move& b) {
     return {a, b, invertMove(a), invertMove(b)};
 }
 
-// Repair centers without increasing StageCap leftoverE (end-state).
 static std::vector<Move> repairCentersPreserveEdges(Cube& work, int rounds = 12) {
     std::vector<Move> out;
     static const int kFaces[6] = {U, D, F, B, L, R};
@@ -81,7 +80,6 @@ static std::vector<Move> repairCentersPreserveEdges(Cube& work, int rounds = 12)
         if (c0 == 0) return false;
 
         std::vector<Move> gens;
-        // Slice moves first (move centers), then outers that preserve UF/UB/DF/DB often.
         for (int f : kFaces)
             for (int turns : {1, -1, 2})
                 gens.push_back(Move{f, 1, turns});
@@ -93,7 +91,6 @@ static std::vector<Move> repairCentersPreserveEdges(Cube& work, int rounds = 12)
             for (int turns : {1, -1, 2})
                 gens.push_back(Move{f, 0, turns});
 
-        // Also enqueue short face/slice commutators as macro-gens.
         std::vector<std::vector<Move>> macros;
         for (int face : kFaces) {
             const int opp = face ^ 1;
@@ -181,7 +178,6 @@ static std::vector<Move> repairCentersPreserveEdges(Cube& work, int rounds = 12)
                 p.push_back(m);
                 consider(std::move(nxt), std::move(p));
             }
-            // Macro expansions cost 4 path slots conceptually; only at shallow depth.
             if (static_cast<int>(cur.path.size()) + 4 <= maxDepth) {
                 for (const auto& mac : macros) {
                     Cube nxt = cur.cube;
@@ -237,7 +233,6 @@ static std::vector<Move> repairCentersPreserveEdges(Cube& work, int rounds = 12)
                                         found = true;
                                     }
                                 }
-                                // Conjugate by outer: X seq X'
                                 for (int xf : kFaces) {
                                     for (int xt : {1, -1, 2}) {
                                         Move mX{xf, 0, xt};
@@ -284,7 +279,15 @@ static std::vector<Move> repairCentersPreserveEdges(Cube& work, int rounds = 12)
 static Cube extractVirtual3x3(const Cube& big) {
     Cube s(3);
     const int n = big.size();
-    const int wing = 1;
+    // Prefer a solid wing slot; fall back to index 1.
+    int wing = 1;
+    for (int slot = 1; slot <= n - 2; ++slot) {
+        bool ok = true;
+        for (int e = 0; e < 12 && ok; ++e) {
+            if (EdgePairing::pairedWings(big, e) < (n - 2)) { ok = false; break; }
+        }
+        if (ok) { wing = slot; break; }
+    }
     for (int f = 0; f < 6; ++f) {
         s.set(f, 1, 1, static_cast<Color>(f));
         s.set(f, 0, 0, big.get(f, 0, 0));
@@ -347,7 +350,7 @@ static std::vector<Move> outerLayerIda(Cube& work, int maxDepth, int nodeCap) {
 static std::vector<Move> nearSolvedFinish(Cube& work, int maxDepth, int nodeCap) {
     if (work.isSolved()) return {};
     const int startBad = faceMismatch(work);
-    if (startBad > 48) return {};
+    if (startBad > 56) return {};
 
     static const int kFaces[6] = {U, D, F, B, L, R};
     std::vector<Move> gens;
@@ -400,12 +403,14 @@ std::vector<Move> ReductionSolver::solveAs3x3(Cube& work) {
 
     std::vector<Move> solution;
     const int cLeft = absoluteCenterBad(work);
-    const int eLeft = StageCap::leftoverUnpairedWings(work);
-    const bool reducedEnough = (cLeft == 0 && eLeft == 0);
+    const int eStage = StageCap::leftoverUnpairedWings(work);
+    const int eAll = EdgePairing::leftoverUnpairedWings(work);
+    // Virtual 3x3 requires ALL 12 dedges paired, not only StageCap's 4 strips.
+    const bool reducedEnough = (cLeft == 0 && eAll == 0);
 
     if (reducedEnough) {
         Cube small = extractVirtual3x3(work);
-        if (faceMismatch(small) <= 40) {
+        if (faceMismatch(small) <= 48) {
             auto sol = Kociemba::solve(small);
             if (sol.empty()) sol = CFOPSolver::solve(small);
             if (!sol.empty()) {
@@ -422,15 +427,15 @@ std::vector<Move> ReductionSolver::solveAs3x3(Cube& work) {
     if (work.isSolved()) return solution;
 
     if (reducedEnough) {
-        auto rest = outerLayerIda(work, 12, 400000);
+        auto rest = outerLayerIda(work, 14, 500000);
         if (!rest.empty())
             solution.insert(solution.end(), rest.begin(), rest.end());
     }
 
     if (!work.isSolved()) {
         const int mm = faceMismatch(work);
-        if (eLeft <= 1 && cLeft <= 8 && mm <= 48) {
-            auto fin = nearSolvedFinish(work, 14, 600000);
+        if (eStage <= 1 && cLeft <= 4 && mm <= 56) {
+            auto fin = nearSolvedFinish(work, 16, 800000);
             if (!fin.empty())
                 solution.insert(solution.end(), fin.begin(), fin.end());
         }
@@ -460,7 +465,6 @@ std::vector<Move> ReductionSolver::solve(const Cube& cube) {
     append(solveCenters(work), &stages.centers, &stages.centersObtm);
     append(pairEdges(work), &stages.edges, &stages.edgesObtm);
 
-    // Repair centers while holding leftoverE (outer 3x3 cannot fix centers).
     {
         auto repaired = repairCentersPreserveEdges(work, 14);
         if (!repaired.empty()) {
@@ -473,7 +477,8 @@ std::vector<Move> ReductionSolver::solve(const Cube& cube) {
     if (work.size() % 2 == 0) {
         const int cLeft = absoluteCenterBad(work);
         const int eLeft = StageCap::leftoverUnpairedWings(work);
-        if (cLeft == 0 && eLeft <= 2) {
+        const int eAll = EdgePairing::leftoverUnpairedWings(work);
+        if (cLeft == 0 && eLeft == 0 && eAll == 0) {
             append(ParityHandler::fix(work), &stages.parity, &stages.parityObtm);
         }
     }
@@ -495,7 +500,6 @@ std::vector<Move> ReductionSolver::solve(const Cube& cube) {
         }
     }
 
-    // Extra absolute-center push whenever stage edges are held (no 8-cell cap).
     if (StageCap::leftoverUnpairedWings(work) == 0 && absoluteCenterBad(work) > 0) {
         auto more = repairCentersPreserveEdges(work, 16);
         if (!more.empty()) {
@@ -507,12 +511,20 @@ std::vector<Move> ReductionSolver::solve(const Cube& cube) {
 
     append(solveAs3x3(work), &stages.reduce3x3, &stages.reduce3x3Obtm);
 
+    // Last-ditch finish when nearly reduced.
+    if (!work.isSolved() && absoluteCenterBad(work) == 0 &&
+        EdgePairing::leftoverUnpairedWings(work) == 0) {
+        auto fin = nearSolvedFinish(work, 18, 1000000);
+        if (!fin.empty()) {
+            append(fin, &stages.reduce3x3, &stages.reduce3x3Obtm);
+        }
+    }
+
     auto optimized = BatchSolver::optimize(solution);
     if (work.isSolved()) {
         Cube verify = cube;
         verify.apply(optimized);
         if (!verify.isSolved()) {
-            // Fall back to unoptimized (should already be compressed-safe).
             optimized = BatchSolver::compress(solution);
             verify = cube;
             verify.apply(optimized);
@@ -523,6 +535,8 @@ std::vector<Move> ReductionSolver::solve(const Cube& cube) {
     stages.afterBatch = BoundHarness::count(solution);
 
     g_lastWorkSolved = work.isSolved();
+    g_lastLeftoverCenters = absoluteCenterBad(work);
+    g_lastLeftoverWings = StageCap::leftoverUnpairedWings(work);
     g_lastBoundReport = BoundHarness::report(cube.size(), stages, solution);
     return solution;
 }
