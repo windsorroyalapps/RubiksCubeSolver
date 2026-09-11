@@ -103,7 +103,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-09-11)
+## Status (2026-09-12)
 
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
@@ -131,7 +131,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 - [x] **centerOrbitBfs n=4 default 40k nodes / depth 7 + env overrides + multi-round** (2026-09-09)
 - [x] **EdgePairing::leftoverUnpairedWings + pairAll stop** (2026-09-09)
 - [x] CenterSolver leftoverC=0 on random 4×4 (measured 2026-09-10 + reconfirmed 2026-09-11)
-- [ ] EdgePairing leftoverE=0 on random 4×4 (last measured leftoverE=7 on 2026-09-11; priority)
+- [ ] EdgePairing leftoverE=0 on random 4×4 (last measured leftoverE=7 on 2026-09-11; **priority gate**)
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK + verified native .so
 - [ ] Adaptive launcher icons
@@ -140,9 +140,9 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Next steps / approaches to try next time (2026-09-11)
+## Next steps / approaches to try next time (2026-09-12 Teegan)
 
-Automation session 2026-09-11: desktop_harness 4×1 reports **leftoverC=0**, leftoverE=7, final OBTM=115, workSolved=no. Exact integer g(n) for n≥4 remains open. Do not invent g(4).
+Automation session 2026-09-12: docs refreshed, leftoverE remains the sole completeness gate. Exact integer g(n) for n≥4 remains open. Do not invent g(4).
 
 Last desktop 4×4 × 1 (2026-09-11):
 - notation_selftest=pass
