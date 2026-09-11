@@ -10,6 +10,7 @@
 #include "../cfop/Kociemba.h"
 
 #include <cstdint>
+#include <cstdlib>
 #include <functional>
 #include <queue>
 #include <set>
@@ -55,10 +56,24 @@ static Move invertMove(const Move& m) {
     return Move{m.face, m.depth, m.turns == 2 ? 2 : -m.turns};
 }
 
+static std::vector<Move> makeComm(const Move& a, const Move& b) {
+    return {a, b, invertMove(a), invertMove(b)};
+}
+
 // Repair centers without increasing StageCap leftoverE (end-state).
-static std::vector<Move> repairCentersPreserveEdges(Cube& work, int rounds = 10) {
+static std::vector<Move> repairCentersPreserveEdges(Cube& work, int rounds = 12) {
     std::vector<Move> out;
     static const int kFaces[6] = {U, D, F, B, L, R};
+
+    auto envInt = [](const char* name, int def) -> int {
+        if (const char* e = std::getenv(name)) {
+            int v = std::atoi(e);
+            if (v > 0) return v;
+        }
+        return def;
+    };
+    const int bfsDepthEnv = envInt("RCS_CENTER_BFS_DEPTH", 7);
+    const int bfsNodesEnv = envInt("RCS_CENTER_BFS_NODES", 40000);
 
     auto bfsOnce = [&](int maxDepth, size_t nodeCap) -> bool {
         const int c0 = absoluteCenterBad(work);
@@ -66,16 +81,34 @@ static std::vector<Move> repairCentersPreserveEdges(Cube& work, int rounds = 10)
         if (c0 == 0) return false;
 
         std::vector<Move> gens;
+        // Slice moves first (move centers), then outers that preserve UF/UB/DF/DB often.
+        for (int f : kFaces)
+            for (int turns : {1, -1, 2})
+                gens.push_back(Move{f, 1, turns});
         for (int turns : {1, -1, 2}) {
             gens.push_back(Move{L, 0, turns});
             gens.push_back(Move{R, 0, turns});
         }
-        for (int f : kFaces)
-            for (int turns : {1, -1, 2})
-                gens.push_back(Move{f, 1, turns});
         for (int f : {U, D, F, B})
             for (int turns : {1, -1, 2})
                 gens.push_back(Move{f, 0, turns});
+
+        // Also enqueue short face/slice commutators as macro-gens.
+        std::vector<std::vector<Move>> macros;
+        for (int face : kFaces) {
+            const int opp = face ^ 1;
+            for (int turns : {1, -1, 2}) {
+                Move ft{face, 0, turns};
+                Move sl{opp, 1, 1};
+                macros.push_back(makeComm(ft, sl));
+                macros.push_back(makeComm(sl, ft));
+                for (int adj : kFaces) {
+                    if (adj == face || adj == opp) continue;
+                    Move sla{adj, 1, 1};
+                    macros.push_back(makeComm(ft, sla));
+                }
+            }
+        }
 
         struct Node {
             Cube cube;
@@ -114,6 +147,18 @@ static std::vector<Move> repairCentersPreserveEdges(Cube& work, int rounds = 10)
         int bestC = c0;
         std::vector<Move> bestPath;
 
+        auto consider = [&](Cube nxt, std::vector<Move> path) {
+            if (StageCap::leftoverUnpairedWings(nxt) > e0 + 2) return;
+            if (absoluteCenterBad(nxt) > c0 + 4) return;
+            const uint64_t k = keyOf(nxt);
+            if (seen.count(k)) return;
+            seen.insert(k);
+            Node nn;
+            nn.cube = std::move(nxt);
+            nn.path = std::move(path);
+            q.push(std::move(nn));
+        };
+
         while (!q.empty() && nodes < nodeCap) {
             Node cur = std::move(q.front());
             q.pop();
@@ -132,16 +177,21 @@ static std::vector<Move> repairCentersPreserveEdges(Cube& work, int rounds = 10)
                 if (m.face == lf && m.depth == ld) continue;
                 Cube nxt = cur.cube;
                 nxt.apply(m);
-                if (StageCap::leftoverUnpairedWings(nxt) > e0 + 4) continue;
-                if (absoluteCenterBad(nxt) > c0 + 3) continue;
-                const uint64_t k = keyOf(nxt);
-                if (seen.count(k)) continue;
-                seen.insert(k);
-                Node nn;
-                nn.cube = std::move(nxt);
-                nn.path = cur.path;
-                nn.path.push_back(m);
-                q.push(std::move(nn));
+                auto p = cur.path;
+                p.push_back(m);
+                consider(std::move(nxt), std::move(p));
+            }
+            // Macro expansions cost 4 path slots conceptually; only at shallow depth.
+            if (static_cast<int>(cur.path.size()) + 4 <= maxDepth) {
+                for (const auto& mac : macros) {
+                    Cube nxt = cur.cube;
+                    auto p = cur.path;
+                    for (const Move& m : mac) {
+                        nxt.apply(m);
+                        p.push_back(m);
+                    }
+                    consider(std::move(nxt), std::move(p));
+                }
             }
         }
 
@@ -169,7 +219,7 @@ static std::vector<Move> repairCentersPreserveEdges(Cube& work, int rounds = 10)
                             for (int bt : {1, -1, 2}) {
                                 Move mA{af, ad, at};
                                 Move mB{bf, bd, bt};
-                                std::vector<Move> seq = {mA, mB, invertMove(mA), invertMove(mB)};
+                                std::vector<Move> seq = makeComm(mA, mB);
                                 for (int rep = 0; rep < 2; ++rep) {
                                     Cube probe = work;
                                     for (const Move& m : seq) probe.apply(m);
@@ -185,6 +235,24 @@ static std::vector<Move> repairCentersPreserveEdges(Cube& work, int rounds = 10)
                                             best.insert(best.end(), seq.begin(), seq.end());
                                         }
                                         found = true;
+                                    }
+                                }
+                                // Conjugate by outer: X seq X'
+                                for (int xf : kFaces) {
+                                    for (int xt : {1, -1, 2}) {
+                                        Move mX{xf, 0, xt};
+                                        std::vector<Move> conj = {mX};
+                                        conj.insert(conj.end(), seq.begin(), seq.end());
+                                        conj.push_back(invertMove(mX));
+                                        Cube probe = work;
+                                        for (const Move& m : conj) probe.apply(m);
+                                        const int c = absoluteCenterBad(probe);
+                                        const int e = StageCap::leftoverUnpairedWings(probe);
+                                        if (e <= e0 && c < bestC) {
+                                            bestC = c;
+                                            best = conj;
+                                            found = true;
+                                        }
                                     }
                                 }
                             }
@@ -204,8 +272,10 @@ static std::vector<Move> repairCentersPreserveEdges(Cube& work, int rounds = 10)
     for (int r = 0; r < rounds; ++r) {
         if (absoluteCenterBad(work) == 0) break;
         if (greedyCommutators()) continue;
-        const int depth = (r < 4) ? 7 : 9;
-        const size_t cap = (r < 4) ? 200000 : 400000;
+        const int depth = (r < 3) ? std::max(bfsDepthEnv, 7) : std::max(bfsDepthEnv + 2, 9);
+        const size_t cap = (r < 3)
+            ? static_cast<size_t>(std::max(bfsNodesEnv, 80000))
+            : static_cast<size_t>(std::max(bfsNodesEnv * 2, 200000));
         if (!bfsOnce(depth, cap)) break;
     }
     return out;
@@ -352,7 +422,7 @@ std::vector<Move> ReductionSolver::solveAs3x3(Cube& work) {
     if (work.isSolved()) return solution;
 
     if (reducedEnough) {
-        auto rest = outerLayerIda(work, 10, 200000);
+        auto rest = outerLayerIda(work, 12, 400000);
         if (!rest.empty())
             solution.insert(solution.end(), rest.begin(), rest.end());
     }
@@ -390,8 +460,9 @@ std::vector<Move> ReductionSolver::solve(const Cube& cube) {
     append(solveCenters(work), &stages.centers, &stages.centersObtm);
     append(pairEdges(work), &stages.edges, &stages.edgesObtm);
 
+    // Repair centers while holding leftoverE (outer 3x3 cannot fix centers).
     {
-        auto repaired = repairCentersPreserveEdges(work);
+        auto repaired = repairCentersPreserveEdges(work, 14);
         if (!repaired.empty()) {
             append(repaired, &stages.centers, &stages.centersObtm);
         }
@@ -424,9 +495,9 @@ std::vector<Move> ReductionSolver::solve(const Cube& cube) {
         }
     }
 
-    if (StageCap::leftoverUnpairedWings(work) == 0 && absoluteCenterBad(work) > 0 &&
-        absoluteCenterBad(work) <= 8) {
-        auto more = repairCentersPreserveEdges(work, 10);
+    // Extra absolute-center push whenever stage edges are held (no 8-cell cap).
+    if (StageCap::leftoverUnpairedWings(work) == 0 && absoluteCenterBad(work) > 0) {
+        auto more = repairCentersPreserveEdges(work, 16);
         if (!more.empty()) {
             append(more, &stages.centers, &stages.centersObtm);
             g_lastLeftoverCenters = absoluteCenterBad(work);
@@ -441,6 +512,7 @@ std::vector<Move> ReductionSolver::solve(const Cube& cube) {
         Cube verify = cube;
         verify.apply(optimized);
         if (!verify.isSolved()) {
+            // Fall back to unoptimized (should already be compressed-safe).
             optimized = BatchSolver::compress(solution);
             verify = cube;
             verify.apply(optimized);

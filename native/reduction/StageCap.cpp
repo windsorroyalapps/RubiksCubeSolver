@@ -34,6 +34,18 @@ static Color faceCenterColor(const Cube& cube, int face) {
     return cube.get(face, n / 2, n / 2);
 }
 
+static int absoluteCenterBad(const Cube& cube) {
+    const int n = cube.size();
+    int bad = 0;
+    for (int f = 0; f < 6; ++f) {
+        const Color want = static_cast<Color>(f);
+        for (int r = 1; r < n - 1; ++r)
+            for (int c = 1; c < n - 1; ++c)
+                if (cube.get(f, r, c) != want) ++bad;
+    }
+    return bad;
+}
+
 int StageCap::leftoverCenterCells(const Cube& cube) {
     const int n = cube.size();
     if (n < 4) return 0;
@@ -112,12 +124,21 @@ std::pair<std::vector<Move>, int> StageCap::capThenRepair(
     Cube afterRepair = afterCap;
     afterRepair.apply(repair);
     const int leftoverRep = measure(afterRepair, centersNotEdges);
-    // Edge repair must not destroy solved centers.
+    // Edge repair must not destroy relative OR absolute centers.
     const bool centersOk = centersNotEdges ||
-        StageCap::leftoverCenterCells(afterRepair) <= StageCap::leftoverCenterCells(afterCap);
+        (StageCap::leftoverCenterCells(afterRepair) <= StageCap::leftoverCenterCells(afterCap) &&
+         absoluteCenterBad(afterRepair) <= absoluteCenterBad(afterCap));
     if (leftoverRep < leftoverCap && centersOk) {
         capped.insert(capped.end(), repair.begin(), repair.end());
         return {capped, leftoverRep};
+    }
+
+    // Prefer raw when it keeps better absolute centers on edge stage.
+    if (!centersNotEdges) {
+        const int absFull = absoluteCenterBad(afterFull);
+        const int absCap = absoluteCenterBad(afterCap);
+        if (leftoverFull <= leftoverCap && absFull <= absCap) return {raw, leftoverFull};
+        if (absCap < absFull && leftoverCap <= leftoverFull + 2) return {capped, leftoverCap};
     }
 
     if (leftoverFull <= leftoverCap) return {raw, leftoverFull};
