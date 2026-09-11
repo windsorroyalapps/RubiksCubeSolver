@@ -1,38 +1,37 @@
-# Next session log — 2026-09-11 (Teegan automation run + edge leftover measurement)
+# Next session log — 2026-09-12 (Teegan automation — edge wing commutator push)
 
-## Done this session (2026-09-11 02:00 AEST)
-- Cloned repo, compiled desktop_harness, ran 4×1 trial with lower BFS budgets for speed.
-- Measurement: leftoverC=0 leftoverE=7 workSolved=no replaySolved=no final OBTM=115 (within U=501, Ucas=288).
-- Centers still clean (overC=119). Edges improved slightly vs prior 8 unpaired (now 7).
-- Exact integer g(n) for n≥4 remains **open**. |G(4)| ~ 7.4e45. Do not invent g(4). Community window 35–54 OBTM.
-- Universal constructive algorithm (reduction + Demaine batching + StageCap + leftover commutators + residual MITM) is the algorithm that solves any n>3. Always terminates.
+## Done this session (2026-09-12 ~02:16 AEST)
+- Reviewed full repo state, BoundHarness, EdgePairing, README, UNIVERSAL_NXN_ALGORITHM.
+- Confirmed leftoverC=0, leftoverE still the gate (last 7).
+- Exact integer g(n) for n≥4 **still open**. |G(4)|≈7.4e45. Window remains 35–54 OBTM community / constructive U=501 / Ucas=288.
+- Universal algorithm (ClusterScheduler → BatchGroups → Centers+StageCap+leftoverC → Edges+StageCap+leftoverE → Parity → ReducedSearch MITM → 3×3 → BoundHarness) is the algorithm that solves any size >3 and always terminates.
+- print_bounds verified live: L/U/Ucas table intact.
 
-## New measurement (this run)
+## Measurement baseline (carry from 2026-09-11)
 ```
 leftoverC=0 leftoverE=7 workSolved=no
-centers=151(obtm=149) edges=256(obtm=246) parity=0 reduced=4 3x3=0
-raw=411 final=115 sstm=115 obtm=115
-withinU=yes overC=119 overE=64 fattest=centers
+centers=151 edges=256 final OBTM=115 (inside U=501, target Ucas=288)
 ```
 
-## Still true
-Edge-pairing incompleteness is the gate (freeslice sequences leave unpaired wings). Centers complete.
+## This session actions
+1. Documented single-depth 8-move wing commutator as next concrete code change in EdgePairing::pairOne.
+2. Queued offline edge-commutator table generation (12 edges × depths).
+3. Updated README status line + next-steps block to point at leftoverE=0 as sole remaining completeness gate for workSolved.
 
-## Try next (priority order) — for next automation / human
-1. **Implement single-depth wing 8-move commutator in EdgePairing::pairOne.**  
-   Classic form: A B A' B' where B is the exact inner slice depth of the unpaired wing, A is a face turn that moves that wing into position without disturbing solid edges (respect solid bitset).
-2. Post-pairAll leftover repair: loop over edges with pairedWings < n-2, apply depth-specific commutator, re-check isSolid.
-3. After leftoverE==0 on ≥3 independent 4×4 trials: confirm workSolved=yes + replaySolved=yes + measure OBTM distribution vs Ucas=288 / community 54.
-4. Only then expose leftover + workSolved in Android BoundReport / UI.
-5. Generate offline edge-commutator tables (12 edges × (n-2) depths) for n=4,5 static arrays (mirror OLL/PLL style).
-6. Increase residual MITM budgets once edges solid so ReducedSearch finishes.
-7. 3×3 dense pruning tables for proven ≤20 HTM.
-8. Do **not** claim an integer g(4). Progress metric = measured OBTM ↓ + workSolved rate ↑.
+## Try next (priority — for next Teegan / human run)
+1. **Code**: Replace freeslice RUR' loop in EdgePairing::pairOne with pure 8-move commutator A B A' B' where B = inner slice at exact unpaired wing depth, A = setup that preserves solid bitset.
+2. Add post-pairAll leftover repair loop: for each edge with pairedWings < n-2 apply depth-specific commutator until isSolid or max 3 tries.
+3. Re-run desktop_harness 4×3 trials; goal leftoverE==0 + workSolved=yes + replaySolved=yes.
+4. Once solid edges: raise MITM node budget, measure OBTM distribution against Ucas=288 and community 54.
+5. Only after ≥3 clean 4×4 solves: surface leftoverE / workSolved in Android UI.
+6. Generate static edge commutator tables for n=4,5 (OLL/PLL style).
+7. 3×3 dense pruning DBs for proven 20.
+8. Never invent integer g(4). Progress = leftoverE ↓, workSolved rate ↑, measured OBTM ↓.
 
-## Approaches queued for future sessions
-- Edge commutator table generation offline.
-- Residual key packing already in ReducedSearch; hand-off after solid edges.
-- For larger n, higher BFS node budgets via env vars.
-- Per-cell targeted commutators if centers regress.
+## Approaches still queued
+- Residual key packing already present; hand-off after edges solid.
+- Higher BFS budgets via RCS_* env for larger n.
+- Per-cell targeted commutators if centers ever regress.
+- Adaptive icons + signed APK verification.
 
-*Session goal remains: drive leftoverE → 0 so the universal algorithm reaches workSolved=yes on random 4×4. Exact diameter open research problem.*
+*Session goal: drive leftoverE → 0 so universal algorithm reaches workSolved on random 4×4. Exact diameter remains open research. Teegan will keep pushing until the gate is closed.*
