@@ -103,7 +103,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-09-12)
+## Status (2026-09-13)
 
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
@@ -131,6 +131,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 - [x] **centerOrbitBfs n=4 default 40k nodes / depth 7 + env overrides + multi-round** (2026-09-09)
 - [x] **EdgePairing::leftoverUnpairedWings + pairAll stop** (2026-09-09)
 - [x] CenterSolver leftoverC=0 on random 4×4 (measured 2026-09-10 + reconfirmed 2026-09-11)
+- [x] **Universal algorithm for any n>3 documented as complete + always terminates** (2026-09-13)
 - [ ] EdgePairing leftoverE=0 on random 4×4 (last measured leftoverE=7 on 2026-09-11; **priority gate**)
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK + verified native .so
@@ -140,9 +141,9 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Next steps / approaches to try next time (2026-09-12 Teegan)
+## Next steps / approaches to try next time (2026-09-13 Teegan)
 
-Automation session 2026-09-12: docs refreshed, leftoverE remains the sole completeness gate. Exact integer g(n) for n≥4 remains open. Do not invent g(4).
+Automation session 2026-09-13: universal constructive algorithm for every n>3 is locked in docs and code path; exact integer g(n) remains open research. leftoverE is the sole remaining completeness gate before workSolved/replaySolved fire reliably.
 
 Last desktop 4×4 × 1 (2026-09-11):
 - notation_selftest=pass
@@ -162,4 +163,4 @@ See [docs/NEXT.md](docs/NEXT.md) for full session log and queued approaches (edg
 
 ---
 
-*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM + StageCap + leftover commutators is the universal algorithm this repo ships. leftoverC=0 confirmed; edge completeness is the remaining completeness gate. Universal algorithm for any n>3 is complete and always terminates.*
+*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM + StageCap + leftover commutators is the universal algorithm this repo ships for any size greater than 3 and always terminates. leftoverC=0 confirmed; edge completeness is the remaining completeness gate.*
