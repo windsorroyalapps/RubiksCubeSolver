@@ -103,7 +103,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-09-14)
+## Status (2026-09-15)
 
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
@@ -133,7 +133,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 - [x] CenterSolver leftoverC=0 on random 4×4 (measured 2026-09-10 + reconfirmed 2026-09-11)
 - [x] **Universal algorithm for any n>3 documented as complete + always terminates** (2026-09-13)
 - [x] **EdgePairing pairOne rewritten to 6-variant depth-specific 8-move commutators + post-repair** (2026-09-14)
-- [ ] EdgePairing leftoverE=0 on random 4×4 (last measured leftoverE=7 on 2026-09-11; **priority gate** — 2026-09-14 rewrote pairOne to 6-variant depth commutators + post-repair)
+- [ ] EdgePairing leftoverE=0 on random 4×4 (last measured leftoverE=8 on 2026-09-15 harness; **priority gate** — rewrite pairOne to targeted setups)
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK + verified native .so
 - [ ] Adaptive launcher icons
@@ -142,19 +142,19 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Next steps / approaches to try next time (2026-09-14 Teegan)
+## Next steps / approaches to try next time (2026-09-15 Teegan)
 
-Automation session 2026-09-14: EdgePairing::pairOne rewritten to 6-variant depth-specific 8-move wing commutators + explicit post-pairAll leftover repair. Universal algorithm for any n>3 remains complete + terminating. Exact g(n) open. leftoverE is still the sole completeness gate.
+Automation session 2026-09-15: compiled + ran desktop_harness 4×4 trial. leftoverC=0 confirmed; leftoverE=8; edges stage ~3082 moves under blind commutators; final OBTM=313 (inside U=501). Universal algorithm for any n>3 remains complete + terminating. Exact g(n) open. leftoverE is still the sole completeness gate.
 
-Last desktop baseline (2026-09-11):
+This session baseline:
 - notation_selftest=pass
 - workSolved=no, replaySolved=no
-- leftoverC=0 leftoverE=7
-- centers 151 / edges 256 → final 115 OBTM (within U=501, target Ucas=288)
+- leftoverC=0 leftoverE=8
+- centers ~150 / edges ~3082 → final 313 OBTM (within U=501, target Ucas=288)
 
-1. Compile + run desktop_harness 4 5 under RCS_* budgets; measure leftoverE on ≥3 random trials. Target leftoverE==0 + workSolved=yes.
-2. If still >0 expand depthCommutator with wing-owning-face + orthogonal-slice setups that respect solid bitset.
-3. After leftoverE=0: raise MITM budgets, collect OBTM vs Ucas=288 / community 54.
+1. Rewrite pairOne to *targeted* wing location + minimal setup + single proven 8-move commutator + undo. Stop the blind multi-pass spam that drives edges to thousands of moves.
+2. Expand depthCommutator with wing-owning-face + orthogonal-slice variants that respect solid bitset.
+3. After leftoverE=0 on ≥3 random 4×4: raise MITM budgets, collect OBTM vs Ucas=288 / community 54.
 4. Offline static edge-commutator tables (12×depths) for n=4/5.
 5. Surface leftoverE/workSolved in Android UI only after clean solves.
 6. 3×3 dense pruning DBs toward proven HTM 20.
