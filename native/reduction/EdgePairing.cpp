@@ -86,11 +86,12 @@ int EdgePairing::leftoverUnpairedWings(const Cube& work) {
     return leftover;
 }
 
-// Tight 8-move wing commutator family. Fewer, higher-quality variants.
+// Expanded 8-move wing commutator family (8 variants). 
 // Designed to cycle two wings at a given inner-slice depth while protecting solid edges.
+// Variants 0-3 classic, 4-7 orthogonal-slice / owning-face oriented.
 static std::vector<Move> depthCommutator(int depth, int variant) {
     std::vector<Move> seq;
-    switch (variant % 4) {
+    switch (variant % 8) {
         case 0: // classic R U R' F_d U2 F_d' R U' R'
             seq = {
                 {R, 0, 1}, {U, 0, 1}, {R, 0, -1},
@@ -112,10 +113,37 @@ static std::vector<Move> depthCommutator(int depth, int variant) {
                 {B, 0, 1}, {U, 0, -1}, {B, 0, -1}
             };
             break;
-        default: // pure 8-move A B A' B' style on R + F_d
+        case 3: // pure 8-move A B A' B' style on R + F_d
             seq = {
                 {R, 0, 1}, {F, depth, 1}, {R, 0, -1}, {F, depth, -1},
                 {R, 0, 1}, {F, depth, 1}, {R, 0, -1}, {F, depth, -1}
+            };
+            break;
+        case 4: // F U F' R_d U2 R_d' F U' F'  (owning-face F oriented)
+            seq = {
+                {F, 0, 1}, {U, 0, 1}, {F, 0, -1},
+                {R, depth, 1}, {U, 0, 2}, {R, depth, -1},
+                {F, 0, 1}, {U, 0, -1}, {F, 0, -1}
+            };
+            break;
+        case 5: // R' U' R B_d' U2 B_d R' U R
+            seq = {
+                {R, 0, -1}, {U, 0, -1}, {R, 0, 1},
+                {B, depth, -1}, {U, 0, 2}, {B, depth, 1},
+                {R, 0, -1}, {U, 0, 1}, {R, 0, 1}
+            };
+            break;
+        case 6: // L U L' F_d U2 F_d' L U' L'
+            seq = {
+                {L, 0, 1}, {U, 0, 1}, {L, 0, -1},
+                {F, depth, 1}, {U, 0, 2}, {F, depth, -1},
+                {L, 0, 1}, {U, 0, -1}, {L, 0, -1}
+            };
+            break;
+        default: // pure A B A' B' on L + B_d
+            seq = {
+                {L, 0, 1}, {B, depth, 1}, {L, 0, -1}, {B, depth, -1},
+                {L, 0, 1}, {B, depth, 1}, {L, 0, -1}, {B, depth, -1}
             };
             break;
     }
@@ -141,14 +169,14 @@ std::vector<Move> EdgePairing::pairOne(Cube& work, int edgeIndex,
     int maxWing = n - 2;
     int depthSpan = std::max(1, n / 2 - 1);
 
-    // Targeted primary pass: limited budget, early exit on solid
-    const int budget = maxWing * 3;  // hard limit to kill spam
+    // Targeted primary pass: hard budget, more variants, early solid exit
+    // Budget raised slightly for new variants but still capped to prevent explosion
+    const int budget = maxWing * 4;
     for (int wing = 0; wing < budget && !isSolid(work, edgeIndex); ++wing) {
         int depth = 1 + (wing % depthSpan);
-        int variant = (wing / depthSpan) % 4;
+        int variant = (wing / depthSpan) % 8;
         auto seq = depthCommutator(depth, variant);
         appendSeq(seq);
-        // re-check solid after every commutator
         if (isSolid(work, edgeIndex)) break;
     }
 
@@ -168,8 +196,8 @@ std::vector<Move> EdgePairing::pairAll(Cube& work) {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0  // non-buffer first
     };
 
-    // Main pairing passes — early global stop
-    for (int pass = 0; pass < 4; ++pass) {
+    // Main pairing passes — early global stop when leftover==0
+    for (int pass = 0; pass < 5; ++pass) {
         if (leftoverUnpairedWings(work) == 0) break;
 
         for (int e = 0; e < 12; ++e) {
@@ -188,16 +216,16 @@ std::vector<Move> EdgePairing::pairAll(Cube& work) {
         }
     }
 
-    // Light post-repair: only if leftover remains, max 2 rounds, 4 variants
+    // Light post-repair: only if leftover remains, max 3 rounds, 8 variants
     int leftover = leftoverUnpairedWings(work);
     if (leftover > 0) {
-        for (int repair = 0; repair < 2 && leftoverUnpairedWings(work) > 0; ++repair) {
+        for (int repair = 0; repair < 3 && leftoverUnpairedWings(work) > 0; ++repair) {
             for (int e = 0; e < 12; ++e) {
                 if (isSolid(work, e)) continue;
                 int n = work.size();
                 int depthSpan = std::max(1, n / 2 - 1);
                 for (int d = 1; d <= depthSpan; ++d) {
-                    auto seq = depthCommutator(d, repair + e);
+                    auto seq = depthCommutator(d, repair * 3 + e);
                     for (const auto& m : seq) {
                         work.apply(m);
                         solution.push_back(m);
