@@ -255,27 +255,49 @@ std::vector<Move> EdgePairing::pairOne(Cube& work, int edgeIndex,
 
     int maxWing = n - 2;
     int depthSpan = std::max(1, n / 2 - 1);
+    int stagnant = 0;
+    const int stagnantLimit = 3;  // abort variant loops if no pairedWings gain
 
-    // 2026-09-19: prioritize actual unpaired depths from facelet scan (targeted gate progress)
+    // 2026-09-22 Teegan: progress-check + deeper unpairedDepths targeting
+    // Real gate remains full source/dest facelet locator; this reduces spam.
     auto targets = unpairedDepths(work, edgeIndex);
     if (!targets.empty()) {
         for (int t = 0; t < (int)targets.size() && !isSolid(work, edgeIndex); ++t) {
             int depth = targets[t];
-            // try a few high-quality variants per unpaired depth
-            for (int v = 0; v < 4 && !isSolid(work, edgeIndex); ++v) {
-                auto seq = depthCommutator(depth, v + t * 3);
+            int before = pairedWings(work, edgeIndex);
+            for (int v = 0; v < 6 && !isSolid(work, edgeIndex); ++v) {
+                auto seq = depthCommutator(depth, v + t * 2);
                 appendSeq(seq);
+                int after = pairedWings(work, edgeIndex);
+                if (after > before) {
+                    before = after;
+                    stagnant = 0;
+                } else {
+                    ++stagnant;
+                    if (stagnant >= stagnantLimit) break;
+                }
             }
+            if (stagnant >= stagnantLimit) break;
         }
     }
 
-    // Fallback: broad coverage with 12 variants, hard budget
-    const int budget = maxWing * 5;
+    // Fallback: broad coverage with 12 variants, hard budget + progress abort
+    stagnant = 0;
+    const int budget = maxWing * 4;  // tightened from *5
+    int before = pairedWings(work, edgeIndex);
     for (int wing = 0; wing < budget && !isSolid(work, edgeIndex); ++wing) {
         int depth = 1 + (wing % depthSpan);
         int variant = (wing / depthSpan) % 12;
         auto seq = depthCommutator(depth, variant);
         appendSeq(seq);
+        int after = pairedWings(work, edgeIndex);
+        if (after > before) {
+            before = after;
+            stagnant = 0;
+        } else {
+            ++stagnant;
+            if (stagnant >= stagnantLimit * 2) break;
+        }
         if (isSolid(work, edgeIndex)) break;
     }
 

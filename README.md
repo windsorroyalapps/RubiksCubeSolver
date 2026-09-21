@@ -103,7 +103,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-09-21)
+## Status (2026-09-22)
 
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
@@ -137,6 +137,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 - [x] **EdgePairing expanded to 8-variant depthCommutator + deeper post-repair** (2026-09-17) — more coverage for solid edges
 - [x] **EdgePairing unpairedDepths() facelet scan + priority targeted pass + 12-variant family** (2026-09-19) — first real targeting step toward leftoverE=0
 - [x] **2026-09-21 re-measure**: leftoverC=0 holds; leftoverE=6–7 on random 4×4; denser 16-variant spam experiment regressed length → confirmed locator required
+- [x] **2026-09-22 progress-check abort in pairOne + tighter budget** — edge spam length ~40% lower (6k vs 11k); leftoverE still 7
 - [ ] EdgePairing leftoverE=0 on random 4×4 (**priority gate** — full targeted wing-locator + setup + single commutator)
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK + verified native .so
@@ -146,14 +147,14 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Next steps / approaches to try next time (2026-09-21 Teegan)
+## Next steps / approaches to try next time (2026-09-22 Teegan)
 
-Automation session 2026-09-21: re-measured current main (leftoverC=0, leftoverE=6–7, workSolved=no). Experimented denser 16-variant + full-per-target spam → length explosion, leftoverE not improved. Confirmed: blind variant spam cannot close the gate; true source/dest facelet locator + setup/undo is required. Universal algorithm for any n>3 remains complete + terminating. Exact g(n) open.
+Automation session 2026-09-22: added progress-check abort (stagnantLimit on pairedWings) + tighter budget in pairOne. Edge spam length cut ~40% (6k vs prior 11k). leftoverE still 7 on random 4×4; workSolved=no. Confirmed progress-check reduces waste but does not close completeness gate. Full source/dest facelet locator + setup/undo remains required. Universal algorithm for any n>3 remains complete + terminating. Exact g(n) open.
 
 This session baseline:
-- leftoverC=0 leftoverE=6–7
-- final OBTM highly variable (152 inside U on one trial, 1770 on another)
-- edges still the fattest stage
+- leftoverC=0 leftoverE=7
+- final OBTM 820–919 (more stable, still over Ucas)
+- edges still the fattest stage but less spammy
 
 1. **Full targeted pairOne (still #1 gate)**: from unpairedDepths, locate actual source/dest facelet positions of mismatched wings → minimal setup to buffer orbit → single proven 8-move commutator → undo setups. Protect solid bitset. Deterministic wing model. **This is the real gate.**
 2. After leftoverE=0 on ≥3 independent random 4×4 trials: raise MITM budgets, collect OBTM distribution vs Ucas=288 / community 54.
@@ -162,7 +163,7 @@ This session baseline:
 5. Surface leftoverE/workSolved in Android UI only after clean solves.
 6. 3×3 dense pruning DBs toward proven HTM 20.
 7. Never invent closed integer g(4). |G(4)|≈7.4e45. Window 35–54 OBTM.
-8. Progress-check inside pairOne (abort early if pairedWings stagnant).
+8. Progress-check already landed this session.
 
 See [docs/NEXT.md](docs/NEXT.md) for full session log and queued approaches.
 
