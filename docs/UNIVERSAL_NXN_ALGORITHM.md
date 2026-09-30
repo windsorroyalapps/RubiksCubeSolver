@@ -12,7 +12,8 @@ What *is* settled:
 4. **Counting lower bound** L(n) = ⌊ ln|G| / ln|S| ⌋ with Hardwick's exact |G(n)| and |S| = 6·⌊n/2⌋·3.
 5. **Face-fixed lower** L_fixed(n) (even n quotients |G| by 24).
 6. **Cascade budget** Ucas(n) — piece-budget family the solver is driven toward (not a diameter).
-7. **Stage caps** (2026-09-06) — Center/Edge stages clipped to C/E so overC/overE is actionable.
+7. **Stage caps** — Center/Edge stages clipped to C/E so overC/overE is actionable.
+8. **Edge pairing (2026-10-01):** multi-face setups + facelet wing locator scan. Full source/dest facelet mapping still the leftoverE=0 gate.
 
 ## Algorithm (constructive God's-algorithm family)
 
@@ -23,7 +24,7 @@ Input: scrambled n×n×n, n≥4.
 2. BatchGroups           shared-slice commutators (Demaine parallel factor)
 3. CenterSolver          never-break orbits; BFS n≤5; residual n≥6
 3b. StageCap             clip centers to C = 8(n-2)²
-4. EdgePairing           Yau buffer + solid-set never-touch wings
+4. EdgePairing           Yau buffer + solid-set + locator scan + multi-face setups
 4b. StageCap             clip edges to E = 96(n-2)
 5. ParityHandler         even n only: wing OLL + PLL parity at all depths
 6. ReducedSearch         n∈{4,5}: packed residual IDA* + bidirectional MITM
@@ -42,7 +43,7 @@ Output: SiGN move string + BoundReport.
 | L(n) | Hardwick counting + community lower |
 | L_fixed | face-fixed counting (even n: |G|/24) |
 | U(n) | constructive reduction formula (official guarantee) |
-| Ucas | cascade piece-budget family (solver target, 2026-09-03) |
+| Ucas | cascade piece-budget family (solver target) |
 | gap | U(n) − L(n) |
 | log10\|G\| | Hardwick group order |
 | asym | 3.8 · n² / ln n |
@@ -68,4 +69,4 @@ Caps: [STAGE_CAPS.md](STAGE_CAPS.md).
 - **Asymptotic number:** yes — Θ(n² / log n).
 - **Exact integer g(n):** no, and this repo will not invent one. Closing g(4) is a multi-CPU-year research program, not a phone solver.
 
-Progress metric: desktop_harness replaySolved + measured OBTM vs Ucas vs community 54 + overC/overE after StageCap.
+Progress metric: desktop_harness replaySolved + measured OBTM vs Ucas vs community 54 + leftoverC/leftoverE after StageCap.
