@@ -9,11 +9,11 @@ What *is* settled:
 1. **Termination.** Reduction always finishes for any n≥4 (memory permitting).
 2. **Constructive upper bound** U(n) — every reachable state solves in ≤ U(n) moves of this algorithm family.
 3. **Asymptotic God's number** g(n) = Θ(n² / log n) (Demaine et al. 2011).
-4. **Counting lower bound** L(n) = ⌊ ln|G| / ln|S| ⌋ with Hardwick's exact |G(n)| and |S| = 6·⌊n/2⌋·3.
+4. **Counting lower bound** L(n) = ⌊ln|G| / ln|S|⌋ with Hardwick's exact |G(n)| and |S| = 6·⌊n/2⌋·3.
 5. **Face-fixed lower** L_fixed(n) (even n quotients |G| by 24).
 6. **Cascade budget** Ucas(n) — piece-budget family the solver is driven toward (not a diameter).
 7. **Stage caps** — Center/Edge stages clipped to C/E so overC/overE is actionable.
-8. **Edge pairing (2026-10-01):** multi-face setups + facelet wing locator scan. Full source/dest facelet mapping still the leftoverE=0 gate.
+8. **Edge pairing (2026-10-07):** source/dest facelet map. `wingFacelets` records (face,row,col); located source edge picks the setup; commutator undoes on no gain. Flip-aware setups and harness re-measure are next. See [FACELET_MAPPING.md](FACELET_MAPPING.md).
 
 ## Algorithm (constructive God's-algorithm family)
 
@@ -24,7 +24,7 @@ Input: scrambled n×n×n, n≥4.
 2. BatchGroups           shared-slice commutators (Demaine parallel factor)
 3. CenterSolver          never-break orbits; BFS n≤5; residual n≥6
 3b. StageCap             clip centers to C = 8(n-2)²
-4. EdgePairing           Yau buffer + solid-set + locator scan + multi-face setups
+4. EdgePairing           Yau buffer + solid-set + facelet map + source setup
 4b. StageCap             clip edges to E = 96(n-2)
 5. ParityHandler         even n only: wing OLL + PLL parity at all depths
 6. ReducedSearch         n∈{4,5}: packed residual IDA* + bidirectional MITM
