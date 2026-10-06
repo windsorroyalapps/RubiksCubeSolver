@@ -1,36 +1,38 @@
-# Next session log — 2026-10-01 (Teegan automation — multi-face setups + facelet locator)
+# Next session log — 2026-10-07 (Teegan automation — source/dest facelet map)
 
-## Done this session (2026-10-01 ~02:00 AEST)
-- Landed **multi-face setups** (U/D/L/R × 90/180/270) before `depthCommutator` in `pairOne`.
-- Landed **facelet wing locator helper** `locateTargetWings`: for an unpaired depth on edge e, scan all 12 edges at that depth and collect edges whose wing colours match the target pair (c1,c2). Pairing prefers those source edges' depths + setups instead of blind U-only.
+## Done this session (2026-10-07)
+- Landed `WingFacelet` + `EdgePairing::wingFacelets` so both stickers of a wing are `(face,row,col)`, matching the colour scan.
+- `pairOne` now uses `locateTargetWings` for real: source edge picks the outer setup face, then `depthCommutator` at that depth, undo if `pairedWings` does not rise.
+- Removed the trailing no-gain `U` that could unpair already-solid wings.
+- Docs: `docs/FACELET_MAPPING.md`, README status, universal algorithm note.
 - Universal constructive algorithm for any n>3 still complete and always terminates.
-- Exact integer g(n) for n≥4 remains open (|G(4)|≈7.4e45; U(4)=501 / Ucas=288; community OBTM 35–54).
+- Exact integer g(n) for n>=4 remains open (|G(4)|≈7.4e45; U(4)=501 / Ucas=288; community OBTM 35–54).
 
 ## Measurement baseline (carry-forward until harness rerun)
 Prior: leftoverC=0 leftoverE=6–7 workSolved=no final OBTM 820–919
-Target this cycle: leftoverE ≤3 then 0 after full source/dest facelet mapping.
+This commit does not claim a new harness number. Target: leftoverE <=3 then 0 after this mapping is measured.
 
 ## Code / doc changes this session
-1. `native/reduction/EdgePairing.cpp` — multi-face setups + `locateTargetWings` + targeted first pass.
-2. `docs/NEXT.md` + README status/next-steps (2026-10-01).
-3. `docs/UNIVERSAL_NXN_ALGORITHM.md` — note locator scaffolding.
+1. `native/reduction/EdgePairing.h` / `.cpp` — facelet map + source-driven setup.
+2. `docs/FACELET_MAPPING.md` (new).
+3. `docs/NEXT.md` + README + `docs/UNIVERSAL_NXN_ALGORITHM.md`.
 
 ## Try next (priority ordered)
-1. **Full source/dest facelet mapping (still #1 gate after this scaffolding):** record (face,row,col) of both stickers of the desired wing, compute shortest outer+slice setup into UF buffer at that depth, one 8-move commutator, exact undo. Protect solid bitset. Deterministic leftoverE=0.
-2. Desktop harness re-measure leftoverE / workSolved on ≥3 random 4×4 after locator lands (`RCS_MITM_NODEBUDGET4=150000`).
-3. After leftoverE=0 + workSolved=true: raise MITM, collect OBTM vs Ucas=288 / community 54.
-4. Offline static edge-commutator tables (12 edges × depths) for n=4/5.
-5. Free-slice pairing with explicit wing tracking (source facelet + dest facelet).
-6. Surface leftoverE/workSolved in Android UI only after clean solves.
-7. 3×3 dense pruning DBs toward proven HTM 20.
-8. Never invent closed integer g(4). Window 35–54 OBTM.
-9. CI: verify lib*.so in APK; adaptive icons.
-10. Per-cell targeted commutators if center leftover ever regresses.
+1. Desktop harness re-measure leftoverE / workSolved on >=3 random 4x4 (`RCS_MITM_NODEBUDGET4=150000`). If leftoverE still >0, log which dest edges miss a source at the unpaired depth (flip vs wrong depth).
+2. Treat orientation: a colour-matched wing may be flipped. Add a flip-aware setup (slice quarter before commutator) instead of only the direct colour match.
+3. Shortest outer+slice setup into UF buffer from the recorded `(face,row,col)`, one 8-move commutator, exact undo. Protect solid bitset.
+4. After leftoverE=0 + workSolved=true: raise MITM, collect OBTM vs Ucas=288 / community 54.
+5. Offline static edge-commutator tables (12 edges x depths x flip) for n=4/5.
+6. Free-slice pairing with explicit wing tracking (source facelet + dest facelet).
+7. Surface leftoverE/workSolved in Android UI only after clean solves.
+8. 3x3 dense pruning DBs toward proven HTM 20.
+9. Never invent closed integer g(4). Window 35–54 OBTM.
+10. CI: verify lib*.so in APK; adaptive icons.
 
 ## Approaches still queued
 - Residual-key packing hand-off once edges solid.
-- Higher BFS / MITM budgets via env for n≥5.
+- Higher BFS / MITM budgets via env for n>=5.
 - Production signed APK + lib verification.
-- Expand depthCommutator only after locator is complete.
+- Per-cell targeted center commutators if leftoverC regresses.
 
-*Session goal: productive multi-face setups + locator scan so leftoverE drops. Exact diameter remains open. Constructive algorithm for any n>3 always terminates.*
+*Session goal: facelet coordinates drive the commutator instead of a discarded locator scan. Exact diameter remains open. Constructive algorithm for any n>3 always terminates.*

@@ -13,7 +13,14 @@
  * - Solid edges (pairedWings == n-2) are never touched again
  * - Cross edges prioritized first (Yau spirit for large n)
  * - pairAll stops when leftoverUnpairedWings()==0
+ * - 2026-10-07: source/dest facelet map (face,row,col) drives setup+commutator
  */
+struct WingFacelet {
+    int face;
+    int row;
+    int col;
+};
+
 class EdgePairing {
 public:
     static std::vector<Move> pairAll(Cube& work);
@@ -21,6 +28,10 @@ public:
 
     // Count matching wing pairs on this edge (real facelet scan)
     static int pairedWings(const Cube& work, int edgeIndex);
+
+    // Both stickers of the wing at depth d on edgeIndex (same coords as colour scan).
+    static void wingFacelets(int n, int edgeIndex, int depth,
+                             WingFacelet& a, WingFacelet& b);
 
     static bool isSolid(const Cube& work, int edgeIndex) {
         return pairedWings(work, edgeIndex) >= work.size() - 2;
