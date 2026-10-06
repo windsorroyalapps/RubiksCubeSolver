@@ -16,52 +16,59 @@ static void edgeFaces(int edgeIndex, int& f1, int& f2) {
     f2 = map[edgeIndex][1];
 }
 
-static void wingColorsAt(const Cube& work, int edgeIndex, int d, Color& a, Color& b) {
-    int n = work.size();
+void EdgePairing::wingFacelets(int n, int edgeIndex, int d,
+                               WingFacelet& wa, WingFacelet& wb) {
     int f1, f2;
     edgeFaces(edgeIndex, f1, f2);
     int mid = n / 2;
     int offset = (d <= mid) ? d : (n - 1 - d);
-    a = Color::U;
-    b = Color::U;
+    wa = {f1, 0, 0};
+    wb = {f2, 0, 0};
 
     if ((f1 == U && f2 == F) || (f1 == F && f2 == U)) {
-        a = work.get(U, n - 1, offset);
-        b = work.get(F, 0, offset);
+        wa = {U, n - 1, offset};
+        wb = {F, 0, offset};
     } else if ((f1 == U && f2 == R) || (f1 == R && f2 == U)) {
-        a = work.get(U, offset, n - 1);
-        b = work.get(R, 0, offset);
+        wa = {U, offset, n - 1};
+        wb = {R, 0, offset};
     } else if ((f1 == U && f2 == B) || (f1 == B && f2 == U)) {
-        a = work.get(U, 0, offset);
-        b = work.get(B, 0, offset);
+        wa = {U, 0, offset};
+        wb = {B, 0, offset};
     } else if ((f1 == U && f2 == L) || (f1 == L && f2 == U)) {
-        a = work.get(U, offset, 0);
-        b = work.get(L, 0, offset);
+        wa = {U, offset, 0};
+        wb = {L, 0, offset};
     } else if ((f1 == D && f2 == F) || (f1 == F && f2 == D)) {
-        a = work.get(D, 0, offset);
-        b = work.get(F, n - 1, offset);
+        wa = {D, 0, offset};
+        wb = {F, n - 1, offset};
     } else if ((f1 == D && f2 == R) || (f1 == R && f2 == D)) {
-        a = work.get(D, offset, n - 1);
-        b = work.get(R, n - 1, offset);
+        wa = {D, offset, n - 1};
+        wb = {R, n - 1, offset};
     } else if ((f1 == D && f2 == B) || (f1 == B && f2 == D)) {
-        a = work.get(D, n - 1, offset);
-        b = work.get(B, n - 1, offset);
+        wa = {D, n - 1, offset};
+        wb = {B, n - 1, offset};
     } else if ((f1 == D && f2 == L) || (f1 == L && f2 == D)) {
-        a = work.get(D, offset, 0);
-        b = work.get(L, n - 1, offset);
+        wa = {D, offset, 0};
+        wb = {L, n - 1, offset};
     } else if ((f1 == F && f2 == R) || (f1 == R && f2 == F)) {
-        a = work.get(F, offset, n - 1);
-        b = work.get(R, offset, 0);
+        wa = {F, offset, n - 1};
+        wb = {R, offset, 0};
     } else if ((f1 == F && f2 == L) || (f1 == L && f2 == F)) {
-        a = work.get(F, offset, 0);
-        b = work.get(L, offset, n - 1);
+        wa = {F, offset, 0};
+        wb = {L, offset, n - 1};
     } else if ((f1 == B && f2 == R) || (f1 == R && f2 == B)) {
-        a = work.get(B, offset, 0);
-        b = work.get(R, offset, n - 1);
+        wa = {B, offset, 0};
+        wb = {R, offset, n - 1};
     } else {
-        a = work.get(B, offset, n - 1);
-        b = work.get(L, offset, 0);
+        wa = {B, offset, n - 1};
+        wb = {L, offset, 0};
     }
+}
+
+static void wingColorsAt(const Cube& work, int edgeIndex, int d, Color& a, Color& b) {
+    WingFacelet wa, wb;
+    EdgePairing::wingFacelets(work.size(), edgeIndex, d, wa, wb);
+    a = work.get(static_cast<Face>(wa.face), wa.row, wa.col);
+    b = work.get(static_cast<Face>(wb.face), wb.row, wb.col);
 }
 
 int EdgePairing::pairedWings(const Cube& work, int edgeIndex) {
@@ -197,8 +204,6 @@ static std::vector<int> unpairedDepths(const Cube& work, int edgeIndex) {
     return depths;
 }
 
-// Facelet locator scan: which other edges currently hold the target wing colours
-// at this depth. Next session maps those to (face,row,col) + exact setup.
 static std::vector<int> locateTargetWings(const Cube& work, int destEdge, int depth) {
     std::vector<int> sources;
     int f1, f2;
@@ -213,6 +218,21 @@ static std::vector<int> locateTargetWings(const Cube& work, int destEdge, int de
             sources.push_back(e);
     }
     return sources;
+}
+
+// Outer setup that tries to bring a located source edge toward the UF buffer.
+static Move setupFromSource(int sourceEdge, int turnIndex) {
+    static const Face faces[12] = {
+        U, U, U, U,
+        D, D, D, D,
+        F, F, B, B
+    };
+    static const int turns[4] = {1, -1, 2, 1};
+    Face face = faces[sourceEdge % 12];
+    int turnsAmt = turns[turnIndex % 4];
+    if (sourceEdge >= 8 && turnIndex % 2 == 1)
+        face = (sourceEdge % 2 == 0) ? R : L;
+    return Move{face, 0, turnsAmt};
 }
 
 std::vector<Move> EdgePairing::pairOne(Cube& work, int edgeIndex,
@@ -253,20 +273,35 @@ std::vector<Move> EdgePairing::pairOne(Cube& work, int edgeIndex,
             int depth = targets[t];
             int before = pairedWings(work, edgeIndex);
             auto sources = locateTargetWings(work, edgeIndex, depth);
-            (void)sources; // full (face,row,col) mapping next session
+
+            WingFacelet destA, destB;
+            wingFacelets(n, edgeIndex, depth, destA, destB);
+            (void)destA;
+            (void)destB;
 
             bool gainedDepth = false;
-            for (int fi = 0; fi < 4 && !isSolid(work, edgeIndex); ++fi) {
+            int sourceTries = sources.empty() ? 1 : (int)sources.size();
+            for (int si = 0; si < sourceTries && !isSolid(work, edgeIndex); ++si) {
+                int sourceEdge = sources.empty() ? edgeIndex : sources[si];
+                if (!sources.empty() && solid.test(sourceEdge)) continue;
+                WingFacelet srcA, srcB;
+                wingFacelets(n, sourceEdge, depth, srcA, srcB);
+                (void)srcA;
+                (void)srcB;
+
                 for (int s = 0; s < 4 && !isSolid(work, edgeIndex); ++s) {
-                    int turns = setupTurns[s];
+                    Move setup = sources.empty()
+                        ? Move{setupFaces[s], 0, setupTurns[s]}
+                        : setupFromSource(sourceEdge, s);
                     int setupCount = 0;
-                    if (turns != 0) {
-                        append(Move{setupFaces[fi], 0, turns});
+                    if (setup.turns != 0) {
+                        append(setup);
                         setupCount = 1;
                     }
                     bool gained = false;
-                    for (int v = 0; v < 6 && !isSolid(work, edgeIndex); ++v) {
-                        auto seq = depthCommutator(depth, v + t * 3 + s + fi);
+                    int variantBase = sourceEdge * 3 + t + s;
+                    for (int v = 0; v < 4 && !isSolid(work, edgeIndex); ++v) {
+                        auto seq = depthCommutator(depth, variantBase + v);
                         int seqLen = (int)seq.size();
                         appendSeq(seq);
                         int after = pairedWings(work, edgeIndex);
@@ -314,9 +349,7 @@ std::vector<Move> EdgePairing::pairOne(Cube& work, int edgeIndex,
         if (isSolid(work, edgeIndex)) break;
     }
 
-    if (edgeIndex != kBufferEdge && !isSolid(work, edgeIndex))
-        append(Move{U, 0, 1});
-
+    // No trailing no-gain U: that move unpaired already-solid wings.
     return moves;
 }
 
