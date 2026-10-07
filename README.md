@@ -3,7 +3,7 @@
 **Android + Native C++ Rubik's Cube Solver**
 
 - **3×3:** God's algorithm path toward **≤ 20 HTM** (proven God's Number)
-- **n×n (n ≥ 4):** Universal constructive algorithm — reduction + Demaine batching + residual MITM + **StageCap + leftover commutators + source/dest facelet map**. Always terminates. Exact integer g(n) is **open**; asymptotic **g(n)=Θ(n²/log n)**.
+- **n×n (n ≥ 4):** Universal constructive algorithm — reduction + Demaine batching + residual MITM + **StageCap + leftover commutators + source/dest facelet map + flip-aware slice setup**. Always terminates. Exact integer g(n) is **open**; asymptotic **g(n)=Θ(n²/log n)**.
 
 Exact g(n) is proven only for n=2,3. This repo implements the algorithm for every larger size plus live L(n)/L_fixed(n)/U(n)/Ucas/OBTM/leftoverC/leftoverE instrumentation — not a fake closed diameter.
 
@@ -62,7 +62,8 @@ Multi-probe Kociemba → if len > 20: optimal IDA* (≤20) → CFOP fallback
 
 ```text
 ClusterScheduler → BatchGroups → Centers → StageCap(C) + leftover commutators
-  → Edges (facelet map + source-driven setup) → StageCap(E) + leftover commutators
+  → Edges (facelet map + flip-aware slice setup + source-driven setup)
+  → StageCap(E) + leftover commutators
   → Parity (even n) → ReducedSearch (IDA* + residualKey MITM on 4x4/5x5)
   → 3×3 → BatchSolver → BoundHarness (L / L_fixed / U / Ucas / leftoverC / leftoverE)
   → Cube::movesToNotation / applyNotation SiGN replay
@@ -102,7 +103,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-10-07)
+## Status (2026-10-08)
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
 - [x] ClusterScheduler + BatchGroups + BatchSolver
@@ -132,26 +133,28 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 - [x] Universal algorithm for any n>3 documented as complete + always terminates
 - [x] EdgePairing pairOne 12-variant depthCommutator + post-repair + setups
 - [x] 2026-10-01 multi-face setups (U/D/L/R) + locateTargetWings facelet scan
-- [x] **2026-10-07 source/dest facelet map (`wingFacelets`) + source-driven setup, no-gain undo, dropped trailing U**
-- [ ] EdgePairing leftoverE=0 on random 4×4 (**priority gate** — flip-aware setups + harness re-measure)
+- [x] 2026-10-07 source/dest facelet map (`wingFacelets`) + source-driven setup, no-gain undo, dropped trailing U
+- [x] **2026-10-08 flip-aware setups: `wingOrientation` +1/−1/0, quarter-slice before commutator, undone on no gain**
+- [ ] EdgePairing leftoverE=0 on random 4×4 (**priority gate** — harness re-measure after flip-slice)
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK + verified native .so
 - [ ] Adaptive launcher icons
 - [ ] replaySolved > 0 on 4×4 (blocked on workSolved; SiGN short selftest already passes)
 - [ ] Per-cell targeted commutators (owning face + orthogonal slice)
+- [ ] Closed integer g(n) for n≥4 — **not schedulable**; |G(4)|≈7.4e45
 
 ---
 
-## Next steps / approaches to try next time (2026-10-07)
+## Next steps / approaches to try next time (2026-10-08)
 
-Automation session 2026-10-07: facelet coordinates now drive the edge commutator. Universal constructive algorithm for any n>3 remains complete + always terminates. Exact g(n) open. Do not invent a closed integer.
+Automation session 2026-10-08: flipped colour pairs now get a quarter-slice setup before the depth commutator. Universal constructive algorithm for any n>3 remains complete + always terminates. Exact g(n) open. Do not invent a closed integer.
 
 Carry-forward baseline (not re-measured this commit):
 - leftoverC=0 leftoverE=6–7 workSolved=no OBTM 820–919
 - goal: leftoverE ≤3 then 0
 
-1. Re-run `./artifacts/rcs_harness 4 10` and log leftoverE / workSolved. If still >0, split misses into wrong-depth vs flipped wing.
-2. Flip-aware setup: quarter-slice before the commutator when colours match but orientation does not.
+1. Re-run `./artifacts/rcs_harness 4 10` and log leftoverE / workSolved. Split remaining misses into wrong-depth vs still-flipped.
+2. If the single quarter-slice does not drop leftoverE, use a 2-move setup (outer quarter, then slice quarter), both undone on no gain.
 3. Shortest outer+slice path from recorded `(face,row,col)` into the UF buffer, one commutator, exact undo, solid bitset protected.
 4. After leftoverE=0 and workSolved=true on ≥3 random 4×4: raise MITM, collect OBTM vs Ucas=288 / community 54.
 5. Offline static edge-commutator tables (12 edges × depths × flip) for n=4/5.
@@ -164,4 +167,4 @@ See [docs/NEXT.md](docs/NEXT.md).
 
 ---
 
-*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM + StageCap + facelet-mapped edge pairing is the universal algorithm this repo ships for any size greater than 3 and always terminates. leftoverC=0 confirmed; edge completeness is the remaining completeness gate.*
+*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM + StageCap + facelet-mapped, flip-aware edge pairing is the universal algorithm this repo ships for any size greater than 3 and always terminates. leftoverC=0 confirmed; edge completeness is the remaining completeness gate.*
