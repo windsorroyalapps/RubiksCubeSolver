@@ -71,18 +71,24 @@ static void wingColorsAt(const Cube& work, int edgeIndex, int d, Color& a, Color
     b = work.get(static_cast<Face>(wb.face), wb.row, wb.col);
 }
 
+int EdgePairing::wingOrientation(const Cube& work, int edgeIndex, int depth) {
+    int f1, f2;
+    edgeFaces(edgeIndex, f1, f2);
+    Color a, b;
+    wingColorsAt(work, edgeIndex, depth, a, b);
+    Color c1 = static_cast<Color>(f1);
+    Color c2 = static_cast<Color>(f2);
+    if (a == c1 && b == c2) return 1;
+    if (a == c2 && b == c1) return -1;
+    return 0;
+}
+
 int EdgePairing::pairedWings(const Cube& work, int edgeIndex) {
     int n = work.size();
     if (n < 4) return 0;
-    int f1, f2;
-    edgeFaces(edgeIndex, f1, f2);
-    Color c1 = static_cast<Color>(f1);
-    Color c2 = static_cast<Color>(f2);
     int paired = 0;
     for (int d = 1; d <= n - 2; ++d) {
-        Color a, b;
-        wingColorsAt(work, edgeIndex, d, a, b);
-        if ((a == c1 && b == c2) || (a == c2 && b == c1))
+        if (wingOrientation(work, edgeIndex, d) != 0)
             ++paired;
     }
     return paired;
@@ -191,21 +197,20 @@ static std::vector<int> unpairedDepths(const Cube& work, int edgeIndex) {
     std::vector<int> depths;
     int n = work.size();
     if (n < 4) return depths;
-    int f1, f2;
-    edgeFaces(edgeIndex, f1, f2);
-    Color c1 = static_cast<Color>(f1);
-    Color c2 = static_cast<Color>(f2);
     for (int d = 1; d <= n - 2; ++d) {
-        Color a, b;
-        wingColorsAt(work, edgeIndex, d, a, b);
-        if (!((a == c1 && b == c2) || (a == c2 && b == c1)))
+        if (EdgePairing::wingOrientation(work, edgeIndex, d) == 0)
             depths.push_back(d);
     }
     return depths;
 }
 
-static std::vector<int> locateTargetWings(const Cube& work, int destEdge, int depth) {
-    std::vector<int> sources;
+struct WingHit {
+    int edge;
+    int orient; // +1 home colours in face order, -1 flipped
+};
+
+static std::vector<WingHit> locateTargetWings(const Cube& work, int destEdge, int depth) {
+    std::vector<WingHit> sources;
     int f1, f2;
     edgeFaces(destEdge, f1, f2);
     Color c1 = static_cast<Color>(f1);
@@ -214,8 +219,8 @@ static std::vector<int> locateTargetWings(const Cube& work, int destEdge, int de
         if (e == destEdge) continue;
         Color a, b;
         wingColorsAt(work, e, depth, a, b);
-        if ((a == c1 && b == c2) || (a == c2 && b == c1))
-            sources.push_back(e);
+        if (a == c1 && b == c2) sources.push_back({e, 1});
+        else if (a == c2 && b == c1) sources.push_back({e, -1});
     }
     return sources;
 }
@@ -233,6 +238,15 @@ static Move setupFromSource(int sourceEdge, int turnIndex) {
     if (sourceEdge >= 8 && turnIndex % 2 == 1)
         face = (sourceEdge % 2 == 0) ? R : L;
     return Move{face, 0, turnsAmt};
+}
+
+// Quarter-slice on the source face. Undone if the commutator does not raise pairedWings.
+static Move flipSliceSetup(int sourceEdge, int depth) {
+    int f1, f2;
+    edgeFaces(sourceEdge, f1, f2);
+    Face slice = static_cast<Face>(f2);
+    int turn = (sourceEdge % 2 == 0) ? 1 : -1;
+    return Move{slice, depth, turn};
 }
 
 std::vector<Move> EdgePairing::pairOne(Cube& work, int edgeIndex,
@@ -274,20 +288,12 @@ std::vector<Move> EdgePairing::pairOne(Cube& work, int edgeIndex,
             int before = pairedWings(work, edgeIndex);
             auto sources = locateTargetWings(work, edgeIndex, depth);
 
-            WingFacelet destA, destB;
-            wingFacelets(n, edgeIndex, depth, destA, destB);
-            (void)destA;
-            (void)destB;
-
             bool gainedDepth = false;
             int sourceTries = sources.empty() ? 1 : (int)sources.size();
             for (int si = 0; si < sourceTries && !isSolid(work, edgeIndex); ++si) {
-                int sourceEdge = sources.empty() ? edgeIndex : sources[si];
+                int sourceEdge = sources.empty() ? edgeIndex : sources[si].edge;
+                int orient = sources.empty() ? 1 : sources[si].orient;
                 if (!sources.empty() && solid.test(sourceEdge)) continue;
-                WingFacelet srcA, srcB;
-                wingFacelets(n, sourceEdge, depth, srcA, srcB);
-                (void)srcA;
-                (void)srcB;
 
                 for (int s = 0; s < 4 && !isSolid(work, edgeIndex); ++s) {
                     Move setup = sources.empty()
@@ -298,8 +304,13 @@ std::vector<Move> EdgePairing::pairOne(Cube& work, int edgeIndex,
                         append(setup);
                         setupCount = 1;
                     }
+                    // Flipped colour pair: quarter the source slice, then the commutator.
+                    if (orient < 0) {
+                        append(flipSliceSetup(sourceEdge, depth));
+                        ++setupCount;
+                    }
                     bool gained = false;
-                    int variantBase = sourceEdge * 3 + t + s;
+                    int variantBase = sourceEdge * 3 + t + s + (orient < 0 ? 6 : 0);
                     for (int v = 0; v < 4 && !isSolid(work, edgeIndex); ++v) {
                         auto seq = depthCommutator(depth, variantBase + v);
                         int seqLen = (int)seq.size();
@@ -334,6 +345,12 @@ std::vector<Move> EdgePairing::pairOne(Cube& work, int edgeIndex,
     for (int wing = 0; wing < budget && !isSolid(work, edgeIndex); ++wing) {
         int depth = 1 + (wing % depthSpan);
         int variant = (wing / depthSpan) % 12;
+        // Alternate a flip-slice attempt on odd wings when the slot is still empty.
+        int pre = 0;
+        if ((wing % 2) == 1 && wingOrientation(work, edgeIndex, depth) == 0) {
+            append(flipSliceSetup(edgeIndex, depth));
+            pre = 1;
+        }
         auto seq = depthCommutator(depth, variant);
         int seqLen = (int)seq.size();
         appendSeq(seq);
@@ -342,7 +359,7 @@ std::vector<Move> EdgePairing::pairOne(Cube& work, int edgeIndex,
             before = after;
             stagnant = 0;
         } else {
-            undoLast(seqLen);
+            undoLast(seqLen + pre);
             ++stagnant;
             if (stagnant >= stagnantLimit * 2) break;
         }
@@ -350,6 +367,7 @@ std::vector<Move> EdgePairing::pairOne(Cube& work, int edgeIndex,
     }
 
     // No trailing no-gain U: that move unpaired already-solid wings.
+    (void)kBufferEdge;
     return moves;
 }
 
@@ -389,6 +407,11 @@ std::vector<Move> EdgePairing::pairAll(Cube& work) {
                 int n = work.size();
                 int depthSpan = std::max(1, n / 2 - 1);
                 for (int d = 1; d <= depthSpan; ++d) {
+                    if (wingOrientation(work, e, d) == 0) {
+                        Move flip = flipSliceSetup(e, d);
+                        work.apply(flip);
+                        solution.push_back(flip);
+                    }
                     auto seq = depthCommutator(d, repair * 3 + e);
                     for (const auto& m : seq) {
                         work.apply(m);

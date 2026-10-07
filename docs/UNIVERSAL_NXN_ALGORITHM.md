@@ -1,72 +1,35 @@
-# Universal algorithm for any n×n×n with n > 3
+# Universal algorithm for any n x n x n, n > 3
 
-This is the algorithm this repo treats as **complete** for every size greater than 3.
+Contract. This is the constructive solver the repo ships. It is not a proof of God's number.
 
-It is **not** a closed-form exact God's number. Exact diameter g(n) is proven only for n=2 (11 HTM) and n=3 (20 HTM / 26 QTM). For n≥4 the Cayley-graph diameter is open; |G(4)| ≈ 7.4×10⁴⁵.
+## Status
 
-What *is* settled:
+- Always terminates for any n >= 4 (memory permitting).
+- Realises constructive upper bound U(n): odd `92n^2 - 307n + 113`, even `92n^2 - 307n + 257`.
+- Prints counting lower L(n) = floor(ln|G|/ln|S|) from Hardwick, lifted to community 35 (n=4) and 52 (n=5).
+- Prints L_fixed, gap, Ucas, OBTM, leftoverC, leftoverE.
+- Exact integer g(n) for n >= 4 is open. Do not publish a closed diameter.
 
-1. **Termination.** Reduction always finishes for any n≥4 (memory permitting).
-2. **Constructive upper bound** U(n) — every reachable state solves in ≤ U(n) moves of this algorithm family.
-3. **Asymptotic God's number** g(n) = Θ(n² / log n) (Demaine et al. 2011).
-4. **Counting lower bound** L(n) = ⌊ln|G| / ln|S|⌋ with Hardwick's exact |G(n)| and |S| = 6·⌊n/2⌋·3.
-5. **Face-fixed lower** L_fixed(n) (even n quotients |G| by 24).
-6. **Cascade budget** Ucas(n) — piece-budget family the solver is driven toward (not a diameter).
-7. **Stage caps** — Center/Edge stages clipped to C/E so overC/overE is actionable.
-8. **Edge pairing (2026-10-07):** source/dest facelet map. `wingFacelets` records (face,row,col); located source edge picks the setup; commutator undoes on no gain. Flip-aware setups and harness re-measure are next. See [FACELET_MAPPING.md](FACELET_MAPPING.md).
+## Pipeline
 
-## Algorithm (constructive God's-algorithm family)
-
-Input: scrambled n×n×n, n≥4.
-
-```
-1. ClusterScheduler      partition cubies into commuting slice classes
-2. BatchGroups           shared-slice commutators (Demaine parallel factor)
-3. CenterSolver          never-break orbits; BFS n≤5; residual n≥6
-3b. StageCap             clip centers to C = 8(n-2)²
-4. EdgePairing           Yau buffer + solid-set + facelet map + source setup
-4b. StageCap             clip edges to E = 96(n-2)
-5. ParityHandler         even n only: wing OLL + PLL parity at all depths
-6. ReducedSearch         n∈{4,5}: packed residual IDA* + bidirectional MITM
-7. 3×3 kernel            Kociemba → GodsAlgorithm ≤20 → CFOP fallback
-8. BatchSolver.optimize  window collapse → log-factor compression
-9. BoundHarness          emit Hardwick L(n), L_fixed, U(n), Ucas, gap, SSTM, OBTM
-10. Cube::applyNotation  SiGN replay (2R / Rw / 3Rw / M E S)
+```text
+ClusterScheduler
+  -> BatchGroups
+  -> Centers (never-break + orbit-BFS n<=5)
+  -> StageCap(C) + leftover center commutators
+  -> Edges (facelet map + flip-aware slice setup + solid-set)
+  -> StageCap(E) + leftover edge commutators
+  -> Parity (even n)
+  -> ReducedSearch (IDA* + residual MITM, n=4,5)
+  -> 3x3 (Kociemba / CFOP / GodsAlgorithm architecture)
+  -> BatchSolver::optimize
+  -> BoundHarness
 ```
 
-Output: SiGN move string + BoundReport.
+## 2026-10-08 edge step
 
-## Bounds the harness prints
+`locateTargetWings` tags orientation. A flipped source (`orient = -1`) receives `flipSliceSetup` before the depth commutator. No-gain sequences are undone. This is the current attack on leftoverE=6-7. It does not change U(n) or L(n).
 
-| symbol | meaning |
-|--------|---------|
-| L(n) | Hardwick counting + community lower |
-| L_fixed | face-fixed counting (even n: |G|/24) |
-| U(n) | constructive reduction formula (official guarantee) |
-| Ucas | cascade piece-budget family (solver target) |
-| gap | U(n) − L(n) |
-| log10\|G\| | Hardwick group order |
-| asym | 3.8 · n² / ln n |
-| OBTM≤54 | published 4×4 outer-block upper (not ours) |
+## What is not claimed
 
-U(n):
-- odd n:  92n² − 307n + 113
-- even n: 92n² − 307n + 257
-
-Locked values: U(4)=501, U(5)=878, U(6)=1727, U(7)=2472, U(10)=6387.
-
-Ucas(n) = 8(n−2)² + 96(n−2) + 20·[n even] + 20 + 6n  
-Locked: Ucas(4)=288, Ucas(5)=410, Ucas(10)=1380.
-
-Per-stage split: [STAGE_BUDGETS.md](STAGE_BUDGETS.md).  
-Caps: [STAGE_CAPS.md](STAGE_CAPS.md).
-
-## Honest statement for the README claim
-
-> "God's number and algorithm for any size > 3"
-
-- **Algorithm:** yes — this pipeline, implemented under `native/reduction/`.
-- **Asymptotic number:** yes — Θ(n² / log n).
-- **Exact integer g(n):** no, and this repo will not invent one. Closing g(4) is a multi-CPU-year research program, not a phone solver.
-
-Progress metric: desktop_harness replaySolved + measured OBTM vs Ucas vs community 54 + leftoverC/leftoverE after StageCap.
+God's number is the diameter of the Cayley graph. Proven only for n=2 (11 HTM) and n=3 (20 HTM / 26 QTM). |G(4)| is about 7.4e45. Community 4x4 OBTM window remains 35-54. Asymptotic result (Demaine et al.) is g(n) = Theta(n^2 / log n), which the batching stage follows in spirit.

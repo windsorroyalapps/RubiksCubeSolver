@@ -14,6 +14,8 @@
  * - Cross edges prioritized first (Yau spirit for large n)
  * - pairAll stops when leftoverUnpairedWings()==0
  * - 2026-10-07: source/dest facelet map (face,row,col) drives setup+commutator
+ * - 2026-10-08: flip-aware setup. Orientation +1 is home order, -1 is flipped.
+ *   A flipped source gets a quarter-slice before the commutator; undone on no gain.
  */
 struct WingFacelet {
     int face;
@@ -32,6 +34,9 @@ public:
     // Both stickers of the wing at depth d on edgeIndex (same coords as colour scan).
     static void wingFacelets(int n, int edgeIndex, int depth,
                              WingFacelet& a, WingFacelet& b);
+
+    // +1 home order (a==face1 colour, b==face2 colour), -1 flipped, 0 not this pair.
+    static int wingOrientation(const Cube& work, int edgeIndex, int depth);
 
     static bool isSolid(const Cube& work, int edgeIndex) {
         return pairedWings(work, edgeIndex) >= work.size() - 2;
