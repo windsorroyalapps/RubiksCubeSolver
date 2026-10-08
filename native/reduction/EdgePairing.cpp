@@ -249,6 +249,18 @@ static Move flipSliceSetup(int sourceEdge, int depth) {
     return Move{slice, depth, turn};
 }
 
+// Outer quarter of the source first face, then slice quarter on the second face.
+// Both undone if pairedWings does not rise. variant flips the turn signs.
+static std::vector<Move> twoMoveFlipSetup(int sourceEdge, int depth, int variant) {
+    int f1, f2;
+    edgeFaces(sourceEdge, f1, f2);
+    int sign = (variant % 2 == 0) ? 1 : -1;
+    return {
+        Move{static_cast<Face>(f1), 0, sign},
+        Move{static_cast<Face>(f2), depth, -sign}
+    };
+}
+
 std::vector<Move> EdgePairing::pairOne(Cube& work, int edgeIndex,
                                        const std::bitset<12>& solid) {
     std::vector<Move> moves;
@@ -281,6 +293,27 @@ std::vector<Move> EdgePairing::pairOne(Cube& work, int edgeIndex,
     static const Face setupFaces[] = {U, D, L, R};
     static const int setupTurns[] = {0, 1, -1, 2};
 
+    auto tryCommutators = [&](int depth, int variantBase, int& before,
+                              int setupCount, bool& gained) {
+        for (int v = 0; v < 4 && !isSolid(work, edgeIndex); ++v) {
+            auto seq = depthCommutator(depth, variantBase + v);
+            int seqLen = (int)seq.size();
+            appendSeq(seq);
+            int after = pairedWings(work, edgeIndex);
+            if (after > before) {
+                before = after;
+                stagnant = 0;
+                gained = true;
+                return;
+            }
+            undoLast(seqLen);
+            ++stagnant;
+            if (stagnant >= stagnantLimit) return;
+        }
+        if (!gained && setupCount > 0)
+            undoLast(setupCount);
+    };
+
     auto targets = unpairedDepths(work, edgeIndex);
     if (!targets.empty()) {
         for (int t = 0; t < (int)targets.size() && !isSolid(work, edgeIndex); ++t) {
@@ -304,34 +337,34 @@ std::vector<Move> EdgePairing::pairOne(Cube& work, int edgeIndex,
                         append(setup);
                         setupCount = 1;
                     }
-                    // Flipped colour pair: quarter the source slice, then the commutator.
                     if (orient < 0) {
                         append(flipSliceSetup(sourceEdge, depth));
                         ++setupCount;
                     }
                     bool gained = false;
                     int variantBase = sourceEdge * 3 + t + s + (orient < 0 ? 6 : 0);
-                    for (int v = 0; v < 4 && !isSolid(work, edgeIndex); ++v) {
-                        auto seq = depthCommutator(depth, variantBase + v);
-                        int seqLen = (int)seq.size();
-                        appendSeq(seq);
-                        int after = pairedWings(work, edgeIndex);
-                        if (after > before) {
-                            before = after;
-                            stagnant = 0;
-                            gained = true;
+                    tryCommutators(depth, variantBase, before, setupCount, gained);
+                    if (gained) {
+                        gainedDepth = true;
+                        break;
+                    }
+                    if (stagnant >= stagnantLimit) break;
+                }
+
+                // Single quarter missed: outer quarter then slice quarter, undone on no gain.
+                if (!gainedDepth && orient < 0 && !isSolid(work, edgeIndex)) {
+                    for (int variant = 0; variant < 2 && !isSolid(work, edgeIndex); ++variant) {
+                        auto setup2 = twoMoveFlipSetup(sourceEdge, depth, variant);
+                        appendSeq(setup2);
+                        bool gained = false;
+                        int variantBase = sourceEdge * 3 + t + 8 + variant;
+                        tryCommutators(depth, variantBase, before, (int)setup2.size(), gained);
+                        if (gained) {
                             gainedDepth = true;
                             break;
-                        } else {
-                            undoLast(seqLen);
-                            ++stagnant;
-                            if (stagnant >= stagnantLimit) break;
                         }
+                        if (stagnant >= stagnantLimit) break;
                     }
-                    if (!gained && setupCount > 0)
-                        undoLast(setupCount);
-                    if (gained) break;
-                    if (stagnant >= stagnantLimit) break;
                 }
                 if (gainedDepth || stagnant >= stagnantLimit) break;
             }
@@ -345,11 +378,15 @@ std::vector<Move> EdgePairing::pairOne(Cube& work, int edgeIndex,
     for (int wing = 0; wing < budget && !isSolid(work, edgeIndex); ++wing) {
         int depth = 1 + (wing % depthSpan);
         int variant = (wing / depthSpan) % 12;
-        // Alternate a flip-slice attempt on odd wings when the slot is still empty.
         int pre = 0;
-        if ((wing % 2) == 1 && wingOrientation(work, edgeIndex, depth) == 0) {
-            append(flipSliceSetup(edgeIndex, depth));
-            pre = 1;
+        if (wingOrientation(work, edgeIndex, depth) == 0) {
+            if ((wing % 4) == 3) {
+                appendSeq(twoMoveFlipSetup(edgeIndex, depth, wing));
+                pre = 2;
+            } else if ((wing % 2) == 1) {
+                append(flipSliceSetup(edgeIndex, depth));
+                pre = 1;
+            }
         }
         auto seq = depthCommutator(depth, variant);
         int seqLen = (int)seq.size();
@@ -366,7 +403,6 @@ std::vector<Move> EdgePairing::pairOne(Cube& work, int edgeIndex,
         if (isSolid(work, edgeIndex)) break;
     }
 
-    // No trailing no-gain U: that move unpaired already-solid wings.
     (void)kBufferEdge;
     return moves;
 }
@@ -408,9 +444,11 @@ std::vector<Move> EdgePairing::pairAll(Cube& work) {
                 int depthSpan = std::max(1, n / 2 - 1);
                 for (int d = 1; d <= depthSpan; ++d) {
                     if (wingOrientation(work, e, d) == 0) {
-                        Move flip = flipSliceSetup(e, d);
-                        work.apply(flip);
-                        solution.push_back(flip);
+                        auto setup2 = twoMoveFlipSetup(e, d, repair);
+                        for (const auto& m : setup2) {
+                            work.apply(m);
+                            solution.push_back(m);
+                        }
                     }
                     auto seq = depthCommutator(d, repair * 3 + e);
                     for (const auto& m : seq) {
