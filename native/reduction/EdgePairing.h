@@ -16,6 +16,9 @@
  * - 2026-10-07: source/dest facelet map (face,row,col) drives setup+commutator
  * - 2026-10-08: flip-aware setup. Orientation +1 is home order, -1 is flipped.
  *   A flipped source gets a quarter-slice before the commutator; undone on no gain.
+ * - 2026-10-09: if the single quarter does not raise pairedWings, try a 2-move
+ *   setup (outer quarter of the source first face, then slice quarter on the
+ *   second face). Both undone exactly on no gain. Solid bitset still protected.
  */
 struct WingFacelet {
     int face;
