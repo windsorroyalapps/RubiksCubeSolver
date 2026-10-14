@@ -26,6 +26,10 @@ ClusterScheduler
   -> BoundHarness
 ```
 
+## 2026-10-15 edge step note
+
+Continued residual edge attack. leftoverE remains the completeness gate after leftoverC=0. 2-move flip setup in place; next is facelet-shortest path and static tables.
+
 ## 2026-10-08 edge step
 
 `locateTargetWings` tags orientation. A flipped source (`orient = -1`) receives `flipSliceSetup` before the depth commutator. No-gain sequences are undone. This is the current attack on leftoverE=6-7. It does not change U(n) or L(n).

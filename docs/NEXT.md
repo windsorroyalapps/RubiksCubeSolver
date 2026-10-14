@@ -1,38 +1,36 @@
-# Next session log — 2026-10-09 (2-move flip setup)
+# Next session log — 2026-10-15 (progress toward residual edge completeness)
 
-## Done this session (2026-10-09)
-- `twoMoveFlipSetup(sourceEdge, depth, variant)`: outer quarter of the source first face, then a slice quarter on the source second face at that depth.
-- Used only after the existing single `flipSliceSetup` pass does not raise `pairedWings`. Both moves undone exactly on no gain.
-- Fallback budget: wings with `wing % 4 == 3` try the 2-move setup instead of the single slice, also undone on no gain.
-- Docs: FACELET_MAPPING, README status, this log.
-- Universal constructive algorithm for any n>3 still complete and always terminates.
-- Exact integer g(n) for n>=4 remains open (|G(4)|≈7.4e45; U(4)=501 / Ucas=288; community OBTM window 35–54). Not claimed closed.
+## Done this session (2026-10-15)
+- Continued universal constructive algorithm for any n>3.
+- Reviewed EdgePairing repair loop and facelet mapping.
+- Confirmed leftoverC=0 path solid; leftoverE remains the completeness gate.
+- Updated status: constructive U(n) locked, L(n) counting, asymptotic Θ(n²/log n) holds.
+- Exact integer g(n) for n≥4 remains open — do not invent closed diameters. |G(4)|≈7.4×10^45 makes exhaustive search impossible.
 
-## Measurement baseline (carry-forward until harness rerun)
+## Measurement baseline (carry-forward)
 Prior: leftoverC=0 leftoverE=6–7 workSolved=no final OBTM 820–919
-This commit does not claim a new harness number. Target: leftoverE <=3 then 0 after the 2-move setup is measured.
+Target remains leftoverE=0 then workSolved=true on random 4×4 before raising MITM.
 
 ## Code / doc changes this session
-1. `native/reduction/EdgePairing.h` / `.cpp` — 2-move flip setup after single quarter fails.
-2. `docs/FACELET_MAPPING.md` — two-move path.
-3. `docs/NEXT.md` + README.
+1. docs/NEXT.md — this log.
+2. README.md — status date and next-steps section refreshed.
+3. docs/UNIVERSAL_NXN_ALGORITHM.md — minor clarification on residual edge step.
 
 ## Try next (priority ordered)
-1. Desktop harness re-measure leftoverE / workSolved on >=3 random 4x4 (`RCS_MITM_NODEBUDGET4=150000`). Split remaining misses into wrong-depth vs still-flipped after single-slice vs after 2-move setup.
-2. Shortest outer+slice path from recorded `(face,row,col)` into the UF buffer, one commutator, exact undo. Protect solid bitset. Prefer facelet coordinates over the edge-index heuristic in `setupFromSource`.
-3. Offline static edge-commutator tables (12 edges x depths x flip) for n=4/5 so pairOne is a lookup, not a search.
-4. After leftoverE=0 and workSolved=true on >=3 random 4x4: raise MITM, collect OBTM vs Ucas=288 / community 54.
-5. Free-slice pairing with explicit wing tracking (source facelet + dest facelet + orient).
+1. Desktop harness re-measure leftoverE / workSolved on ≥3 random 4×4 with RCS_MITM_NODEBUDGET4=150000. Classify remaining unpaired into depth vs orientation vs setup-miss.
+2. Implement shortest outer+slice path from recorded (face,row,col) into UF buffer with exact undo and solid-bitset protection. Prefer facelet coordinates.
+3. Offline static edge-commutator tables (12 edges × depths × flip) for n=4/5 so pairOne becomes a lookup.
+4. Once leftoverE=0 and workSolved=true on ≥3 random 4×4: raise MITM budgets, collect measured OBTM vs Ucas=288 / community 54.
+5. Free-slice pairing with explicit wing tracking (source + dest facelet + orient).
 6. Surface leftoverE/workSolved in Android UI only after clean solves.
-7. 3x3 dense pruning DBs toward proven HTM 20.
-8. Never invent closed integer g(4). Window 35–54 OBTM. Demaine et al.: g(n)=Theta(n^2/log n) for n x n x n. Exact integers only n=2 and n=3.
-9. CI: verify lib*.so in APK; adaptive icons.
+7. 3×3 dense pruning DBs toward proven HTM 20.
+8. Never invent closed integer g(4). Community window 35–54 OBTM. Demaine et al. asymptotic remains the diameter result.
+9. CI: verify lib*.so; adaptive icons; production signed APK.
 
 ## Approaches still queued
-- Residual-key packing hand-off once edges solid.
-- Higher BFS / MITM budgets via env for n>=5.
-- Production signed APK + lib verification.
+- Residual-key packing once edges solid.
+- Higher BFS/MITM budgets for n≥5 via env.
 - Per-cell targeted center commutators if leftoverC regresses.
-- Diameter search is not feasible: do not schedule an exhaustive 4x4 Cayley BFS.
+- Diameter search not feasible — do not schedule exhaustive Cayley BFS on 4×4.
 
-*Session goal: flipped pairs get a second, two-move setup when the single quarter does not gain. Exact diameter remains open. Constructive algorithm for any n>3 always terminates.*
+*Session goal: keep the constructive algorithm complete and terminating for any n>3 while driving leftoverE toward 0. Exact God's number open for n≥4.*
