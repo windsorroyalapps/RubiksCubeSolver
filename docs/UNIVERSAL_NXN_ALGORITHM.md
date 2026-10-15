@@ -26,9 +26,9 @@ ClusterScheduler
   -> BoundHarness
 ```
 
-## 2026-10-15 edge step note
+## 2026-10-16 edge step note
 
-Continued residual edge attack. leftoverE remains the completeness gate after leftoverC=0. 2-move flip setup in place; next is facelet-shortest path and static tables.
+Expanded setupFromSource with additional face options to improve residual edge positioning. leftoverE remains the completeness gate after leftoverC=0. Next is facelet-shortest path and static tables.
 
 ## 2026-10-08 edge step
 

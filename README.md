@@ -103,7 +103,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-10-15)
+## Status (2026-10-16)
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
 - [x] ClusterScheduler + BatchGroups + BatchSolver
@@ -136,7 +136,8 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 - [x] 2026-10-07 source/dest facelet map (`wingFacelets`) + source-driven setup, no-gain undo, dropped trailing U
 - [x] 2026-10-08 flip-aware setups: `wingOrientation` +1/−1/0, quarter-slice before commutator, undone on no gain
 - [x] **2026-10-09 2-move flip setup: outer quarter + slice quarter after single quarter misses, undone on no gain**
-- [ ] EdgePairing leftoverE=0 on random 4×4 (**priority gate** — harness re-measure after 2-move setup; session 2026-10-15 continues attack)
+- [x] **2026-10-16 expanded setupFromSource with additional L/R face options for better residual edge positioning**
+- [ ] EdgePairing leftoverE=0 on random 4×4 (**priority gate** — harness re-measure after expanded setups; session 2026-10-16 continues attack)
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK + verified native .so
 - [ ] Adaptive launcher icons
@@ -146,21 +147,21 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Next steps / approaches to try next time (2026-10-15)
+## Next steps / approaches to try next time (2026-10-16)
 
-Automation session 2026-10-15: continued drive on residual edge completeness. Universal constructive algorithm for any n>3 remains complete + always terminates. Exact g(n) open. Do not invent a closed integer.
+Automation session 2026-10-16: expanded source setup faces in EdgePairing to improve residual edge completeness. Universal constructive algorithm for any n>3 remains complete + always terminates. Exact g(n) open. Do not invent a closed integer.
 
 Carry-forward baseline:
 - leftoverC=0 leftoverE=6–7 workSolved=no OBTM 820–919
 - goal: leftoverE ≤3 then 0
 
-1. Re-run `./artifacts/rcs_harness 4 10` and log leftoverE / workSolved. Classify remaining misses (wrong-depth / orientation / setup-miss).
-2. Shortest outer+slice path from recorded `(face,row,col)` into the UF buffer, one commutator, exact undo, solid bitset protected. Prefer facelet coordinates.
-3. Offline static edge-commutator tables (12 edges × depths × flip) for n=4/5.
+1. Re-run `./artifacts/rcs_harness 4 10` and log leftoverE / workSolved after expanded setups. Classify remaining misses (wrong-depth / orientation / setup-miss).
+2. Shortest outer+slice path from recorded `(face,row,col)` into the UF buffer, one commutator, exact undo, solid bitset protected. Prefer facelet coordinates. Implement as static lookup for n=4.
+3. Offline static edge-commutator tables (12 edges × depths × flip) for n=4/5 so pairOne becomes a lookup.
 4. After leftoverE=0 and workSolved=true on ≥3 random 4×4: raise MITM, collect OBTM vs Ucas=288 / community 54.
 5. Surface leftoverE/workSolved in the Android UI only after clean solves.
 6. 3×3 dense pruning DBs toward proven HTM 20.
-7. Never invent closed integer g(4). |G(4)|≈7.4e45. Window 35–54 OBTM. Asymptotic diameter Θ(n²/log n) (Demaine et al.).
+7. Never invent closed integer g(4). |G(4)|≈7.4e45. Window 35–54 OBTM. Asymptotic diameter Θ(n²/log n) (Demaine et al.). The constructive algorithm realises a practical U(n) in that family.
 8. CI: verify lib*.so; adaptive icons; production signed APK.
 
 See [docs/NEXT.md](docs/NEXT.md).

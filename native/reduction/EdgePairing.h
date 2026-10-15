@@ -19,6 +19,8 @@
  * - 2026-10-09: if the single quarter does not raise pairedWings, try a 2-move
  *   setup (outer quarter of the source first face, then slice quarter on the
  *   second face). Both undone exactly on no gain. Solid bitset still protected.
+ * - 2026-10-16: expanded setupFromSource with additional face options (L/R) to improve
+ *   source positioning into the buffer for residual edges.
  */
 struct WingFacelet {
     int face;
