@@ -80,7 +80,7 @@ Exact diameter open for n≥4. Constructive algorithm always terminates.
 | n | L(n) ≥ | L_fixed | log10|G| | Constructive U(n) | gap U−L | Community OBTM upper |
 |---|--------|---------|------------|-------------------|---------|----------------------|
 | 3 | **20** | **20** | 19.64 | **20** | 0 | **20** (proven) |
-| 4 | 35 | 32 | 45.87 | **501** / Ucas **288** | 466 | **55** |
+| 4 | 35 | 32 | 45.87 | **501** / Ucas **288** | 466 | **54** (Jul 2026) |
 | 5 | **52** | 47 | 74.45 | **878** / Ucas **410** | 826 | ~130 claimed |
 | 6 | 67 | 66 | 116.20 | **1727** | 1660 | open |
 | 7 | 92 | 92 | 160.29 | **2472** | 2380 | open |
@@ -88,7 +88,7 @@ Exact diameter open for n≥4. Constructive algorithm always terminates.
 | 9 | 149 | 149 | 277.15 | **4802** | 4653 | open |
 | 10 | 179 | 178 | 349.92 | **6387** | 6208 | open |
 
-4×4 probabilistic estimates ~41 HTM / ~48 QTM. Community OBTM window currently 35–55.
+4×4 probabilistic estimates ~41 HTM / ~48 QTM. Community OBTM window currently 35–54.
 
 L(n) for n≥4 is `floor(ln|G|/ln|S|)` from Hardwick's exact |G(n)|, lifted to community 35 on 4×4 and 52 on 5×5. L_fixed quotients even-n |G| by 24. Still counting lowers, not proven diameters. U(n) is the hard constructive guarantee. Ucas is the piece-budget family we drive the solver toward.
 
@@ -103,12 +103,12 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-10-17)
+## Status (2026-10-22)
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
 - [x] ClusterScheduler + BatchGroups + BatchSolver
 - [x] BoundHarness U(n) + OBTM/SSTM + per-stage OBTM
-- [x] BoundHarness L(n) counting lower + generatorCount + community OBTM 55 (4x4)
+- [x] BoundHarness L(n) counting lower + generatorCount + community OBTM 54 (4x4)
 - [x] Hardwick exact |G(n)| in log-space
 - [x] `native/tools/print_bounds.cpp` + [docs/GROUP_ORDER.md](docs/GROUP_ORDER.md)
 - [x] U(n) table n≥6 locked (1727 / 2472 / 3689 / 4802 / 6387)
@@ -137,7 +137,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 - [x] 2026-10-08 flip-aware setups: `wingOrientation` +1/−1/0, quarter-slice before commutator, undone on no gain
 - [x] **2026-10-09 2-move flip setup: outer quarter + slice quarter after single quarter misses, undone on no gain**
 - [x] **2026-10-16 expanded setupFromSource with additional L/R face options for better residual edge positioning**
-- [ ] EdgePairing leftoverE=0 on random 4×4 (**priority gate** — harness re-measure after expanded setups; session 2026-10-17 continues attack)
+- [ ] EdgePairing leftoverE=0 on random 4×4 (**priority gate** — harness re-measure after expanded setups; session continues attack)
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK + verified native .so
 - [ ] Adaptive launcher icons
@@ -147,9 +147,9 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Next steps / approaches to try next time (2026-10-17)
+## Next steps / approaches to try next time (2026-10-22)
 
-Automation session 2026-10-17: research update confirming Demaine Θ(n²/log n), community OBTM 35–55 for 4×4, probabilistic ~41 HTM. Universal constructive algorithm for any n>3 remains complete + always terminates. Exact g(n) open. Do not invent a closed integer.
+Automation session 2026-10-22: Incorporated Jul 2026 improvement of 4×4 OBTM upper bound from 55 to 54 (phases 1+2 ≤18 + phase 3 16 + reduced 3×3 20). Probabilistic estimates remain ~41 HTM / ~48 QTM. Demaine et al. Θ(n²/log n) holds. Universal constructive algorithm for any n>3 remains complete + always terminates. Exact g(n) open. Do not invent a closed integer.
 
 Carry-forward baseline:
 - leftoverC=0 leftoverE=6–7 workSolved=no OBTM 820–919
@@ -158,12 +158,12 @@ Carry-forward baseline:
 1. Re-run `./artifacts/rcs_harness 4 10` and log leftoverE / workSolved after expanded setups. Classify remaining misses (wrong-depth / orientation / setup-miss).
 2. Shortest outer+slice path from recorded `(face,row,col)` into the UF buffer, one commutator, exact undo, solid bitset protected. Prefer facelet coordinates. Implement as static lookup for n=4.
 3. Offline static edge-commutator tables (12 edges × depths × flip) for n=4/5 so pairOne becomes a lookup.
-4. After leftoverE=0 and workSolved=true on ≥3 random 4×4: raise MITM, collect OBTM vs Ucas=288 / community 54–55.
+4. After leftoverE=0 and workSolved=true on ≥3 random 4×4: raise MITM, collect OBTM vs Ucas=288 / community 54.
 5. Surface leftoverE/workSolved in the Android UI only after clean solves.
 6. 3×3 dense pruning DBs toward proven HTM 20.
-7. Never invent closed integer g(4). |G(4)|≈7.4e45. Window 35–55 OBTM. Asymptotic diameter Θ(n²/log n) (Demaine et al.). The constructive algorithm realises a practical U(n) in that family.
+7. Never invent closed integer g(4). |G(4)|≈7.4e45. Window 35–54 OBTM. Asymptotic diameter Θ(n²/log n) (Demaine et al.). The constructive algorithm realises a practical U(n) in that family.
 8. CI: verify lib*.so; adaptive icons; production signed APK.
-9. Optional: add probabilistic diameter estimator reporting (not claimed exact g(n)).
+9. Optional: add probabilistic diameter estimator reporting (not claimed exact g(n)). Integrate recent computer-assisted phase bounds where possible.
 
 See [docs/NEXT.md](docs/NEXT.md).
 

@@ -1,8 +1,10 @@
-# Next session log — 2026-10-17 (research + constructive algorithm refinement)
+# Next session log — 2026-10-22 (bounds update + constructive algorithm)
 
-## Done this session (2026-10-17)
+## Done this session (2026-10-22)
 - Confirmed exact integer g(n) for n≥4 remains open (only proven for n=2,3).
-- Incorporated latest literature: Demaine et al. Θ(n²/log n) asymptotic is the diameter result; probabilistic estimates for 4×4 ~41 HTM / ~48 QTM; community OBTM window 35–55 for 4×4, 52–130 for 5×5.
+- Incorporated Jul 2026 community result: 4×4 OBTM upper bound improved from 55 to 54 via computer-assisted proof of phases 1+2 ≤18 moves (https://github.com/AnanasClassic/4x4x4-obtm-54-research).
+- Probabilistic estimates for 4×4 ~41 HTM / ~48 QTM; 5×5 ~58 HTM / ~68 QTM unchanged.
+- Demaine et al. asymptotic g(n) = Θ(n² / log n) remains the diameter result.
 - Constructive universal algorithm for any n>3 remains complete and always terminates (reduction + Demaine-style batching + residual MITM + StageCap + facelet-mapped flip-aware edge pairing).
 - Updated status and next steps; no fake closed diameter invented.
 
@@ -12,18 +14,20 @@ Target: leftoverE=0 then workSolved=true on ≥3 random 4×4 before raising MITM
 
 ## Code / doc changes this session
 1. docs/NEXT.md — this log.
-2. README.md — status refreshed with current bounds and next approaches.
+2. README.md — status and bounds table refreshed (OBTM 54 for 4×4).
+3. docs/GODS_NUMBER_NXN.md — community upper updated.
 
 ## Try next (priority ordered)
 1. Desktop harness re-measure leftoverE / workSolved on ≥3 random 4×4 (RCS_MITM_NODEBUDGET4=150000). Classify remaining unpaired (depth / orientation / setup-miss).
 2. Implement shortest outer+slice path from recorded (face,row,col) into UF buffer with exact undo + solid-bitset protection. Static lookup for n=4 preferred.
 3. Offline static edge-commutator tables (12 edges × depths × flip) for n=4/5 so pairOne becomes lookup.
-4. Once leftoverE=0 and workSolved=true: raise MITM, collect measured OBTM vs Ucas=288 / community ~54.
+4. Once leftoverE=0 and workSolved=true: raise MITM, collect measured OBTM vs Ucas=288 / community 54.
 5. Free-slice pairing with explicit wing tracking.
 6. Surface leftoverE/workSolved in Android UI only after clean solves.
 7. 3×3 dense pruning DBs toward proven HTM 20.
-8. Never invent closed integer g(4). |G(4)|≈7.4e45. Window 35–55 OBTM. Asymptotic Θ(n²/log n) holds.
+8. Never invent closed integer g(4). |G(4)|≈7.4e45. Window 35–54 OBTM. Asymptotic Θ(n²/log n) holds.
 9. CI: verify lib*.so; adaptive icons; production signed APK.
+10. Optional integration of phase-decomposition certificates from 54-bound research for tighter constructive stages.
 
 ## Approaches still queued
 - Residual-key packing once edges solid.

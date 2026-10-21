@@ -14,7 +14,7 @@ For every **n ≥ 4**, g(n) is **open**. Group order grows as ~exp(Θ(n²)); exh
 3. Follows Demaine et al.: **g(n) = Θ(n² / log n)** by batching shared slice moves.
 4. Prints a counting lower bound **L(n) = ⌊ln|G|/ln|S|⌋** from Hardwick's exact |G(n)|.
 5. Prints **L_fixed(n)** (even n: |G|/24) and the window **gap = U(n)−L(n)**.
-6. Prints **Ucas(n)** piece-budget target (2026-09-03).
+6. Prints **Ucas(n)** piece-budget target.
 7. Tightens live length with residual MITM on 4×4 / 5×5.
 
 Canonical write-up: [UNIVERSAL_NXN_ALGORITHM.md](UNIVERSAL_NXN_ALGORITHM.md).  
@@ -39,11 +39,11 @@ ClusterScheduler
 - Odd n: `92n² − 307n + 113`
 - Even n: `92n² − 307n + 257`
 
-Verified by `print_bounds` (2026-09-03, OEIS + Ucas lock):
+Verified by `print_bounds`:
 
 | n | U(n) | L(n) | L_fixed | Community / estimates |
 |---|------|------|---------|------------------------|
-| 4 | 501 / Ucas 288 | ≥35 | ≥32 | OBTM upper **54**; probabilistic ~41 HTM / ~48 QTM |
+| 4 | 501 / Ucas 288 | ≥35 | ≥32 | OBTM upper **54** (Jul 2026); probabilistic ~41 HTM / ~48 QTM |
 | 5 | 878 / Ucas 410 | ≥52 | ≥47 | OBTM ~130 claimed; probabilistic ~58 HTM / ~68 QTM |
 | 6 | **1727** | 67 | 66 | open |
 | 7 | **2472** | 92 | 92 | open |
@@ -55,7 +55,7 @@ BoundHarness scale `3.8 · n² / ln(n)` sits near those community estimates (~44
 
 ## Why exact g(n) is not claimed
 
-Computing God's number is the diameter of the Cayley graph. For n=3 that required ~35 CPU-years. For n=4 the position count is ~7.4×10⁴⁵. Honest progress: keep U(n), print Hardwick L(n) + L_fixed + Ucas, shrink measured OBTM, raise residual MITM quality.
+Computing God's number is the diameter of the Cayley graph. For n=3 that required ~35 CPU-years. For n=4 the position count is ~7.4×10⁴⁵. Honest progress: keep U(n), print Hardwick L(n) + L_fixed + Ucas, shrink measured OBTM, raise residual MITM quality. Recent community upper for 4×4 is 54 OBTM.
 
 ## Code map
 
