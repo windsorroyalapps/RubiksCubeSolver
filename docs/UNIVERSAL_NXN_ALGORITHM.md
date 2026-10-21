@@ -9,6 +9,7 @@ Contract. This is the constructive solver the repo ships. It is not a proof of G
 - Prints counting lower L(n) = floor(ln|G|/ln|S|) from Hardwick, lifted to community 35 (n=4) and 52 (n=5).
 - Prints L_fixed, gap, Ucas, OBTM, leftoverC, leftoverE.
 - Exact integer g(n) for n >= 4 is open. Do not publish a closed diameter.
+- Community 4x4 OBTM upper now **54** (Jul 2026 computer-assisted phase bound).
 
 ## Pipeline
 
@@ -25,6 +26,10 @@ ClusterScheduler
   -> BatchSolver::optimize
   -> BoundHarness
 ```
+
+## 2026-10-22 edge step note
+
+Expanded setups continue; leftoverE is the completeness gate after leftoverC=0. Community upper for 4x4 tightened to 54 OBTM. Next is facelet-shortest path and static tables to drive measured OBTM toward Ucas=288 and community 54.
 
 ## 2026-10-16 edge step note
 
