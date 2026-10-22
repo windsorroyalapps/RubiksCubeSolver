@@ -103,7 +103,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-10-22)
+## Status (2026-10-23)
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
 - [x] ClusterScheduler + BatchGroups + BatchSolver
@@ -147,9 +147,9 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Next steps / approaches to try next time (2026-10-22)
+## Next steps / approaches to try next time (2026-10-23)
 
-Automation session 2026-10-22: Incorporated Jul 2026 improvement of 4×4 OBTM upper bound from 55 to 54 (phases 1+2 ≤18 + phase 3 16 + reduced 3×3 20). Probabilistic estimates remain ~41 HTM / ~48 QTM. Demaine et al. Θ(n²/log n) holds. Universal constructive algorithm for any n>3 remains complete + always terminates. Exact g(n) open. Do not invent a closed integer.
+Automation session 2026-10-23: Confirmed exact g(n) open for n≥4. Latest 4x4 OBTM upper 54 (Jul 2026). Universal constructive algorithm for any n>3 complete + always terminates. leftoverC=0; driving leftoverE to 0 is the completeness gate. Do not invent a closed integer.
 
 Carry-forward baseline:
 - leftoverC=0 leftoverE=6–7 workSolved=no OBTM 820–919
