@@ -103,7 +103,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-10-24)
+## Status (2026-10-25)
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
 - [x] ClusterScheduler + BatchGroups + BatchSolver
@@ -147,9 +147,9 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Next steps / approaches to try next time (2026-10-24)
+## Next steps / approaches to try next time (2026-10-25)
 
-Automation session 2026-10-24: Confirmed exact g(n) open for n≥4. Latest 4x4 OBTM upper 54 (Jul 2026). Universal constructive algorithm for any n>3 complete + always terminates. leftoverC=0; driving leftoverE to 0 is the completeness gate. Do not invent a closed integer.
+Automation session 2026-10-25: Reconfirmed exact g(n) open for n≥4 (only n=2,3 proven). Community 4×4 OBTM upper remains 54 (AnanasClassic Jul 2026 phase 1+2 ≤18 +16+20). Demigod’s Number paper (Merino/Subercaseaux FUN 2026) offers sampling-based diameter ≤2×average for vertex-transitive groups — useful for future probabilistic estimators, not exact. Universal constructive algorithm for any n>3 complete + always terminates. leftoverC=0; leftoverE is the completeness gate. Do not invent closed integer.
 
 Carry-forward baseline:
 - leftoverC=0 leftoverE=6–7 workSolved=no OBTM 820–919
@@ -163,7 +163,7 @@ Carry-forward baseline:
 6. 3×3 dense pruning DBs toward proven HTM 20.
 7. Never invent closed integer g(4). |G(4)|≈7.4e45. Window 35–54 OBTM. Asymptotic diameter Θ(n²/log n) (Demaine et al.). The constructive algorithm realises a practical U(n) in that family.
 8. CI: verify lib*.so; adaptive icons; production signed APK.
-9. Optional: add probabilistic diameter estimator reporting (not claimed exact g(n)). Integrate recent computer-assisted phase bounds where possible.
+9. Optional: add probabilistic diameter estimator reporting using Demigod sampling (not claimed exact g(n)). Integrate recent computer-assisted phase bounds where possible. Explore residual packing once edges solid.
 
 See [docs/NEXT.md](docs/NEXT.md).
 
