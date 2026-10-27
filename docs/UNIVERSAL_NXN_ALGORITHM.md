@@ -27,6 +27,10 @@ ClusterScheduler
   -> BoundHarness
 ```
 
+## 2026-10-28 edge step note
+
+Reconfirmed community 4x4 OBTM upper 54. Noted Demigod sampling method (FUN 2026) for potential future probabilistic diameter estimators. leftoverE remains the completeness gate after leftoverC=0. Next is facelet-shortest path and static tables to drive measured OBTM toward Ucas=288 and community 54. Consider Hirata graph-theoretical lower bounds.
+
 ## 2026-10-25 edge step note
 
 Reconfirmed community 4x4 OBTM upper 54. Noted Demigod sampling method (FUN 2026) for potential future probabilistic diameter estimators. leftoverE remains the completeness gate after leftoverC=0. Next is facelet-shortest path and static tables to drive measured OBTM toward Ucas=288 and community 54.

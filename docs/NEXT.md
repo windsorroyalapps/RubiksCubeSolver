@@ -1,6 +1,6 @@
-# Next session log — 2026-10-25 (automation progress on universal nxn algorithm)
+# Next session log — 2026-10-28 (automation progress on universal nxn algorithm)
 
-## Done this session (2026-10-25)
+## Done this session (2026-10-28)
 - Reconfirmed exact integer g(n) for n≥4 remains open (proven only for n=2,3; 3×3 HTM=20, QTM=26). Exhaustive diameter search infeasible (|G(4)|≈7.4e45).
 - Latest community OBTM upper for 4×4 remains 54 (Jul 2026, AnanasClassic computer-assisted proof of phases 1+2 ≤18; +16 phase 3 +20 reduced 3×3). Window 35–54 OBTM.
 - Noted Demigod’s Number paper (Merino & Subercaseaux, FUN 2026): sampling-based method gives high-confidence diameter ≤ 2 × average distance for vertex-transitive Cayley graphs. Useful for future probabilistic estimators on nxn; not a closed integer.
@@ -15,7 +15,7 @@ Target: leftoverE=0 then workSolved=true on ≥3 random 4×4 before raising MITM
 
 ## Code / doc changes this session
 1. docs/NEXT.md — this log.
-2. README.md — refreshed status date to 2026-10-25, bounds confirmation, next steps / approaches including Demigod sampling note.
+2. README.md — refreshed status date to 2026-10-28, bounds confirmation, next steps / approaches including Demigod sampling note and Hirata lower bounds mention.
 
 ## Try next (priority ordered)
 1. Re-run desktop harness `./artifacts/rcs_harness 4 10` with RCS_MITM_NODEBUDGET4=150000 RCS_MITM_DEPTHCAP4=28 and log leftoverE / workSolved. Classify remaining unpaired wings (wrong-depth / orientation / setup-miss).
@@ -27,7 +27,7 @@ Target: leftoverE=0 then workSolved=true on ≥3 random 4×4 before raising MITM
 7. 3×3 dense pruning DBs toward proven HTM 20.
 8. Never invent closed integer g(4). |G(4)|≈7.4e45. Window 35–54 OBTM. Asymptotic Θ(n²/log n) holds.
 9. CI: verify lib*.so; adaptive icons; production signed APK.
-10. Optional: integrate phase-decomposition certificates from 54-bound research for tighter constructive stages; implement Demigod-style probabilistic diameter estimator as optional reporting (not claimed exact g(n)).
+10. Optional: integrate phase-decomposition certificates from 54-bound research for tighter constructive stages; implement Demigod-style probabilistic diameter estimator as optional reporting (not claimed exact g(n)). Explore Hirata graph-theoretical diameter lower bounds for potential L(n) tightening.
 
 ## Approaches still queued
 - Residual-key packing once edges solid.
