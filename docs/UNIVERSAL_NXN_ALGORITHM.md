@@ -10,6 +10,7 @@ Contract. This is the constructive solver the repo ships. It is not a proof of G
 - Prints L_fixed, gap, Ucas, OBTM, leftoverC, leftoverE.
 - Exact integer g(n) for n >= 4 is open. Do not publish a closed diameter.
 - Community 4x4 OBTM upper now **54** (Jul 2026 computer-assisted phase bound).
+- Asymptotic diameter g(n) = Θ(n² / log n) (Demaine et al.).
 
 ## Pipeline
 
@@ -26,6 +27,10 @@ ClusterScheduler
   -> BatchSolver::optimize
   -> BoundHarness
 ```
+
+## 2026-10-30 edge step note
+
+Reconfirmed exact g(n) open for n>=4. Asymptotic Θ(n²/log n) holds. Community 4x4 OBTM upper 54. leftoverE remains the completeness gate after leftoverC=0. Next is facelet-shortest path and static tables to drive measured OBTM toward Ucas=288 and community 54. Noted Demaine parallelization and Salkinder group analysis for potential refinements.
 
 ## 2026-10-29 edge step note
 

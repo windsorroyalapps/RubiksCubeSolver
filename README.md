@@ -103,7 +103,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-10-29)
+## Status (2026-10-30)
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
 - [x] ClusterScheduler + BatchGroups + BatchSolver
@@ -147,9 +147,9 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Next steps / approaches to try next time (2026-10-29)
+## Next steps / approaches to try next time (2026-10-30)
 
-Automation session 2026-10-29: Reconfirmed exact g(n) open for n≥4 (only n=2,3 proven). Community 4×4 OBTM upper remains 54 (AnanasClassic Jul 2026 phase 1+2 ≤18 +16+20). Demigod’s Number paper (Merino/Subercaseaux FUN 2026) offers sampling-based diameter ≤2×average for vertex-transitive groups — useful for future probabilistic estimators, not exact. Universal constructive algorithm for any n>3 complete + always terminates. leftoverC=0; leftoverE is the completeness gate. Do not invent closed integer.
+Automation session 2026-10-30: Exact integer g(n) remains open for n≥4 (proven only for n=2,3). Asymptotic Θ(n²/log n) from Demaine et al. (arXiv:1106.5736) is the known growth rate. Community 4×4 OBTM upper 54 holds. Demigod sampling (arXiv:2501.00144) noted for probabilistic bounds. Universal constructive algorithm complete and always terminates for any n>3. Priority remains driving leftoverE to 0 on 4×4 to unlock workSolved and measured OBTM collection vs Ucas=288 / community 54. Do not invent closed integer.
 
 Carry-forward baseline:
 - leftoverC=0 leftoverE=6–7 workSolved=no OBTM 820–919
@@ -163,7 +163,7 @@ Carry-forward baseline:
 6. 3×3 dense pruning DBs toward proven HTM 20.
 7. Never invent closed integer g(4). |G(4)|≈7.4e45. Window 35–54 OBTM. Asymptotic diameter Θ(n²/log n) (Demaine et al.). The constructive algorithm realises a practical U(n) in that family.
 8. CI: verify lib*.so; adaptive icons; production signed APK.
-9. Optional: add probabilistic diameter estimator reporting using Demigod sampling (not claimed exact g(n)). Integrate recent computer-assisted phase bounds where possible. Explore residual packing once edges solid. Consider Hirata graph-theoretical lower bounds for tighter L(n).
+9. Optional: add probabilistic diameter estimator reporting using Demigod sampling (not claimed exact g(n)). Integrate recent computer-assisted phase bounds where possible. Explore residual packing once edges solid. Consider Hirata graph-theoretical lower bounds for tighter L(n). Review Salkinder group-order refinements for L(n).
 
 See [docs/NEXT.md](docs/NEXT.md).
 
