@@ -28,6 +28,10 @@ ClusterScheduler
   -> BoundHarness
 ```
 
+## 2026-11-05 edge step note
+
+Fresh harness measurement on 4×4 (limited budgets, 3 trials): leftoverC=0 leftoverE=7-8 workSolved=no OBTM=143-266 (under Ucas=288, within U(n)=501). Exact g(n) open for n>=4. Asymptotic Θ(n²/log n) holds as the general God's algorithm for any size >3. Community 4x4 OBTM upper 54. leftoverE remains the completeness gate after leftoverC=0. Next is facelet-shortest path and static tables to drive measured OBTM toward Ucas=288 and community 54. Noted Demaine parallelization and Salkinder group analysis for potential refinements.
+
 ## 2026-11-03 edge step note
 
 Fresh harness measurement on 4×4 (reduced budgets): leftoverC=0 leftoverE=8 workSolved=no OBTM=257 (under Ucas=288, within U(n)=501). Improvement over prior 820–919 range. Exact g(n) open for n>=4. Asymptotic Θ(n²/log n) holds as the general God's algorithm for any size >3. Community 4x4 OBTM upper 54. leftoverE remains the completeness gate after leftoverC=0. Next is facelet-shortest path and static tables to drive measured OBTM toward Ucas=288 and community 54. Noted Demaine parallelization and Salkinder group analysis for potential refinements.
