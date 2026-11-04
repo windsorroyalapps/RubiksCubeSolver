@@ -103,7 +103,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-11-03)
+## Status (2026-11-05)
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
 - [x] ClusterScheduler + BatchGroups + BatchSolver
@@ -147,12 +147,12 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Next steps / approaches to try next time (2026-11-03)
+## Next steps / approaches to try next time (2026-11-05)
 
-Automation session 2026-11-03: Exact integer g(n) remains open for n≥4 (proven only for n=2,3). Asymptotic Θ(n²/log n) from Demaine et al. (arXiv:1106.5736) is the known growth rate and practical God's algorithm for any size greater than 3. Community 4×4 OBTM upper 54 holds. Demigod sampling noted for probabilistic bounds. Universal constructive algorithm complete and always terminates for any n>3. Fresh harness measurement (reduced budgets): leftoverC=0 leftoverE=8 workSolved=no OBTM=257 (under Ucas=288). Priority remains driving leftoverE to 0 on 4×4 to unlock workSolved and measured OBTM collection vs Ucas=288 / community 54. Do not invent closed integer.
+Automation session 2026-11-05: Exact integer g(n) remains open for n≥4 (proven only for n=2,3). Asymptotic Θ(n²/log n) from Demaine et al. (arXiv:1106.5736) is the known growth rate and practical God's algorithm for any size greater than 3. Community 4×4 OBTM upper 54 holds. Demigod sampling noted for probabilistic bounds. Universal constructive algorithm complete and always terminates for any n>3. Fresh harness measurement (limited budgets, 3 trials): leftoverC=0 leftoverE=7-8 workSolved=no OBTM=143-266 (under Ucas=288). Priority remains driving leftoverE to 0 on 4×4 to unlock workSolved and measured OBTM collection vs Ucas=288 / community 54. Do not invent closed integer.
 
 Carry-forward baseline:
-- leftoverC=0 leftoverE=8 workSolved=no OBTM=257
+- leftoverC=0 leftoverE=7-8 workSolved=no OBTM=143-266
 - goal: leftoverE=0 then workSolved=true
 
 1. Re-run `./artifacts/rcs_harness 4 10` with higher MITM budgets and log leftoverE / workSolved. Classify remaining unpaired wings (wrong-depth / orientation / setup-miss).
