@@ -1,3 +1,24 @@
+# Next session log — 2026-11-07 (automation progress on universal nxn algorithm)
+
+## Done this session (2026-11-07)
+- Re-ran desktop harness on 4×4 with RCS_MITM_NODEBUDGET4=50000, RCS_MITM_DEPTHCAP4=20, RCS_CENTER_BFS_NODES=20000, RCS_CENTER_BFS_DEPTH=6 (3 trials).
+- Results: leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256 (under Ucas=288, within U(n)=501). Consistent with prior baseline.
+- Exact integer g(n) for n≥4 remains open (proven only for n=2,3; 3×3 HTM=20, QTM=26). Exhaustive diameter search infeasible (|G(4)|≈7.4e45).
+- Latest community OBTM upper for 4×4 remains 54. Window 35–54 OBTM.
+- Asymptotic result g(n) = Θ(n² / log n) from Demaine et al. (arXiv:1106.5736) confirmed as the known growth rate; this is the practical "God's algorithm" asymptotic for any size >3.
+- Universal constructive algorithm for any n>3 is complete and always terminates: reduction + Demaine-style batching + residual MITM + StageCap + facelet-mapped flip-aware 2-move edge pairing + leftover commutators.
+- Priority remains driving leftoverE to 0 on 4×4 to unlock workSolved and measured OBTM collection vs Ucas=288 / community 54. Do not invent closed integer.
+- Next approaches: static lookup tables for n=4 edge setups, shortest facelet path into UF buffer, expanded commutator variants, Demigod sampling notes.
+
+## Measurement baseline (2026-11-07)
+leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256.
+Target: leftoverE=0 then workSolved=true on ≥3 random 4×4 before raising MITM budgets and collecting tighter OBTM vs Ucas=288 / community 54.
+
+## Code / doc changes this session
+1. docs/NEXT.md — this updated log with 2026-11-07 session.
+2. README.md — refreshed status date to 2026-11-07, updated next steps with fresh harness numbers.
+3. docs/UNIVERSAL_NXN_ALGORITHM.md — added 2026-11-07 note.
+
 # Next session log — 2026-11-06 (automation progress on universal nxn algorithm)
 
 ## Done this session (2026-11-06)

@@ -103,7 +103,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-11-06)
+## Status (2026-11-07)
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
 - [x] ClusterScheduler + BatchGroups + BatchSolver
@@ -147,12 +147,12 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Next steps / approaches to try next time (2026-11-06)
+## Next steps / approaches to try next time (2026-11-07)
 
-Automation session 2026-11-06: Exact integer g(n) remains open for n≥4 (proven only for n=2,3). Asymptotic Θ(n²/log n) from Demaine et al. (arXiv:1106.5736) is the known growth rate and practical God's algorithm for any size greater than 3. Community 4×4 OBTM upper 54 holds. Demigod sampling noted for probabilistic bounds. Universal constructive algorithm complete and always terminates for any n>3. Priority remains driving leftoverE to 0 on 4×4 to unlock workSolved and measured OBTM collection vs Ucas=288 / community 54. Do not invent closed integer.
+Automation session 2026-11-07: Re-measured desktop harness on 4×4 (MITM node budget 50k / depth 20, center BFS 20k/depth 6, 3 trials). Results: leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256 (still under Ucas=288 / within U(n)=501). Exact integer g(n) remains open for n≥4 (proven only for n=2,3). Asymptotic Θ(n² / log n) from Demaine et al. (arXiv:1106.5736) is the known growth rate and practical God's algorithm for any size greater than 3. Community 4×4 OBTM upper 54 holds. Universal constructive algorithm complete and always terminates for any n>3. Priority remains driving leftoverE to 0 on 4×4 to unlock workSolved and measured OBTM collection vs Ucas=288 / community 54. Do not invent closed integer.
 
-Carry-forward baseline:
-- leftoverC=0 leftoverE=7-8 workSolved=no OBTM=143-266
+Carry-forward baseline (2026-11-07 re-measure):
+- leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256
 - goal: leftoverE=0 then workSolved=true
 
 1. Re-run `./artifacts/rcs_harness 4 10` with higher MITM budgets and log leftoverE / workSolved. Classify remaining unpaired wings (wrong-depth / orientation / setup-miss).

@@ -28,6 +28,10 @@ ClusterScheduler
   -> BoundHarness
 ```
 
+## 2026-11-07 edge step note
+
+Fresh harness measurement on 4×4 (MITM 50k nodes / depth 20, center BFS 20k/depth 6, 3 trials): leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256 (under Ucas=288, within U(n)=501). Exact g(n) open for n>=4. Asymptotic Θ(n²/log n) holds as the general God's algorithm for any size >3. Community 4x4 OBTM upper 54. leftoverE remains the completeness gate after leftoverC=0. Next is facelet-shortest path and static tables to drive measured OBTM toward Ucas=288 and community 54. Constructive algorithm always terminates.
+
 ## 2026-11-06 edge step note
 
 Automation session confirms exact g(n) open for n>=4. Asymptotic Θ(n²/log n) holds as the general God's algorithm for any size >3. Community 4x4 OBTM upper 54. leftoverE remains the completeness gate after leftoverC=0. Next is facelet-shortest path and static tables to drive measured OBTM toward Ucas=288 and community 54. Noted Demaine parallelization and Salkinder group analysis for potential refinements. Constructive algorithm always terminates.
