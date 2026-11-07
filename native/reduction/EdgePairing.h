@@ -21,6 +21,7 @@
  *   second face). Both undone exactly on no gain. Solid bitset still protected.
  * - 2026-10-16: expanded setupFromSource with additional face options (L/R) to improve
  *   source positioning into the buffer for residual edges.
+ * - 2026-11-08: expanded depthCommutator from 12 to 16 variants for residual wing coverage.
  */
 struct WingFacelet {
     int face;
