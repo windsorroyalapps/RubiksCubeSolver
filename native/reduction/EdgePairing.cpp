@@ -108,7 +108,7 @@ int EdgePairing::leftoverUnpairedWings(const Cube& work) {
 
 static std::vector<Move> depthCommutator(int depth, int variant) {
     std::vector<Move> seq;
-    switch (variant % 12) {
+    switch (variant % 16) {
         case 0:
             seq = {
                 {R, 0, 1}, {U, 0, 1}, {R, 0, -1},
@@ -183,10 +183,35 @@ static std::vector<Move> depthCommutator(int depth, int variant) {
                 {B, 0, -1}, {U, 0, 1}, {B, 0, 1}
             };
             break;
-        default:
+        case 11:
             seq = {
                 {R, 0, 1}, {B, depth, 1}, {R, 0, -1}, {B, depth, -1},
                 {R, 0, 1}, {B, depth, 1}, {R, 0, -1}, {B, depth, -1}
+            };
+            break;
+        case 12:
+            seq = {
+                {U, 0, 1}, {R, depth, 1}, {U, 0, -1}, {R, depth, -1},
+                {U, 0, 1}, {R, depth, 1}, {U, 0, -1}, {R, depth, -1}
+            };
+            break;
+        case 13:
+            seq = {
+                {D, 0, -1}, {F, depth, -1}, {D, 0, 1}, {F, depth, 1},
+                {D, 0, -1}, {F, depth, -1}, {D, 0, 1}, {F, depth, 1}
+            };
+            break;
+        case 14:
+            seq = {
+                {L, 0, -1}, {U, 0, 1}, {L, 0, 1},
+                {B, depth, 1}, {U, 0, 2}, {B, depth, -1},
+                {L, 0, -1}, {U, 0, -1}, {L, 0, 1}
+            };
+            break;
+        default:
+            seq = {
+                {F, 0, -1}, {L, depth, -1}, {F, 0, 1}, {L, depth, 1},
+                {F, 0, -1}, {L, depth, -1}, {F, 0, 1}, {L, depth, 1}
             };
             break;
     }
@@ -377,7 +402,7 @@ std::vector<Move> EdgePairing::pairOne(Cube& work, int edgeIndex,
     int before = pairedWings(work, edgeIndex);
     for (int wing = 0; wing < budget && !isSolid(work, edgeIndex); ++wing) {
         int depth = 1 + (wing % depthSpan);
-        int variant = (wing / depthSpan) % 12;
+        int variant = (wing / depthSpan) % 16;
         int pre = 0;
         if (wingOrientation(work, edgeIndex, depth) == 0) {
             if ((wing % 4) == 3) {
