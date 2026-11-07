@@ -26,7 +26,7 @@ Group-order formula: [GROUP_ORDER.md](GROUP_ORDER.md).
 ClusterScheduler
   → BatchGroups (shared-slice commutators)
   → Centers (never-break + orbit-BFS n≤5 / residual n=6)
-  → Edges (Yau buffer + solid-set never-touch)
+  → Edges (Yau buffer + solid-set never-touch + expanded commutators)
   → Parity (full multi-depth wing OLL+PLL, even n)
   → ReducedSearch (residual packing + IDA* + bidirectional MITM, n=4,5)
   → 3×3 (Kociemba / CFOP / GodsAlgorithm architecture)
@@ -43,7 +43,7 @@ Verified by `print_bounds`:
 
 | n | U(n) | L(n) | L_fixed | Community / estimates |
 |---|------|------|---------|------------------------|
-| 4 | 501 / Ucas 288 | ≥35 | ≥32 | OBTM upper **54** (Jul 2026); probabilistic ~41 HTM / ~48 QTM |
+| 4 | 501 / Ucas 288 | ≥35 | ≥32 | OBTM upper **54** (Jul 2026); unverified 53 claim (Nov 2026); probabilistic ~41 HTM / ~48 QTM |
 | 5 | 878 / Ucas 410 | ≥52 | ≥47 | OBTM ~130 claimed; probabilistic ~58 HTM / ~68 QTM |
 | 6 | **1727** | 67 | 66 | open |
 | 7 | **2472** | 92 | 92 | open |
@@ -55,7 +55,7 @@ BoundHarness scale `3.8 · n² / ln(n)` sits near those community estimates (~44
 
 ## Why exact g(n) is not claimed
 
-Computing God's number is the diameter of the Cayley graph. For n=3 that required ~35 CPU-years. For n=4 the position count is ~7.4×10⁴⁵. Honest progress: keep U(n), print Hardwick L(n) + L_fixed + Ucas, shrink measured OBTM, raise residual MITM quality. Recent community upper for 4×4 is 54 OBTM.
+Computing God's number is the diameter of the Cayley graph. For n=3 that required ~35 CPU-years. For n=4 the position count is ~7.4×10⁴⁵. Honest progress: keep U(n), print Hardwick L(n) + L_fixed + Ucas, shrink measured OBTM, raise residual MITM quality. Recent community upper for 4×4 is 54 OBTM (53 claim unverified).
 
 ## Code map
 

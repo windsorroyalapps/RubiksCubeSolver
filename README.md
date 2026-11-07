@@ -3,7 +3,7 @@
 **Android + Native C++ Rubik's Cube Solver**
 
 - **3×3:** God's algorithm path toward **≤ 20 HTM** (proven God's Number)
-- **n×n (n ≥ 4):** Universal constructive algorithm — reduction + Demaine batching + residual MITM + **StageCap + leftover commutators + source/dest facelet map + flip-aware slice setup + 2-move flip setup**. Always terminates. Exact integer g(n) is **open**; asymptotic **g(n)=Θ(n²/log n)**.
+- **n×n (n ≥ 4):** Universal constructive algorithm — reduction + Demaine batching + residual MITM + **StageCap + leftover commutators + source/dest facelet map + flip-aware slice setup + 2-move flip setup + expanded commutators**. Always terminates. Exact integer g(n) is **open**; asymptotic **g(n)=Θ(n²/log n)**.
 
 Exact g(n) is proven only for n=2,3. This repo implements the algorithm for every larger size plus live L(n)/L_fixed(n)/U(n)/Ucas/OBTM/leftoverC/leftoverE instrumentation — not a fake closed diameter.
 
@@ -62,7 +62,7 @@ Multi-probe Kociemba → if len > 20: optimal IDA* (≤20) → CFOP fallback
 
 ```text
 ClusterScheduler → BatchGroups → Centers → StageCap(C) + leftover commutators
-  → Edges (facelet map + flip-aware slice + 2-move flip setup + source-driven setup)
+  → Edges (facelet map + flip-aware slice + 2-move flip setup + expanded depth commutators + source-driven setup)
   → StageCap(E) + leftover commutators
   → Parity (even n) → ReducedSearch (IDA* + residualKey MITM on 4x4/5x5)
   → 3×3 → BatchSolver → BoundHarness (L / L_fixed / U / Ucas / leftoverC / leftoverE)
@@ -80,7 +80,7 @@ Exact diameter open for n≥4. Constructive algorithm always terminates.
 | n | L(n) ≥ | L_fixed | log10|G| | Constructive U(n) | gap U−L | Community OBTM upper |
 |---|--------|---------|------------|-------------------|---------|----------------------|
 | 3 | **20** | **20** | 19.64 | **20** | 0 | **20** (proven) |
-| 4 | 35 | 32 | 45.87 | **501** / Ucas **288** | 466 | **54** (Jul 2026) |
+| 4 | 35 | 32 | 45.87 | **501** / Ucas **288** | 466 | **54** (Jul 2026); unverified 53 claim (Nov 2026) |
 | 5 | **52** | 47 | 74.45 | **878** / Ucas **410** | 826 | ~130 claimed |
 | 6 | 67 | 66 | 116.20 | **1727** | 1660 | open |
 | 7 | 92 | 92 | 160.29 | **2472** | 2380 | open |
@@ -88,7 +88,7 @@ Exact diameter open for n≥4. Constructive algorithm always terminates.
 | 9 | 149 | 149 | 277.15 | **4802** | 4653 | open |
 | 10 | 179 | 178 | 349.92 | **6387** | 6208 | open |
 
-4×4 probabilistic estimates ~41 HTM / ~48 QTM. Community OBTM window currently 35–54.
+4×4 probabilistic estimates ~41 HTM / ~48 QTM. Community OBTM window currently 35–54 (53 claim unverified).
 
 L(n) for n≥4 is `floor(ln|G|/ln|S|)` from Hardwick's exact |G(n)|, lifted to community 35 on 4×4 and 52 on 5×5. L_fixed quotients even-n |G| by 24. Still counting lowers, not proven diameters. U(n) is the hard constructive guarantee. Ucas is the piece-budget family we drive the solver toward.
 
@@ -103,7 +103,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-11-07)
+## Status (2026-11-08)
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
 - [x] ClusterScheduler + BatchGroups + BatchSolver
@@ -137,7 +137,8 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 - [x] 2026-10-08 flip-aware setups: `wingOrientation` +1/−1/0, quarter-slice before commutator, undone on no gain
 - [x] **2026-10-09 2-move flip setup: outer quarter + slice quarter after single quarter misses, undone on no gain**
 - [x] **2026-10-16 expanded setupFromSource with additional L/R face options for better residual edge positioning**
-- [ ] EdgePairing leftoverE=0 on random 4×4 (**priority gate** — harness re-measure after expanded setups; session continues attack)
+- [x] **2026-11-08 expanded depthCommutator to 16 variants for residual wing coverage**
+- [ ] EdgePairing leftoverE=0 on random 4×4 (**priority gate** — harness re-measure after expanded commutators; session continues attack)
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK + verified native .so
 - [ ] Adaptive launcher icons
@@ -147,15 +148,15 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Next steps / approaches to try next time (2026-11-07)
+## Next steps / approaches to try next time (2026-11-08)
 
-Automation session 2026-11-07: Re-measured desktop harness on 4×4 (MITM node budget 50k / depth 20, center BFS 20k/depth 6, 3 trials). Results: leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256 (still under Ucas=288 / within U(n)=501). Exact integer g(n) remains open for n≥4 (proven only for n=2,3). Asymptotic Θ(n² / log n) from Demaine et al. (arXiv:1106.5736) is the known growth rate and practical God's algorithm for any size greater than 3. Community 4×4 OBTM upper 54 holds. Universal constructive algorithm complete and always terminates for any n>3. Priority remains driving leftoverE to 0 on 4×4 to unlock workSolved and measured OBTM collection vs Ucas=288 / community 54. Do not invent closed integer.
+Automation session 2026-11-08: Expanded edge depth commutators (16 variants). Noted recent unverified claim of OBTM ≤53 for 4x4 (Nov 2026 manuscript); prior verified 54 holds until independent confirmation. Re-measure desktop harness on 4×4 recommended. Results baseline leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256 (still under Ucas=288 / within U(n)=501). Exact integer g(n) remains open for n≥4 (proven only for n=2,3). Asymptotic Θ(n² / log n) from Demaine et al. (arXiv:1106.5736) is the known growth rate and practical God's algorithm for any size greater than 3. Community 4×4 OBTM upper 54 (53 unverified). Universal constructive algorithm complete and always terminates for any n>3. Priority remains driving leftoverE to 0 on 4×4 to unlock workSolved and measured OBTM collection vs Ucas=288 / community 54. Do not invent closed integer.
 
-Carry-forward baseline (2026-11-07 re-measure):
+Carry-forward baseline (2026-11-08):
 - leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256
 - goal: leftoverE=0 then workSolved=true
 
-1. Re-run `./artifacts/rcs_harness 4 10` with higher MITM budgets and log leftoverE / workSolved. Classify remaining unpaired wings (wrong-depth / orientation / setup-miss).
+1. Re-run `./artifacts/rcs_harness 4 10` with higher MITM budgets and log leftoverE / workSolved after commutator expansion. Classify remaining unpaired wings (wrong-depth / orientation / setup-miss).
 2. Shortest outer+slice path from recorded `(face,row,col)` into the UF buffer, one commutator, exact undo, solid bitset protected. Prefer facelet coordinates. Implement as static lookup for n=4.
 3. Offline static edge-commutator tables (12 edges × depths × flip) for n=4/5 so pairOne becomes a lookup.
 4. After leftoverE=0 and workSolved=true on ≥3 random 4×4: raise MITM, collect OBTM vs Ucas=288 / community 54.
@@ -163,10 +164,10 @@ Carry-forward baseline (2026-11-07 re-measure):
 6. 3×3 dense pruning DBs toward proven HTM 20.
 7. Never invent closed integer g(4). |G(4)|≈7.4e45. Window 35–54 OBTM. Asymptotic diameter Θ(n²/log n) (Demaine et al.) is the general algorithm for size >3. The constructive algorithm realises a practical terminating solver in that family.
 8. CI: verify lib*.so; adaptive icons; production signed APK.
-9. Optional: add probabilistic diameter estimator reporting using Demigod sampling (not claimed exact g(n)). Integrate recent computer-assisted phase bounds where possible. Explore residual packing once edges solid. Consider Hirata graph-theoretical lower bounds for tighter L(n). Review Salkinder group-order refinements for L(n). Explicit Demaine parallel batching refinements.
+9. Optional: add probabilistic diameter estimator reporting using Demigod sampling (not claimed exact g(n)). Integrate recent computer-assisted phase bounds where verified. Explore residual packing once edges solid. Consider Hirata graph-theoretical lower bounds for tighter L(n). Review Salkinder group-order refinements for L(n). Explicit Demaine parallel batching refinements.
 
 See [docs/NEXT.md](docs/NEXT.md).
 
 ---
 
-*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM + StageCap + facelet-mapped, flip-aware, two-move edge pairing is the universal algorithm this repo ships for any size greater than 3 and always terminates. leftoverC=0 confirmed; edge completeness is the remaining completeness gate.*
+*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM + StageCap + facelet-mapped, flip-aware, two-move, expanded-commutator edge pairing is the universal algorithm this repo ships for any size greater than 3 and always terminates. leftoverC=0 confirmed; edge completeness is the remaining completeness gate.*
