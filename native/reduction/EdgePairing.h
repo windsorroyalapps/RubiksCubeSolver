@@ -22,6 +22,7 @@
  * - 2026-10-16: expanded setupFromSource with additional face options (L/R) to improve
  *   source positioning into the buffer for residual edges.
  * - 2026-11-08: expanded depthCommutator from 12 to 16 variants for residual wing coverage.
+ * - 2026-11-09: increased pairAll passes (6->8) and final repair loops (4->8) to drive leftoverE closer to 0 on 4x4.
  */
 struct WingFacelet {
     int face;

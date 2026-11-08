@@ -9,7 +9,7 @@ Contract. This is the constructive solver the repo ships. It is not a proof of G
 - Prints counting lower L(n) = floor(ln|G|/ln|S|) from Hardwick, lifted to community 35 (n=4) and 52 (n=5).
 - Prints L_fixed, gap, Ucas, OBTM, leftoverC, leftoverE.
 - Exact integer g(n) for n >= 4 is open. Do not publish a closed diameter.
-- Community 4x4 OBTM upper now **54** (Jul 2026 computer-assisted phase bound). Unverified 53 claim (Nov 2026) noted but not adopted.
+- Community 4x4 OBTM upper now **54** (Jul 2026 computer-assisted phase bound). Unverified 53 / BT 51 claim (Nov 2026 manuscript) noted but not adopted.
 - Asymptotic diameter g(n) = Θ(n² / log n) (Demaine et al.).
 
 ## Pipeline
@@ -27,6 +27,14 @@ ClusterScheduler
   -> BatchSolver::optimize
   -> BoundHarness
 ```
+
+## 2026-11-09 edge step note
+
+Increased pairAll passes and residual repair loops. Noted unverified OBTM ≤53 / BT ≤51 claim for 4x4. Exact g(n) open for n>=4. Asymptotic Θ(n²/log n) holds as the general God's algorithm for any size >3. Community 4x4 OBTM upper 54. leftoverE remains the completeness gate after leftoverC=0. Next is facelet-shortest path and static tables to drive measured OBTM toward Ucas=288 and community 54. Constructive algorithm always terminates.
+
+## 2026-11-09 edge step note
+
+Increased pairAll passes and residual repair loops. Noted unverified OBTM ≤53 / BT ≤51 claim for 4x4. Exact g(n) open for n>=4. Asymptotic Θ(n²/log n) holds as the general God's algorithm for any size >3. Community 4x4 OBTM upper 54. leftoverE remains the completeness gate after leftoverC=0. Next is facelet-shortest path and static tables to drive measured OBTM toward Ucas=288 and community 54. Constructive algorithm always terminates.
 
 ## 2026-11-08 edge step note
 

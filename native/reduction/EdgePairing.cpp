@@ -441,7 +441,7 @@ std::vector<Move> EdgePairing::pairAll(Cube& work) {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0
     };
 
-    for (int pass = 0; pass < 6; ++pass) {
+    for (int pass = 0; pass < 8; ++pass) {
         if (leftoverUnpairedWings(work) == 0) break;
 
         for (int e = 0; e < 12; ++e) {
@@ -462,7 +462,7 @@ std::vector<Move> EdgePairing::pairAll(Cube& work) {
 
     int leftover = leftoverUnpairedWings(work);
     if (leftover > 0) {
-        for (int repair = 0; repair < 4 && leftoverUnpairedWings(work) > 0; ++repair) {
+        for (int repair = 0; repair < 8 && leftoverUnpairedWings(work) > 0; ++repair) {
             for (int e = 0; e < 12; ++e) {
                 if (isSolid(work, e)) continue;
                 int n = work.size();
