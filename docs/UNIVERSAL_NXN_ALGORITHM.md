@@ -28,9 +28,9 @@ ClusterScheduler
   -> BoundHarness
 ```
 
-## 2026-11-09 edge step note
+## 2026-11-10 edge step note
 
-Increased pairAll passes and residual repair loops. Noted unverified OBTM ≤53 / BT ≤51 claim for 4x4. Exact g(n) open for n>=4. Asymptotic Θ(n²/log n) holds as the general God's algorithm for any size >3. Community 4x4 OBTM upper 54. leftoverE remains the completeness gate after leftoverC=0. Next is facelet-shortest path and static tables to drive measured OBTM toward Ucas=288 and community 54. Constructive algorithm always terminates.
+Reconfirmed asymptotic Θ(n²/log n) as the practical God's algorithm for any size >3. Exact g(n) open for n>=4. Community 4x4 OBTM upper 54 (53 claim unverified). leftoverE remains the completeness gate after leftoverC=0. Next is facelet-shortest path and static tables to drive measured OBTM toward Ucas=288 and community 54. Constructive algorithm always terminates.
 
 ## 2026-11-09 edge step note
 
