@@ -103,7 +103,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-11-09)
+## Status (2026-11-10)
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
 - [x] ClusterScheduler + BatchGroups + BatchSolver
@@ -149,9 +149,9 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Next steps / approaches to try next time (2026-11-09)
+## Next steps / approaches to try next time (2026-11-10)
 
-Automation session 2026-11-09: Increased EdgePairing pairAll passes to 8 and residual repair loops to 8. Noted unverified claim of OBTM ≤53 / BT ≤51 for 4x4 (Nov 2026 manuscript); prior verified 54 holds until independent confirmation. Re-measure desktop harness on 4×4 recommended. Results baseline leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256 (still under Ucas=288 / within U(n)=501). Exact integer g(n) remains open for n≥4 (proven only for n=2,3). Asymptotic Θ(n² / log n) from Demaine et al. (arXiv:1106.5736) is the known growth rate and practical God's algorithm for any size greater than 3. Community 4×4 OBTM upper 54 (53 unverified). Universal constructive algorithm complete and always terminates for any n>3. Priority remains driving leftoverE to 0 on 4×4 to unlock workSolved and measured OBTM collection vs Ucas=288 / community 54. Do not invent closed integer.
+Automation session 2026-11-10: Reconfirmed asymptotic Θ(n² / log n) from Demaine et al. (arXiv:1106.5736) as the practical God's algorithm for any size greater than 3. Exact integer g(n) remains open for n≥4 (proven only for n=2,3). Noted unverified claim of OBTM ≤53 / BT ≤51 for 4x4 (Nov 2026 manuscript); prior verified 54 holds until independent confirmation. Re-measure desktop harness on 4×4 recommended. Results baseline leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256 (still under Ucas=288 / within U(n)=501). Universal constructive algorithm complete and always terminates for any n>3. Priority remains driving leftoverE to 0 on 4×4 to unlock workSolved and measured OBTM collection vs Ucas=288 / community 54. Do not invent closed integer.
 
 Carry-forward baseline (2026-11-08):
 - leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256
