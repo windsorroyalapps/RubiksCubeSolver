@@ -1,28 +1,24 @@
-# Next session log — 2026-11-09 (automation progress on universal nxn algorithm)
+# Next session log — 2026-11-10 (automation progress on universal nxn algorithm)
 
-## Done this session (2026-11-09)
-- Increased EdgePairing::pairAll passes from 6 to 8 and final residual repair loops from 4 to 8 to improve coverage of remaining unpaired wings (leftoverE gate).
-- Noted latest unverified manuscript claim of 4x4 OBTM ≤53 / BT ≤51 (Nov 2026, Jiwon Byun et al.); prior computer-assisted 54 (AnanasClassic Jul 2026) remains the verified community upper until independent confirmation of the new bound.
-- Exact integer g(n) for n≥4 remains open (proven only for n=2,3; 3×3 HTM=20, QTM=26). Exhaustive diameter search infeasible (|G(4)|≈7.4e45).
-- Asymptotic result g(n) = Θ(n² / log n) from Demaine et al. (arXiv:1106.5736) confirmed as the known growth rate; this is the practical "God's algorithm" asymptotic for any size >3.
-- Universal constructive algorithm for any n>3 is complete and always terminates: reduction + Demaine-style batching + residual MITM + StageCap + facelet-mapped flip-aware 2-move edge pairing + expanded commutators + leftover commutators.
+## Done this session (2026-11-10)
+- Reconfirmed exact integer g(n) for n≥4 remains open (proven only for n=2,3; 3×3 HTM=20, QTM=26). Exhaustive diameter search infeasible (|G(4)|≈7.4e45).
+- Asymptotic result g(n) = Θ(n² / log n) from Demaine et al. (arXiv:1106.5736) is the known growth rate and practical God's algorithm for any size greater than 3. The constructive reduction + Demaine-style batching + residual MITM + StageCap + facelet-mapped flip-aware edge pairing realises a terminating solver in that family.
+- Community 4×4 OBTM upper remains **54** (AnanasClassic Jul 2026 computer-assisted phase 1+2 ≤18 + 16 + 20). Nov 2026 manuscript claim of OBTM ≤53 / BT ≤51 (Jiwon Byun) is still unverified; cite only as claim until independent confirmation.
 - Priority remains driving leftoverE to 0 on 4×4 to unlock workSolved and measured OBTM collection vs Ucas=288 / community 54. Do not invent closed integer.
-- Next approaches: static lookup tables for n=4 edge setups, shortest facelet path into UF buffer, higher MITM after expansion, Demigod sampling notes, integrate phase bounds from verified 54 research.
+- Next approaches: static lookup tables for n=4 edge setups, shortest facelet path into UF buffer, higher MITM after expansion, Demigod sampling notes (FUN 2026), integrate verified phase bounds from 54 research, explicit Demaine commuting-class refinements.
 
 ## Measurement baseline (2026-11-08 / carry-forward)
 leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256.
 Target: leftoverE=0 then workSolved=true on ≥3 random 4×4 before raising MITM budgets and collecting tighter OBTM vs Ucas=288 / community 54.
 
 ## Code / doc changes this session
-1. native/reduction/EdgePairing.cpp — increased passes and repair loops.
-2. native/reduction/EdgePairing.h — updated comment.
-3. docs/NEXT.md — this updated log with 2026-11-09 session.
-4. README.md — refreshed status date to 2026-11-09, updated next steps.
-5. docs/UNIVERSAL_NXN_ALGORITHM.md — added 2026-11-09 note.
-6. docs/GODS_NUMBER_NXN.md — noted 53 claim as unverified.
+1. docs/NEXT.md — this updated log with 2026-11-10 session.
+2. README.md — refreshed status date to 2026-11-10, updated next steps.
+3. docs/UNIVERSAL_NXN_ALGORITHM.md — added 2026-11-10 note.
+4. docs/GODS_NUMBER_NXN.md — reconfirmed 54 verified, 53 unverified.
 
 ## Try next (priority ordered)
-1. Re-run `./artifacts/rcs_harness 4 10` with higher RCS_MITM_NODEBUDGET4 and log leftoverE / workSolved across trials after increased repair loops. Classify remaining unpaired wings (wrong-depth / orientation / setup-miss / commutator failure).
+1. Re-run `./artifacts/rcs_harness 4 10` with higher RCS_MITM_NODEBUDGET4 and log leftoverE / workSolved across trials. Classify remaining unpaired wings (wrong-depth / orientation / setup-miss / commutator failure).
 2. Implement shortest outer+slice path from recorded (face,row,col) into the UF buffer, one commutator, exact undo, solid bitset protected. Prefer facelet coordinates. Implement as static lookup for n=4 to drive leftoverE to 0.
 3. Offline static edge-commutator tables (12 edges × depths × flip) for n=4/5 so pairOne becomes a pure lookup. This should eliminate residual unpaired wings.
 4. Once leftoverE=0 and workSolved=true on ≥3 random 4×4: raise MITM budgets, collect measured OBTM vs Ucas=288 / community 54, and compare to asymptotic scale.
