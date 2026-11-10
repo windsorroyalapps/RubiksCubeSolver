@@ -103,7 +103,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-11-10)
+## Status (2026-11-11)
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
 - [x] ClusterScheduler + BatchGroups + BatchSolver
@@ -149,9 +149,9 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Next steps / approaches to try next time (2026-11-10)
+## Next steps / approaches to try next time (2026-11-11)
 
-Automation session 2026-11-10: Reconfirmed asymptotic Θ(n² / log n) from Demaine et al. (arXiv:1106.5736) as the practical God's algorithm for any size greater than 3. Exact integer g(n) remains open for n≥4 (proven only for n=2,3). Noted unverified claim of OBTM ≤53 / BT ≤51 for 4x4 (Nov 2026 manuscript); prior verified 54 holds until independent confirmation. Re-measure desktop harness on 4×4 recommended. Results baseline leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256 (still under Ucas=288 / within U(n)=501). Universal constructive algorithm complete and always terminates for any n>3. Priority remains driving leftoverE to 0 on 4×4 to unlock workSolved and measured OBTM collection vs Ucas=288 / community 54. Do not invent closed integer.
+Automation session 2026-11-11: Reconfirmed asymptotic Θ(n² / log n) from Demaine et al. (arXiv:1106.5736) as the practical God's algorithm for any size greater than 3. Exact integer g(n) remains open for n≥4 (proven only for n=2,3). Noted unverified claim of OBTM ≤53 / BT ≤51 for 4x4 (Nov 2026 manuscript); prior verified 54 holds until independent confirmation. Re-measure desktop harness on 4×4 recommended. Results baseline leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256 (still under Ucas=288 / within U(n)=501). Universal constructive algorithm complete and always terminates for any n>3. Priority remains driving leftoverE to 0 on 4×4 to unlock workSolved and measured OBTM collection vs Ucas=288 / community 54. Do not invent closed integer.
 
 Carry-forward baseline (2026-11-08):
 - leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256
@@ -161,11 +161,12 @@ Carry-forward baseline (2026-11-08):
 2. Shortest outer+slice path from recorded `(face,row,col)` into the UF buffer, one commutator, exact undo, solid bitset protected. Prefer facelet coordinates. Implement as static lookup for n=4.
 3. Offline static edge-commutator tables (12 edges × depths × flip) for n=4/5 so pairOne becomes a lookup.
 4. After leftoverE=0 and workSolved=true on ≥3 random 4×4: raise MITM, collect OBTM vs Ucas=288 / community 54.
-5. Surface leftoverE/workSolved in the Android UI only after clean solves.
-6. 3×3 dense pruning DBs toward proven HTM 20.
-7. Never invent closed integer g(4). |G(4)|≈7.4e45. Window 35–54 OBTM. Asymptotic diameter Θ(n²/log n) (Demaine et al.) is the general algorithm for size >3. The constructive algorithm realises a practical terminating solver in that family.
-8. CI: verify lib*.so; adaptive icons; production signed APK.
-9. Optional: add probabilistic diameter estimator reporting using Demigod sampling (not claimed exact g(n)). Integrate recent computer-assisted phase bounds where verified. Explore residual packing once edges solid. Consider Hirata graph-theoretical lower bounds for tighter L(n). Review Salkinder group-order refinements for L(n). Explicit Demaine parallel batching refinements.
+5. Explicit Demaine parallel cubie commuting-class batching refinements to better realize the log-factor in practice.
+6. Surface leftoverE/workSolved in the Android UI only after clean solves.
+7. 3×3 dense pruning DBs toward proven HTM 20.
+8. Never invent closed integer g(4). |G(4)|≈7.4e45. Window 35–54 OBTM. Asymptotic diameter Θ(n²/log n) (Demaine et al.) is the general algorithm for size >3. The constructive algorithm realises a practical terminating solver in that family.
+9. CI: verify lib*.so; adaptive icons; production signed APK.
+10. Optional: add probabilistic diameter estimator reporting using Demigod sampling (not claimed exact g(n)). Integrate recent computer-assisted phase bounds where verified. Explore residual packing once edges solid. Consider Hirata graph-theoretical lower bounds for tighter L(n). Review Salkinder group-order refinements for L(n).
 
 See [docs/NEXT.md](docs/NEXT.md).
 

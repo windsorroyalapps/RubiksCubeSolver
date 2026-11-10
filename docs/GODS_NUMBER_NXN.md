@@ -11,7 +11,7 @@ For every **n ≥ 4**, g(n) is **open**. Group order grows as ~exp(Θ(n²)); exh
 
 1. Always terminates for any n ≥ 4 (memory permitting).
 2. Realises a concrete upper bound **U(n)** (reduction formula).
-3. Follows Demaine et al.: **g(n) = Θ(n² / log n)** by batching shared slice moves.
+3. Follows Demaine et al.: **g(n) = Θ(n² / log n)** by batching shared slice moves on commuting cubie classes. Upper bound from parallelizing standard Θ(n²) solution algorithms; lower from counting argument (|G| = 2^Θ(n²), O(n) moves).
 4. Prints a counting lower bound **L(n) = ⌊ln|G|/ln|S|⌋** from Hardwick's exact |G(n)|.
 5. Prints **L_fixed(n)** (even n: |G|/24) and the window **gap = U(n)−L(n)**.
 6. Prints **Ucas(n)** piece-budget target.
@@ -55,7 +55,7 @@ BoundHarness scale `3.8 · n² / ln(n)` sits near those community estimates (~44
 
 ## Why exact g(n) is not claimed
 
-Computing God's number is the diameter of the Cayley graph. For n=3 that required ~35 CPU-years. For n=4 the position count is ~7.4×10⁴⁵. Honest progress: keep U(n), print Hardwick L(n) + L_fixed + Ucas, shrink measured OBTM, raise residual MITM quality. Recent community upper for 4×4 is 54 OBTM (53 / BT 51 claim unverified as of 2026-11-10).
+Computing God's number is the diameter of the Cayley graph. For n=3 that required ~35 CPU-years. For n=4 the position count is ~7.4×10⁴⁵. Honest progress: keep U(n), print Hardwick L(n) + L_fixed + Ucas, shrink measured OBTM, raise residual MITM quality. Recent community upper for 4×4 is 54 OBTM (53 / BT 51 claim unverified as of 2026-11-11).
 
 ## Code map
 
