@@ -8,6 +8,7 @@
 Exact g(n) is proven only for n=2,3. This repo implements the algorithm for every larger size plus live L(n)/L_fixed(n)/U(n)/Ucas/OBTM/leftoverC/leftoverE instrumentation — not a fake closed diameter.
 
 Canonical contract: [docs/UNIVERSAL_NXN_ALGORITHM.md](docs/UNIVERSAL_NXN_ALGORITHM.md)
+Demaine asymptotic: [docs/DEMAINE_SUMMARY.md](docs/DEMAINE_SUMMARY.md)
 Facelet map: [docs/FACELET_MAPPING.md](docs/FACELET_MAPPING.md)
 Stage budgets: [docs/STAGE_BUDGETS.md](docs/STAGE_BUDGETS.md)
 Stage caps: [docs/STAGE_CAPS.md](docs/STAGE_CAPS.md)
