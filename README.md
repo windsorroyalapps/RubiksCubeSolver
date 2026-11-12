@@ -104,7 +104,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-11-12)
+## Status (2026-11-13)
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
 - [x] ClusterScheduler + BatchGroups + BatchSolver
@@ -141,6 +141,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 - [x] **2026-11-08 expanded depthCommutator to 16 variants for residual wing coverage**
 - [x] **2026-11-09 increased pairAll passes (6->8) and final repair loops (4->8) to drive leftoverE closer to 0 on 4x4**
 - [x] **2026-11-12 incorporated arXiv:2611.11018 explicit 30.5 n²/lg n upper into docs**
+- [x] **2026-11-13 reconfirmed community 4x4 OBTM upper 54 (AnanasClassic Jul 2026, GitHub proof artifact); Nov 2026 manuscript claim OBTM≤53 / BT≤51 (Jiwon Byun) remains unverified — cite as claim only**
 - [ ] EdgePairing leftoverE=0 on random 4×4 (**priority gate** — harness re-measure after expanded commutators; session continues attack)
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK + verified native .so
@@ -151,27 +152,23 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Next steps / approaches to try next time (2026-11-12)
+## Next steps / approaches to try next time (2026-11-13)
 
-Automation session 2026-11-12: Reconfirmed asymptotic Θ(n² / log n) from Demaine et al. (arXiv:1106.5736) as the practical God's algorithm for any size greater than 3. Exact integer g(n) remains open for n≥4 (proven only for n=2,3). Noted new explicit constant from arXiv:2611.11018: 30.5 n² / lg n moves, factor 2.37 of lower, first practical linear-time solver. Unverified claim of OBTM ≤53 / BT ≤51 for 4x4 (Nov 2026 manuscript) still holds until independent confirmation; prior verified 54 holds. Re-measure desktop harness on 4×4 recommended. Results baseline leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256 (still under Ucas=288 / within U(n)=501). Universal constructive algorithm complete and always terminates for any n>3. Priority remains driving leftoverE to 0 on 4×4 to unlock workSolved and measured OBTM collection vs Ucas=288 / community 54. Do not invent closed integer.
+Automation session 2026-11-13: Exact integer g(n) for n≥4 remains open and infeasible (proven only n=2,3). Asymptotic Θ(n² / log n) from Demaine et al. (arXiv:1106.5736) is the known growth rate and practical God's algorithm for any size greater than 3. Explicit practical upper 30.5 n² / lg n + o(...) from arXiv:2611.11018 (factor 2.37 of lower, linear time, O(√N lg N) space). Community 4×4 OBTM upper **54** verified via computer-assisted phase bounds (AnanasClassic Jul 2026); 53/BT51 claim (Nov 6 2026 manuscript) unverified. Baseline carry-forward: leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256 (under Ucas=288). Priority: drive leftoverE→0 via static facelet-shortest setups / offline commutator tables to unlock measured OBTM collection vs 54 / Ucas. Do not invent closed integer. Universal constructive algorithm complete and always terminates for any n>3.
 
-Carry-forward baseline (2026-11-08):
-- leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256
-- goal: leftoverE=0 then workSolved=true
-
-1. Re-run `./artifacts/rcs_harness 4 10` with higher MITM budgets and log leftoverE / workSolved after commutator expansion. Classify remaining unpaired wings (wrong-depth / orientation / setup-miss).
-2. Shortest outer+slice path from recorded `(face,row,col)` into the UF buffer, one commutator, exact undo, solid bitset protected. Prefer facelet coordinates. Implement as static lookup for n=4.
-3. Offline static edge-commutator tables (12 edges × depths × flip) for n=4/5 so pairOne becomes a lookup.
-4. After leftoverE=0 and workSolved=true on ≥3 random 4×4: raise MITM, collect OBTM vs Ucas=288 / community 54 / new 30.5 scale.
-5. Explicit Demaine parallel cubie commuting-class batching refinements to better realize the log-factor in practice; port ideas from arXiv:2611.11018.
-6. Surface leftoverE/workSolved in the Android UI only after clean solves.
-7. 3×3 dense pruning DBs toward proven HTM 20.
-8. Never invent closed integer g(4). |G(4)|≈7.4e45. Window 35–54 OBTM. Asymptotic diameter Θ(n²/log n) (Demaine et al.) is the general algorithm for size >3. The constructive algorithm realises a practical terminating solver in that family. Explicit upper now 30.5 n²/lg n.
-9. CI: verify lib*.so; adaptive icons; production signed APK.
-10. Optional: add probabilistic diameter estimator reporting using Demigod sampling (not claimed exact g(n)). Integrate recent computer-assisted phase bounds where verified. Explore residual packing once edges solid. Consider Hirata graph-theoretical lower bounds for tighter L(n). Review Salkinder group-order refinements for L(n).
+1. Re-run desktop harness `./artifacts/rcs_harness 4 10` with raised MITM (RCS_MITM_NODEBUDGET4≥200k) and log leftoverE / workSolved / OBTM across ≥10 trials. Classify residual unpaired wings (orientation, depth, setup miss).
+2. Implement static lookup for n=4: shortest outer+slice path from (face,row,col) into UF buffer, one commutator, exact undo, solid-bitset protected. Prefer facelet coordinates over search.
+3. Offline static edge-commutator tables (12 edges × depths × flip × orientations) for n=4/5 so pairOne becomes pure lookup; eliminate residual unpaired wings.
+4. Once leftoverE=0 and workSolved=true on ≥3 random 4×4: raise MITM further, collect measured OBTM distribution vs Ucas=288 / community 54 / asymptotic 30.5 scale.
+5. Explicit Demaine parallel cubie commuting-class batching refinements (partition O(n²/log n) classes, parallel O(log n) shared slices) to shrink practical U(n); port constants and techniques from arXiv:2611.11018.
+6. Optional Demigod-style probabilistic diameter estimator (sampling, not claimed exact) reporting for n=4/5 as instrumentation.
+7. Surface leftoverE/workSolved in Android UI only after clean solves.
+8. 3×3 dense pruning DBs toward proven HTM 20.
+9. Never invent closed integer g(4). |G(4)|≈7.4e45. Window 35–54 OBTM. Asymptotic diameter Θ(n²/log n) is the general algorithm for size >3. Constructive path realises a practical terminating solver in that family. Explicit upper 30.5 n²/lg n.
+10. CI: verify lib*.so; adaptive icons; production signed APK.
 
 See [docs/NEXT.md](docs/NEXT.md).
 
 ---
 
-*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM + StageCap + facelet-mapped, flip-aware, two-move, expanded-commutator edge pairing is the universal algorithm this repo ships for any size greater than 3 and always terminates. leftoverC=0 confirmed; edge completeness is the remaining completeness gate. Practical God's algorithm is the Θ(n²/log n) family with explicit constant from arXiv:2611.11018.*
+*Exact g(n) for n≥4 remains open. Constructive reduction + Demaine batching + residual MITM + StageCap + facelet-mapped, flip-aware, two-move, expanded-commutator edge pairing is the universal algorithm this repo ships for any size greater than 3 and always terminates. leftoverC=0 confirmed; edge completeness is the remaining completeness gate. Practical God's algorithm is the Θ(n²/log n) family with explicit constant from arXiv:2611.11018. Community 4×4 upper 54 (53 claim unverified).*

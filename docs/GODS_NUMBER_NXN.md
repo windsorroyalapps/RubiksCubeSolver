@@ -17,7 +17,7 @@ For every **n ≥ 4**, g(n) is **open**. Group order grows as ~exp(Θ(n²)); exh
 6. Prints **Ucas(n)** piece-budget target.
 7. Tightens live length with residual MITM on 4×4 / 5×5.
 
-**2026-11-12 update:** arXiv:2611.11018 gives an explicit practical algorithm within 30.5 n² / lg n + o(...) moves (factor 2.37 of lower bound), first with linear time and O(√N lg N) space. The constructive solver in this repo follows the same asymptotic family and can incorporate these refinements.
+**2026-11-13 update:** Community 4×4 OBTM upper **54** verified via AnanasClassic Jul 2026 computer-assisted proof (phase 1+2 ≤18 + published 16+20). Nov 6 2026 manuscript claim of OBTM ≤53 / BT ≤51 (Jiwon Byun) remains unverified — cite as claim only. arXiv:2611.11018 gives explicit practical algorithm within 30.5 n² / lg n + o(...) moves (factor 2.37 of lower bound), first with linear time and O(√N lg N) space. The constructive solver in this repo follows the same asymptotic family and can incorporate these refinements.
 
 Canonical write-up: [UNIVERSAL_NXN_ALGORITHM.md](UNIVERSAL_NXN_ALGORITHM.md).  
 Group-order formula: [GROUP_ORDER.md](GROUP_ORDER.md).

@@ -29,9 +29,9 @@ ClusterScheduler
   -> BoundHarness
 ```
 
-## 2026-11-12 edge step note
+## 2026-11-13 edge step note
 
-Reconfirmed asymptotic Θ(n²/log n) as the practical God's algorithm for any size >3. Exact g(n) open for n>=4. Community 4x4 OBTM upper 54 (53 claim unverified). Noted new explicit constant 30.5 n²/lg n from arXiv:2611.11018. leftoverE remains the completeness gate after leftoverC=0. Next is facelet-shortest path, static tables, and explicit Demaine commuting-class parallel refinements to drive measured OBTM toward Ucas=288 and community 54. Constructive algorithm always terminates.
+Reconfirmed asymptotic Θ(n²/log n) as the practical God's algorithm for any size >3. Exact g(n) open for n>=4. Community 4x4 OBTM upper **54** verified (AnanasClassic Jul 2026 computer-assisted phase bounds, GitHub artifact). Nov 2026 manuscript claim OBTM≤53 / BT≤51 remains unverified. Noted new explicit constant 30.5 n²/lg n from arXiv:2611.11018. leftoverE remains the completeness gate after leftoverC=0. Next is facelet-shortest path, static tables, and explicit Demaine commuting-class parallel refinements to drive measured OBTM toward Ucas=288 and community 54. Constructive algorithm always terminates.
 
 ## 2026-11-11 edge step note
 
