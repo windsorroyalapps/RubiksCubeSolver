@@ -9,6 +9,7 @@ Exact g(n) is proven only for n=2,3. This repo implements the algorithm for ever
 
 Canonical contract: [docs/UNIVERSAL_NXN_ALGORITHM.md](docs/UNIVERSAL_NXN_ALGORITHM.md)
 Demaine asymptotic: [docs/DEMAINE_SUMMARY.md](docs/DEMAINE_SUMMARY.md)
+Asymptotic calculator: [docs/ASYMPTOTIC_BOUNDS.md](docs/ASYMPTOTIC_BOUNDS.md) · `native/tools/asymptotic_bounds.py`
 Facelet map: [docs/FACELET_MAPPING.md](docs/FACELET_MAPPING.md)
 Stage budgets: [docs/STAGE_BUDGETS.md](docs/STAGE_BUDGETS.md)
 Stage caps: [docs/STAGE_CAPS.md](docs/STAGE_CAPS.md)
@@ -47,6 +48,12 @@ g++ -O2 -std=c++17 -Inative/common -Inative/reduction \
 ./artifacts/print_bounds 20
 ```
 
+Asymptotic upper (30.5 n² / lg n):
+
+```bash
+python3 native/tools/asymptotic_bounds.py 4 5 10 20
+```
+
 ---
 
 ## 3×3 path
@@ -72,7 +79,7 @@ ClusterScheduler → BatchGroups → Centers → StageCap(C) + leftover commutat
 
 Exact diameter open for n≥4. Constructive algorithm always terminates. Practical God's algorithm is the asymptotic family with explicit 30.5 n²/lg n upper.
 
-→ [docs/GODS_NUMBER_NXN.md](docs/GODS_NUMBER_NXN.md) · [docs/GROUP_ORDER.md](docs/GROUP_ORDER.md) · [docs/STAGE_BUDGETS.md](docs/STAGE_BUDGETS.md) · [docs/STAGE_CAPS.md](docs/STAGE_CAPS.md)
+→ [docs/GODS_NUMBER_NXN.md](docs/GODS_NUMBER_NXN.md) · [docs/GROUP_ORDER.md](docs/GROUP_ORDER.md) · [docs/STAGE_BUDGETS.md](docs/STAGE_BUDGETS.md) · [docs/STAGE_CAPS.md](docs/STAGE_CAPS.md) · [docs/ASYMPTOTIC_BOUNDS.md](docs/ASYMPTOTIC_BOUNDS.md)
 
 ---
 
@@ -142,7 +149,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 - [x] **2026-11-09 increased pairAll passes (6->8) and final repair loops (4->8) to drive leftoverE closer to 0 on 4x4**
 - [x] **2026-11-12 incorporated arXiv:2611.11018 explicit 30.5 n²/lg n upper into docs**
 - [x] **2026-11-13 reconfirmed community 4x4 OBTM upper 54 (AnanasClassic Jul 2026, GitHub proof artifact); Nov 2026 manuscript claim OBTM≤53 / BT≤51 (Jiwon Byun) remains unverified — cite as claim only**
-- [x] **2026-11-15 reaffirmed asymptotic Θ(n²/log n) as practical God's algorithm for n>3; no new exact integer; 53 claim still unverified**
+- [x] **2026-11-15 reaffirmed asymptotic Θ(n²/log n) as practical God's algorithm for n>3; no new exact integer; 53 claim still unverified; added asymptotic calculator**
 - [ ] EdgePairing leftoverE=0 on random 4×4 (**priority gate** — harness re-measure after expanded commutators; session continues attack)
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK + verified native .so
