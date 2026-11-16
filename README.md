@@ -111,7 +111,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-11-15)
+## Status (2026-11-17)
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
 - [x] ClusterScheduler + BatchGroups + BatchSolver
@@ -150,6 +150,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 - [x] **2026-11-12 incorporated arXiv:2611.11018 explicit 30.5 n²/lg n upper into docs**
 - [x] **2026-11-13 reconfirmed community 4x4 OBTM upper 54 (AnanasClassic Jul 2026, GitHub proof artifact); Nov 2026 manuscript claim OBTM≤53 / BT≤51 (Jiwon Byun) remains unverified — cite as claim only**
 - [x] **2026-11-15 reaffirmed asymptotic Θ(n²/log n) as practical God's algorithm for n>3; no new exact integer; 53 claim still unverified; added asymptotic calculator**
+- [x] **2026-11-17 reconfirmed asymptotic Θ(n²/log n) practical God's algorithm with explicit 30.5 constant; exact integer open for n≥4; 4x4 OBTM 54 verified, 53 claim still unverified**
 - [ ] EdgePairing leftoverE=0 on random 4×4 (**priority gate** — harness re-measure after expanded commutators; session continues attack)
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK + verified native .so
@@ -160,9 +161,9 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Next steps / approaches to try next time (2026-11-15)
+## Next steps / approaches to try next time (2026-11-17)
 
-Automation session 2026-11-15: Exact integer g(n) for n≥4 remains open and infeasible (proven only n=2,3). Asymptotic Θ(n² / log n) from Demaine et al. (arXiv:1106.5736) is the known growth rate and practical God's algorithm for any size greater than 3. Explicit practical upper 30.5 n² / lg n + o(...) from arXiv:2611.11018 (factor 2.37 of lower, linear time, O(√N lg N) space). Community 4×4 OBTM upper **54** verified via computer-assisted phase bounds (AnanasClassic Jul 2026); 53/BT51 claim (Nov 6 2026 manuscript) unverified as of 2026-11-15. Baseline carry-forward: leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256 (under Ucas=288). Priority: drive leftoverE→0 via static facelet-shortest setups / offline commutator tables to unlock measured OBTM collection vs 54 / Ucas. Do not invent closed integer. Universal constructive algorithm complete and always terminates for any n>3.
+Automation session 2026-11-17: Exact integer g(n) for n≥4 remains open and infeasible (proven only n=2,3). Asymptotic Θ(n² / log n) from Demaine et al. (arXiv:1106.5736) is the known growth rate and practical God's algorithm for any size greater than 3. Explicit practical upper 30.5 n² / lg n + o(...) from arXiv:2611.11018 (factor 2.37 of lower, linear time, O(√N lg N) space). Community 4×4 OBTM upper **54** verified via computer-assisted phase bounds (AnanasClassic Jul 2026); 53/BT51 claim (Nov 6 2026 manuscript) unverified as of 2026-11-17. Baseline carry-forward: leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256 (under Ucas=288). Priority: drive leftoverE→0 via static facelet-shortest setups / offline commutator tables to unlock measured OBTM collection vs 54 / Ucas. Do not invent closed integer. Universal constructive algorithm complete and always terminates for any n>3.
 
 1. Re-run desktop harness `./artifacts/rcs_harness 4 10` with raised MITM (RCS_MITM_NODEBUDGET4≥200k) and log leftoverE / workSolved / OBTM across ≥10 trials. Classify residual unpaired wings (orientation, depth, setup miss).
 2. Implement static lookup for n=4: shortest outer+slice path from (face,row,col) into UF buffer, one commutator, exact undo, solid-bitset protected. Prefer facelet coordinates over search.
