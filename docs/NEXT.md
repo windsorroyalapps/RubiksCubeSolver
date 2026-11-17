@@ -1,24 +1,25 @@
-# Next session log — 2026-11-17 (automation progress on universal nxn algorithm)
+# Next session log — 2026-11-18 (automation progress on universal nxn algorithm)
 
-## Done this session (2026-11-17)
-- Reconfirmed exact integer g(n) for n≥4 remains open and computationally intractable (proven only for n=2,3; 3×3 HTM=20, QTM=26). |G(4)|≈7.4e45; exhaustive diameter search not feasible.
+## Done this session (2026-11-18)
+- Reconfirmed exact integer g(n) for n≥4 remains open and computationally intractable (proven only for n=2,3; 3×3 HTM=20, QTM=26). |G(4)|≈7.4e45; exhaustive diameter search not feasible. No closed integer God's number for sizes >3 is schedulable or claimed.
 - Asymptotic result g(n) = Θ(n² / log n) from Demaine et al. (arXiv:1106.5736) is the known growth rate and practical God's algorithm for any size greater than 3. The constructive reduction + Demaine-style batching + residual MITM + StageCap + facelet-mapped flip-aware edge pairing realises a terminating solver in that family.
 - Explicit practical upper: arXiv:2611.11018 (Nov 7 2026, Mrzyglocki, Rokicki, Perroni-Scharf, Demaine) algorithms solve within 30.5 n² / lg n + o(n²/lg n) moves, within factor 2.37+o(1) of the known lower bound ≈12.88, linear time, O(√N lg N) space. First practical O(n²/lg n) solver; improves prior implicit constant by >3e38.
-- Community 4×4 OBTM upper remains **54** (AnanasClassic Jul 2026 computer-assisted phase 1+2 bound of 18 combined with published 16+20). GitHub proof artifact: https://github.com/AnanasClassic/4x4x4-obtm-54-research. Nov 6 2026 manuscript claim of OBTM ≤53 / BT ≤51 (Jiwon Byun, SpeedSolving) still unverified as of 2026-11-17; cite only as claim until independent confirmation.
+- Community 4×4 OBTM upper remains **54** (AnanasClassic Jul 2026 computer-assisted phase 1+2 bound of 18 combined with published 16+20). GitHub proof artifact: https://github.com/AnanasClassic/4x4x4-obtm-54-research. Nov 6 2026 manuscript claim of OBTM ≤53 / BT ≤51 (Jiwon Byun, SpeedSolving) still unverified as of 2026-11-18; cite only as claim until independent confirmation.
 - Priority remains driving leftoverE to 0 on 4×4 to unlock workSolved and measured OBTM collection vs Ucas=288 / community 54. Do not invent closed integer.
-- Next approaches: static lookup tables for n=4 edge setups / facelet-shortest paths, offline commutator tables, higher MITM after expansion, Demigod sampling notes, integrate verified phase bounds from 54 research, explicit Demaine commuting-class refinements for better practical log-factor, reference the new 30.5 constant for U(n) improvements.
+- Next approaches: static lookup tables for n=4 edge setups / facelet-shortest paths, offline commutator tables, higher MITM after expansion, Demigod sampling notes, integrate verified phase bounds from 54 research, explicit Demaine commuting-class refinements for better practical log-factor, reference the new 30.5 constant for U(n) improvements. Begin prototyping facelet-shortest setup path in EdgePairing for n=4.
 
 ## Measurement baseline (2026-11-08 / carry-forward)
 leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256.
 Target: leftoverE=0 then workSolved=true on ≥3 random 4×4 before raising MITM budgets and collecting tighter OBTM vs Ucas=288 / community 54.
 
 ## Code / doc changes this session
-1. docs/NEXT.md — this updated log with 2026-11-17 session.
-2. README.md — refreshed status date to 2026-11-17, updated next steps, noted verified 54 vs unverified 53.
+1. docs/NEXT.md — this updated log with 2026-11-18 session.
+2. README.md — refreshed status date to 2026-11-18, updated next steps, noted verified 54 vs unverified 53.
+3. docs/GODS_NUMBER_NXN.md and docs/UNIVERSAL_NXN_ALGORITHM.md — minor date/confirmation refresh (no algorithmic change).
 
 ## Try next (priority ordered)
 1. Re-run `./artifacts/rcs_harness 4 10` with higher RCS_MITM_NODEBUDGET4 (≥200k) and log leftoverE / workSolved / OBTM across ≥10 trials. Classify residual unpaired wings (orientation, depth, setup miss).
-2. Implement static lookup for n=4: shortest outer+slice path from (face,row,col) into UF buffer, one commutator, exact undo, solid-bitset protected. Prefer facelet coordinates over search.
+2. Implement static lookup for n=4: shortest outer+slice path from (face,row,col) into UF buffer, one commutator, exact undo, solid-bitset protected. Prefer facelet coordinates over search. Prototype in EdgePairing::setupFromSource.
 3. Offline static edge-commutator tables (12 edges × depths × flip × orientations) for n=4/5 so pairOne becomes pure lookup; eliminate residual unpaired wings.
 4. Once leftoverE=0 and workSolved=true on ≥3 random 4×4: raise MITM further, collect measured OBTM distribution vs Ucas=288 / community 54 / asymptotic 30.5 scale.
 5. Explicit Demaine parallel cubie commuting-class batching refinements (partition O(n²/log n) classes, parallel O(log n) shared slices) to shrink practical U(n); port constants and techniques from arXiv:2611.11018 (permnet61 etc.).
