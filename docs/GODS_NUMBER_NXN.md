@@ -17,7 +17,7 @@ For every **n ≥ 4**, g(n) is **open**. Group order grows as ~exp(Θ(n²)); exh
 6. Prints **Ucas(n)** piece-budget target.
 7. Tightens live length with residual MITM on 4×4 / 5×5.
 
-**2026-11-18 update:** Community 4×4 OBTM upper **54** verified via AnanasClassic Jul 2026 computer-assisted proof (phase 1+2 ≤18 + published 16+20). Nov 6 2026 manuscript claim of OBTM ≤53 / BT ≤51 (Jiwon Byun) remains unverified — cite as claim only. arXiv:2611.11018 gives explicit practical algorithm within 30.5 n² / lg n + o(...) moves (factor 2.37 of lower bound), first with linear time and O(√N lg N) space. The constructive solver in this repo follows the same asymptotic family and can incorporate these refinements. Exact integer remains open.
+**2026-11-21 update:** Community 4×4 OBTM upper **54** verified via AnanasClassic Jul 2026 computer-assisted proof (phase 1+2 ≤18 + published 16+20). Nov 6 2026 manuscript claim of OBTM ≤53 / BT ≤51 (Jiwon Byun) remains unverified — cite as claim only. arXiv:2611.11018 gives explicit practical algorithm within 30.5 n² / lg n + o(...) moves (factor 2.37 of lower bound), first with linear time and O(√N lg N) space. The constructive solver in this repo follows the same asymptotic family and can incorporate these refinements. Exact integer remains open.
 
 Canonical write-up: [UNIVERSAL_NXN_ALGORITHM.md](UNIVERSAL_NXN_ALGORITHM.md).  
 Group-order formula: [GROUP_ORDER.md](GROUP_ORDER.md).
@@ -57,7 +57,7 @@ BoundHarness scale `3.8 · n² / ln(n)` sits near those community estimates (~44
 
 ## Why exact g(n) is not claimed
 
-Computing God's number is the diameter of the Cayley graph. For n=3 that required ~35 CPU-years. For n=4 the position count is ~7.4×10⁴⁵. Honest progress: keep U(n), print Hardwick L(n) + L_fixed + Ucas, shrink measured OBTM, raise residual MITM quality. Recent community upper for 4×4 is 54 OBTM (53 / BT 51 claim unverified as of 2026-11-18). The practical God's algorithm for any size >3 is the asymptotic Θ(n²/log n) family, now with explicit constants from arXiv:2611.11018.
+Computing God's number is the diameter of the Cayley graph. For n=3 that required ~35 CPU-years. For n=4 the position count is ~7.4×10⁴⁵. Honest progress: keep U(n), print Hardwick L(n) + L_fixed + Ucas, shrink measured OBTM, raise residual MITM quality. Recent community upper for 4×4 is 54 OBTM (53 / BT 51 claim unverified as of 2026-11-21). The practical God's algorithm for any size >3 is the asymptotic Θ(n²/log n) family, now with explicit constants from arXiv:2611.11018.
 
 ## Code map
 
