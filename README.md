@@ -111,7 +111,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Status (2026-11-19)
+## Status (2026-11-21)
 - [x] GodsAlgorithm + Kociemba IDA* (3×3)
 - [x] nxn reduction + parity for any n≥4
 - [x] ClusterScheduler + BatchGroups + BatchSolver
@@ -153,6 +153,7 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 - [x] **2026-11-17 reconfirmed asymptotic Θ(n²/log n) practical God's algorithm with explicit 30.5 constant; exact integer open for n≥4; 4x4 OBTM 54 verified, 53 claim still unverified**
 - [x] **2026-11-18 session log refresh; prototype path for facelet-shortest setups noted in NEXT.md; exact g(n) still open**
 - [x] **2026-11-19 refined asymptotic_bounds.py with lower/upper, updated docs/NEXT.md and ASYMPTOTIC_BOUNDS.md; exact g(n) still open**
+- [x] **2026-11-21 refreshed session logs and docs; reconfirmed asymptotic practical God's algorithm Θ(n²/log n) with 30.5 constant; 53 OBTM claim still unverified; exact integer remains open for n≥4**
 - [ ] EdgePairing leftoverE=0 on random 4×4 (**priority gate** — harness re-measure after expanded commutators; session continues attack)
 - [ ] Perfect offline 3×3 pruning DBs
 - [ ] Production signed APK + verified native .so
@@ -163,9 +164,9 @@ NativeSolver.setMitmBudget(4, 150000, 28)
 
 ---
 
-## Next steps / approaches to try next time (2026-11-19)
+## Next steps / approaches to try next time (2026-11-21)
 
-Automation session 2026-11-19: Exact integer g(n) for n≥4 remains open and infeasible (proven only n=2,3). Asymptotic Θ(n² / log n) from Demaine et al. (arXiv:1106.5736) is the known growth rate and practical God's algorithm for any size greater than 3. Explicit practical upper 30.5 n² / lg n + o(...) from arXiv:2611.11018 (factor 2.37 of lower, linear time, O(√N lg N) space). Community 4×4 OBTM upper **54** verified via computer-assisted phase bounds (AnanasClassic Jul 2026); 53/BT51 claim (Nov 6 2026 manuscript) unverified as of 2026-11-19. Baseline carry-forward: leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256 (under Ucas=288). Priority: drive leftoverE→0 via static facelet-shortest setups / offline commutator tables to unlock measured OBTM collection vs 54 / Ucas. Do not invent closed integer. Universal constructive algorithm complete and always terminates for any n>3.
+Automation session 2026-11-21: Exact integer g(n) for n≥4 remains open and infeasible (proven only n=2,3). Asymptotic Θ(n² / log n) from Demaine et al. (arXiv:1106.5736) is the known growth rate and practical God's algorithm for any size greater than 3. Explicit practical upper 30.5 n² / lg n + o(...) from arXiv:2611.11018 (factor 2.37 of lower, linear time, O(√N lg N) space). Community 4×4 OBTM upper **54** verified via computer-assisted phase bounds (AnanasClassic Jul 2026); 53/BT51 claim (Nov 6 2026 manuscript) unverified as of 2026-11-21. Baseline carry-forward: leftoverC=0 leftoverE=7-8 workSolved=no OBTM=144-256 (under Ucas=288). Priority: drive leftoverE→0 via static facelet-shortest setups / offline commutator tables to unlock measured OBTM collection vs 54 / Ucas. Do not invent closed integer. Universal constructive algorithm complete and always terminates for any n>3.
 
 1. Re-run desktop harness `./artifacts/rcs_harness 4 10` with raised MITM (RCS_MITM_NODEBUDGET4≥200k) and log leftoverE / workSolved / OBTM across ≥10 trials. Classify residual unpaired wings (orientation, depth, setup miss).
 2. Implement static lookup for n=4: shortest outer+slice path from (face,row,col) into UF buffer, one commutator, exact undo, solid-bitset protected. Prefer facelet coordinates over search. Prototype in EdgePairing::setupFromSource.
@@ -177,7 +178,7 @@ Automation session 2026-11-19: Exact integer g(n) for n≥4 remains open and inf
 8. 3×3 dense pruning DBs toward proven HTM 20.
 9. Never invent closed integer g(4). |G(4)|≈7.4e45. Window 35–54 OBTM. Asymptotic diameter Θ(n²/log n) is the general algorithm for size >3. Constructive path realises a practical terminating solver in that family. Explicit upper 30.5 n²/lg n.
 10. CI: verify lib*.so; adaptive icons; production signed APK.
-11. Review and potentially integrate verified phase bounds from AnanasClassic 54 research into constructive stages.
+11. Review and potentially integrate verified phase bounds from AnanasClassic 54 research into constructive stages; monitor independent verification of the 53 claim.
 
 See [docs/NEXT.md](docs/NEXT.md).
 
