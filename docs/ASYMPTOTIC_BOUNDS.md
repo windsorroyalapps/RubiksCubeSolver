@@ -5,8 +5,8 @@ Exact integer God's number g(n) is known only for n=2 (11 HTM) and n=3 (20 HTM).
 ## Known results
 - Lower bound: Ω(n² / log n) from counting argument (Demaine et al., arXiv:1106.5736). Explicit ~12.88 n² / lg n for the leading constant.
 - Upper bound: O(n² / log n) via parallel batching of commuting cubie classes.
-- Explicit practical upper: 30.5 n² / lg n + o(n² / lg n) (arXiv:2611.11018, Nov 2026). Within factor ~2.37 of lower for large n. Linear time, O(√N lg N) extra space.
-- Community 4×4 OBTM: upper 54 (verified Jul 2026 AnanasClassic); 53 claim (Nov 2026) unverified.
+- Explicit practical upper: 30.5 n² / lg n + o(n² / lg n) (arXiv:2611.11018, Nov 2026). Within factor ~2.37 of lower for large n. Linear time, O(√N lg N) extra space. First explicit constant (prior implicit ~10^40).
+- Community 4×4 OBTM: upper 54 (verified Jul 2026 AnanasClassic, public GitHub artifact); 53 / BT 51 claim (Nov 6 2026 manuscript by Jiwon Byun) unverified as of 2026-11-21.
 
 ## Approximate bounds for small n
 (Note: asymptotic not tight for n≤20; constructive U(n) in BoundHarness is higher but explicit.)
@@ -31,4 +31,4 @@ The universal constructive pipeline (reduction + Demaine-style BatchGroups + res
 
 See BoundHarness, docs/GODS_NUMBER_NXN.md, docs/UNIVERSAL_NXN_ALGORITHM.md.
 
-*Updated 2026-11-19 automation session. Algorithm for any size >3 is this constructive Θ(n²/log n) solver. Exact diameter open.*
+*Updated 2026-11-21 automation session. Algorithm for any size >3 is this constructive Θ(n²/log n) solver. Exact diameter open.*
