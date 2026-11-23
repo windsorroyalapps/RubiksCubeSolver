@@ -1,10 +1,10 @@
-# Next session log — 2026-11-21 (automation progress on universal nxn algorithm)
+# Next session log — 2026-11-24 (automation progress on universal nxn algorithm)
 
-## Done this session (2026-11-21)
+## Done this session (2026-11-24)
 - Reconfirmed exact integer g(n) for n≥4 remains open and computationally intractable (proven only for n=2,3; 3×3 HTM=20, QTM=26). |G(4)|≈7.4e45; exhaustive diameter search not feasible. No closed integer God's number for sizes >3 is schedulable or claimed.
 - Asymptotic result g(n) = Θ(n² / log n) from Demaine et al. (arXiv:1106.5736) is the known growth rate and practical God's algorithm for any size greater than 3. The constructive reduction + Demaine-style batching + residual MITM + StageCap + facelet-mapped flip-aware edge pairing realises a terminating solver in that family.
-- Explicit practical upper: arXiv:2611.11018 (Nov 7 2026) algorithms solve within 30.5 n² / lg n + o(n²/lg n) moves, within factor 2.37+o(1) of the known lower bound ≈12.88, linear time, O(√N lg N) space. First explicit constant; prior was ~1e40.
-- Community 4×4 OBTM upper remains **54** (AnanasClassic Jul 2026, GitHub proof artifact). Nov 6 2026 manuscript claim of OBTM ≤53 / BT ≤51 (Jiwon Byun) remains unverified as of 2026-11-21; cite only as claim until independent confirmation. Speedsolving threads and attached PDF note the claim; AnanasClassic 54 is the verified public upper.
+- Explicit practical upper: arXiv:2611.11018 (Nov 7 2026) algorithms solve within 30.5 n² / lg n + o(n²/lg n) moves, within factor 2.37+o(1) of the known lower bound ≈12.88, linear time, O(√N lg N) space. First explicit constant; prior was ~1e40. Repo's pipeline is in this family; further porting of parallel commuting-class techniques can tighten measured lengths.
+- Community 4×4 OBTM upper remains **54** (AnanasClassic Jul 2026, GitHub proof artifact). Nov 6 2026 manuscript claim of OBTM ≤53 / BT ≤51 (Jiwon Byun) remains unverified as of 2026-11-24; cite only as claim until independent confirmation.
 - Priority remains driving leftoverE to 0 on 4×4 to unlock workSolved and measured OBTM collection vs Ucas=288 / community 54. Do not invent closed integer.
 
 ## Measurement baseline (carry-forward)
