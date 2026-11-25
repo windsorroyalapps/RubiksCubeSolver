@@ -9,9 +9,9 @@ Contract. This is the constructive solver the repo ships. It is not a proof of G
 - Prints counting lower L(n) = floor(ln|G|/ln|S|) from Hardwick, lifted to community 35 (n=4) and 52 (n=5).
 - Prints L_fixed, gap, Ucas, OBTM, leftoverC, leftoverE.
 - Exact integer g(n) for n >= 4 is open. Do not publish a closed diameter.
-- Community 4x4 OBTM upper now **54** (Jul 2026 computer-assisted phase bound). Unverified 53 / BT 51 claim (Nov 2026 manuscript) noted but not adopted as of 2026-11-24.
+- Community 4x4 OBTM upper now **54** (Jul 2026 computer-assisted phase bound, AnanasClassic GitHub artifact). Unverified 53 / BT 51 claim (Nov 2026 manuscript) noted but not adopted as of 2026-11-26.
 - Asymptotic diameter g(n) = Θ(n² / log n) (Demaine et al., arXiv:1106.5736). Upper from parallelizing O(n²) folk algorithms via shared slice moves on O(n²/log n) commuting classes; lower from counting.
-- **2026-11-12:** arXiv:2611.11018 provides explicit practical algorithm with 30.5 n² / lg n + o(n²/lg n) moves, within 2.37+o(1) of lower bound, linear time, O(√N lg N) space. First practical O(n²/lg n) solver. This repo's constructive path is in the same family and can adopt the tighter constants and parallel techniques.
+- **2026-11-12:** arXiv:2611.11018 provides explicit practical algorithm with 30.5 n² / lg n + o(n²/lg n) moves (permnet61), within 2.37+o(1) of lower bound, linear time, O(√N lg N) space. First practical O(n²/lg n) solver. This repo's constructive path is in the same family and can adopt the tighter constants and parallel techniques.
 
 ## Pipeline
 
@@ -29,18 +29,14 @@ ClusterScheduler
   -> BoundHarness
 ```
 
-## 2026-11-24 edge step note
+## 2026-11-26 edge step note
 
-Reconfirmed asymptotic Θ(n²/log n) as the practical God's algorithm for any size >3. Exact g(n) open for n>=4. Community 4x4 OBTM upper **54** verified (AnanasClassic Jul 2026 computer-assisted phase bounds, GitHub artifact). Nov 2026 manuscript claim OBTM≤53 / BT≤51 remains unverified. Explicit constant 30.5 n²/lg n from arXiv:2611.11018 is the tightest known practical upper. leftoverE remains the completeness gate after leftoverC=0. Next is facelet-shortest path, static tables, and explicit Demaine commuting-class parallel refinements to drive measured OBTM toward Ucas=288 and community 54. Constructive algorithm always terminates.
+Reconfirmed asymptotic Θ(n²/log n) as the practical God's algorithm for any size >3. Exact g(n) open for n>=4. Community 4x4 OBTM upper **54** verified (AnanasClassic Jul 2026 computer-assisted phase bounds, GitHub artifact https://github.com/AnanasClassic/4x4x4-obtm-54-research). Nov 2026 manuscript claim OBTM≤53 / BT≤51 remains unverified. Explicit constant 30.5 n²/lg n from arXiv:2611.11018 (permnet61) is the tightest known practical upper. leftoverE remains the completeness gate after leftoverC=0. Next is facelet-shortest path, static tables, and explicit Demaine commuting-class parallel refinements (including sorting-network inspired center stages) to drive measured OBTM toward Ucas=288 and community 54. Constructive algorithm always terminates.
 
-## 2026-11-18 edge step note
+## 2026-11-25 edge step note
 
-Reconfirmed asymptotic Θ(n²/log n) as the practical God's algorithm for any size >3. Exact g(n) open for n>=4. Community 4x4 OBTM upper **54** verified (AnanasClassic Jul 2026 computer-assisted phase bounds, GitHub artifact). Nov 2026 manuscript claim OBTM≤53 / BT≤51 remains unverified. Noted new explicit constant 30.5 n²/lg n from arXiv:2611.11018. leftoverE remains the completeness gate after leftoverC=0. Next is facelet-shortest path, static tables, and explicit Demaine commuting-class parallel refinements to drive measured OBTM toward Ucas=288 and community 54. Constructive algorithm always terminates.
-
-## 2026-11-13 edge step note
-
-Reconfirmed asymptotic Θ(n²/log n) as the practical God's algorithm for any size >3. Exact g(n) open for n>=4. Community 4x4 OBTM upper **54** verified (AnanasClassic Jul 2026 computer-assisted phase bounds, GitHub artifact). Nov 2026 manuscript claim OBTM≤53 / BT≤51 remains unverified. Noted new explicit constant 30.5 n²/lg n from arXiv:2611.11018. leftoverE remains the completeness gate after leftoverC=0. Next is facelet-shortest path, static tables, and explicit Demaine commuting-class parallel refinements to drive measured OBTM toward Ucas=288 and community 54. Constructive algorithm always terminates.
+Reconfirmed asymptotic Θ(n²/log n) as the practical God's algorithm for any size >3. Exact g(n) open for n>=4. Community 4x4 OBTM upper **54** verified. 53 claim still unverified. Added permnet61 note. leftoverE remains the gate. Constructive algorithm always terminates.
 
 ## What is not claimed
 
-God's number is the diameter of the Cayley graph. Proven only for n=2 (11 HTM) and n=3 (20 HTM / 26 QTM). |G(4)| is about 7.4e45. Community 4x4 OBTM window remains 35-54. Asymptotic result (Demaine et al.) is g(n) = Theta(n^2 / log n), which the batching stage follows in spirit. Explicit practical upper now available via arXiv:2611.11018.
+God's number is the diameter of the Cayley graph. Proven only for n=2 (11 HTM) and n=3 (20 HTM / 26 QTM). |G(4)| is about 7.4e45. Community 4x4 OBTM window remains 35-54. Asymptotic result (Demaine et al.) is g(n) = Theta(n^2 / log n), which the batching stage follows in spirit. Explicit practical upper now available via arXiv:2611.11018 permnet61.
